@@ -59,6 +59,8 @@
 	{/each}
 {/await}
 
+<!--
+
 <h1>Upload profile</h1>
 
 <div>
@@ -112,3 +114,4 @@
 		<pre>{JSON.stringify(profileToUpload)}</pre>
 	{/if}
 </div>
+-->
