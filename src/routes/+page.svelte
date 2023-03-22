@@ -1,10 +1,26 @@
 <script lang="ts">
-	import { db } from '$lib/firebase';
-	import { collection, doc, Firestore, getDoc, getDocs, query, setDoc } from 'firebase/firestore';
+	import { auth, db } from '$lib/firebase';
+	import { signInWithEmailAndPassword } from 'firebase/auth';
+	import {
+		addDoc,
+		collection,
+		doc,
+		Firestore,
+		getDoc,
+		getDocs,
+		query,
+		QueryDocumentSnapshot,
+		setDoc,
+		Timestamp,
+		where,
+		type DocumentData
+	} from 'firebase/firestore';
+	import { onMount } from 'svelte';
 
 	interface IProfile {
 		owner: string;
 		name: string;
+		public: boolean;
 		slug: string;
 		description: string;
 		isGridProfile: boolean;
@@ -15,10 +31,12 @@
 		};
 		productType: string;
 		editorData: string;
+		createdAt: Timestamp | undefined;
 	}
 
 	let profileDoc: IProfile = {
 		owner: '',
+		public: true,
 		name: '',
 		slug: '',
 		description: '',
@@ -29,12 +47,16 @@
 		},
 		isGridProfile: true,
 		productType: '',
+		createdAt: undefined,
 		editorData: ''
 	};
 
 	async function getProfiles() {
-		const q = query(collection(db, 'profiles'));
-		return await getDocs(q).then((res) => res.docs);
+		const q = query(collection(db, 'profiles'), where('public', '==', true));
+		// Create a reference to the "profiles" collection
+		return await getDocs(q)
+			.then((res) => res.docs)
+			.catch((err) => console.log(err));
 	}
 
 	let profileToUpload: IProfile;
@@ -43,13 +65,22 @@
 		profileToUpload = profileDoc;
 		profileToUpload.slug = profileDoc.name.toLowerCase().replace(/ /g, '-');
 		profileToUpload.editorData = profileDoc.editorData;
+		// good practice to create documents with timestamps
+		profileToUpload.createdAt = Timestamp.now();
 		isFirestoreUploading = true;
-		const res = await setDoc(doc(db, 'profiles', profileToUpload.slug), profileToUpload);
-		console.log(res);
+		const res = await addDoc(collection(db, 'profiles'), profileToUpload);
 		isFirestoreUploading = false;
 	}
 
-	console.log(window.frameElement);
+	onMount(() => {
+		signInWithEmailAndPassword(auth, 'kkerti@riseup.net', 'macgyver2')
+			.then((res) => {
+				console.log(res);
+			})
+			.catch((err) => {
+				console.log(err);
+			});
+	});
 </script>
 
 <h1>Profile Cloud</h1>
@@ -67,6 +98,11 @@
 <div>
 	<label for="profile-owner">Owner</label>
 	<input type="text" id="profile-owner" bind:value={profileDoc.owner} placeholder="owner name" />
+</div>
+
+<div>
+	<label for="profile-public">Public</label>
+	<input type="checkbox" id="profile-public" bind:checked={profileDoc.public} />
 </div>
 
 <div>
