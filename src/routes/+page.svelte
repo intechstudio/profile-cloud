@@ -72,16 +72,37 @@
 		isFirestoreUploading = false;
 	}
 
-	onMount(() => {
-		signInWithEmailAndPassword(auth, 'kkerti@riseup.net', 'macgyver2')
+	let password = '';
+	let email = 'kkerti@riseup.net';
+
+	function signIn() {
+		signInWithEmailAndPassword(auth, email, password)
 			.then((res) => {
 				console.log(res);
 			})
 			.catch((err) => {
 				console.log(err);
 			});
-	});
+	}
 </script>
+
+<div>
+	<label for="email">Email</label>
+	<input type="text" id="email" bind:value={email} placeholder="email" />
+</div>
+<div>
+	<label for="password">Password</label>
+	<input type="password" id="password" bind:value={password} placeholder="password" />
+</div>
+<div>
+	<button
+		on:click={() => {
+			signIn();
+		}}>Sign In</button
+	>
+</div>
+
+{auth.currentUser?.uid}
 
 <h1>Profile Cloud</h1>
 
