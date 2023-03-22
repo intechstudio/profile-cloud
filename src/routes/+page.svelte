@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { auth, db } from '$lib/firebase';
-	import { signInWithEmailAndPassword } from 'firebase/auth';
+	import { onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
 	import {
 		addDoc,
 		collection,
@@ -8,6 +8,7 @@
 		Firestore,
 		getDoc,
 		getDocs,
+		onSnapshot,
 		query,
 		QueryDocumentSnapshot,
 		setDoc,
@@ -15,7 +16,9 @@
 		where,
 		type DocumentData
 	} from 'firebase/firestore';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
+
+	$: console.log('curruser?', auth);
 
 	interface IProfile {
 		owner: string;
@@ -51,6 +54,17 @@
 		editorData: ''
 	};
 
+	let realtimeDb: () => void;
+	let profiles: any = [];
+	const q = query(collection(db, 'profiles'), where('public', '==', true));
+	realtimeDb = onSnapshot(q, (querySnapshot) => {
+		profiles = [];
+		querySnapshot.forEach((doc) => {
+			profiles = [...profiles, { id: doc.id, ...doc.data() }];
+		});
+		console.log('profilee', profiles);
+	});
+
 	async function getProfiles() {
 		const q = query(collection(db, 'profiles'), where('public', '==', true));
 		// Create a reference to the "profiles" collection
@@ -66,17 +80,30 @@
 		profileToUpload.slug = profileDoc.name.toLowerCase().replace(/ /g, '-');
 		profileToUpload.editorData = profileDoc.editorData;
 		// good practice to create documents with timestamps
+		console.log('AUTH USED', auth);
 		profileToUpload.createdAt = Timestamp.now();
 		isFirestoreUploading = true;
-		const res = await addDoc(collection(db, 'profiles'), profileToUpload);
+		const res = await addDoc(collection(db, 'profiles'), profileToUpload).catch((err) =>
+			console.log(err)
+		);
 		isFirestoreUploading = false;
 	}
 
-	let password = '';
-	let email = 'kkerti@riseup.net';
+	let browserPassword = '';
+	let browserEmail = 'kkerti@riseup.net';
+
+	let iframeUser: any = null;
+
+	onAuthStateChanged(auth, (user) => {
+		if (user) {
+			iframeUser = user;
+		} else {
+			iframeUser = null;
+		}
+	});
 
 	function signIn() {
-		signInWithEmailAndPassword(auth, email, password)
+		signInWithEmailAndPassword(auth, browserEmail, browserPassword)
 			.then((res) => {
 				console.log(res);
 			})
@@ -84,25 +111,53 @@
 				console.log(err);
 			});
 	}
+
+	window.addEventListener(
+		'message',
+		function (event) {
+			const { email, password } = event.data;
+			console.log('Child received:  ', event.origin, window.location.origin, event.data);
+			document.getElementById('my-message')!.innerHTML = JSON.stringify(event.data);
+
+			if (email?.length > 0 && password?.length > 0) {
+				signInWithEmailAndPassword(auth, email, password)
+					.then((res) => {
+						console.log(res);
+					})
+					.catch((err) => {
+						console.log(err);
+					});
+			}
+		},
+		false
+	);
+
+	onDestroy(() => {
+		realtimeDb();
+	});
 </script>
 
-<div>
-	<label for="email">Email</label>
-	<input type="text" id="email" bind:value={email} placeholder="email" />
-</div>
-<div>
-	<label for="password">Password</label>
-	<input type="password" id="password" bind:value={password} placeholder="password" />
-</div>
-<div>
-	<button
-		on:click={() => {
-			signIn();
-		}}>Sign In</button
-	>
-</div>
+{iframeUser?.uid}
 
-{auth.currentUser?.uid}
+<div id="my-message">nothing</div>
+
+{#if window.self === window.top}
+	<div>
+		<label for="email">Email</label>
+		<input type="text" id="email" bind:value={browserEmail} placeholder="email" />
+	</div>
+	<div>
+		<label for="password">Password</label>
+		<input type="password" id="password" bind:value={browserPassword} placeholder="password" />
+	</div>
+	<div>
+		<button
+			on:click={() => {
+				signIn();
+			}}>Sign In</button
+		>
+	</div>
+{/if}
 
 <h1>Profile Cloud</h1>
 
@@ -113,6 +168,12 @@
 		<div>{data.name}</div>
 	{/each}
 {/await}
+
+{#each profiles as profile (profile.id)}
+	{profile.id}
+	<a href="/{profile.owner}/{profile.slug}">{profile.owner}</a>
+	<div>{profile.name}</div>
+{/each}
 
 <h1>Upload profile</h1>
 
