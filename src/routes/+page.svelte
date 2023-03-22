@@ -14,7 +14,7 @@
 			patch: number;
 		};
 		productType: string;
-		pageJson: string;
+		editorData: string;
 	}
 
 	let profileDoc: IProfile = {
@@ -29,7 +29,7 @@
 		},
 		isGridProfile: true,
 		productType: '',
-		pageJson: ''
+		editorData: ''
 	};
 
 	async function getProfiles() {
@@ -42,11 +42,14 @@
 	async function uploadProfile() {
 		profileToUpload = profileDoc;
 		profileToUpload.slug = profileDoc.name.toLowerCase().replace(/ /g, '-');
-		profileToUpload.pageJson = JSON.parse(profileDoc.pageJson);
+		profileToUpload.editorData = profileDoc.editorData;
 		isFirestoreUploading = true;
-		await setDoc(doc(db, 'profiles', profileToUpload.slug), profileToUpload);
+		const res = await setDoc(doc(db, 'profiles', profileToUpload.slug), profileToUpload);
+		console.log(res);
 		isFirestoreUploading = false;
 	}
+
+	console.log(window.frameElement);
 </script>
 
 <h1>Profile Cloud</h1>
@@ -58,8 +61,6 @@
 		<div>{data.name}</div>
 	{/each}
 {/await}
-
-<!--
 
 <h1>Upload profile</h1>
 
@@ -98,7 +99,7 @@
 
 <div>
 	<label for="profile-page-json">Page JSON</label>
-	<textarea name="" id="profile-page-json" bind:value={profileDoc.pageJson} cols="30" rows="5" />
+	<textarea name="" id="profile-page-json" bind:value={profileDoc.editorData} cols="30" rows="5" />
 </div>
 
 <div>
@@ -114,4 +115,3 @@
 		<pre>{JSON.stringify(profileToUpload)}</pre>
 	{/if}
 </div>
--->
