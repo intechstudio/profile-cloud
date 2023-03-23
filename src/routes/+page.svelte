@@ -1,6 +1,13 @@
 <script lang="ts">
 	import { auth, db } from '$lib/firebase';
-	import { onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
+	import {
+		getAuth,
+		onAuthStateChanged,
+		signInWithEmailAndPassword,
+		signOut,
+		type User
+	} from 'firebase/auth';
+	import { UserImpl } from '@firebase/auth/internal';
 	import {
 		addDoc,
 		collection,
@@ -18,7 +25,7 @@
 	} from 'firebase/firestore';
 	import { onDestroy, onMount } from 'svelte';
 
-	$: console.log('curruser?', auth);
+	//$: console.log('curruser?', auth);
 
 	interface IProfile {
 		owner: string;
@@ -96,13 +103,14 @@
 
 	onAuthStateChanged(auth, (user) => {
 		if (user) {
+			console.log('user chabged', user);
 			iframeUser = user;
 		} else {
 			iframeUser = null;
 		}
 	});
 
-	function signIn() {
+	function login() {
 		signInWithEmailAndPassword(auth, browserEmail, browserPassword)
 			.then((res) => {
 				console.log(res);
@@ -112,22 +120,32 @@
 			});
 	}
 
+	function logout() {
+		signOut(auth);
+	}
+
+	function createUserFromSerializedData(currentUser: string) {
+		const userData = JSON.parse(currentUser);
+		const user: User = UserImpl._fromJSON(getAuth() as any, userData);
+		auth.updateCurrentUser(user);
+	}
+
 	window.addEventListener(
 		'message',
 		function (event) {
-			const { email, password } = event.data;
-			console.log('Child received:  ', event.origin, window.location.origin, event.data);
-			document.getElementById('my-message')!.innerHTML = JSON.stringify(event.data);
+			const { currentUser } = event.data;
 
-			if (email?.length > 0 && password?.length > 0) {
-				signInWithEmailAndPassword(auth, email, password)
-					.then((res) => {
-						console.log(res);
-					})
-					.catch((err) => {
-						console.log(err);
-					});
-			}
+			createUserFromSerializedData(currentUser);
+
+			console.log('Child received:  ', event.origin, window.location.origin, event.data);
+
+			// signInWithEmailAndPassword(auth, email, password)
+			// 	.then((res) => {
+			// 		console.log(res);
+			// 	})
+			// 	.catch((err) => {
+			// 		console.log(err);
+			// 	});
 		},
 		false
 	);
@@ -153,11 +171,19 @@
 	<div>
 		<button
 			on:click={() => {
-				signIn();
+				login();
 			}}>Sign In</button
 		>
 	</div>
 {/if}
+
+<div>
+	<button
+		on:click={() => {
+			logout();
+		}}>Sign Out</button
+	>
+</div>
 
 <h1>Profile Cloud</h1>
 
