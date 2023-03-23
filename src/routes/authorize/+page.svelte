@@ -4,6 +4,9 @@
 	function handleCredentialResponse(response: { credential: string }) {
 		console.log('Encoded JWT ID token: ', response.credential);
 		const link = document.createElement('a');
+
+		// need to handle dev and prod links
+
 		link.href = `grid-editor-dev://credential=${response.credential}`;
 		document.body.appendChild(link);
 		link.click();
