@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { auth, db } from '$lib/firebase';
 	import {
+		AuthCredential,
 		getAuth,
 		onAuthStateChanged,
 		signInWithCredential,
@@ -25,6 +26,7 @@
 		type DocumentData
 	} from 'firebase/firestore';
 	import { onDestroy, onMount } from 'svelte';
+	import { error } from '@sveltejs/kit';
 
 	//$: console.log('curruser?', auth);
 
@@ -131,8 +133,10 @@
 		auth.updateCurrentUser(user);
 	}
 
-	function authenticateUser(credential: string) {
-		signInWithCredential(auth, credential);
+	function authenticateUser(credential: AuthCredential) {
+		signInWithCredential(auth, credential).catch((error) => {
+			console.log(error);
+		});
 	}
 
 	window.addEventListener(
