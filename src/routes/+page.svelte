@@ -3,6 +3,7 @@
 	import {
 		getAuth,
 		onAuthStateChanged,
+		signInWithCredential,
 		signInWithEmailAndPassword,
 		signOut,
 		type User
@@ -130,12 +131,16 @@
 		auth.updateCurrentUser(user);
 	}
 
+	function authenticateUser(credential: string) {
+		signInWithCredential(auth, credential);
+	}
+
 	window.addEventListener(
 		'message',
 		function (event) {
-			const { currentUser } = event.data;
+			const { credential } = event.data;
 
-			createUserFromSerializedData(currentUser);
+			authenticateUser(credential);
 
 			console.log('Child received:  ', event.origin, window.location.origin, event.data);
 
