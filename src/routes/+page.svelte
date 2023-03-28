@@ -27,6 +27,8 @@
 	} from 'firebase/firestore';
 	import { onDestroy, onMount } from 'svelte';
 	import { error } from '@sveltejs/kit';
+	import Login from '$lib/components/Login.svelte';
+	import DocumentBrowser from '$lib/components/DocumentBrowser.svelte';
 
 	//$: console.log('curruser?', auth);
 
@@ -63,25 +65,6 @@
 		createdAt: undefined,
 		editorData: ''
 	};
-
-	let realtimeDb: () => void;
-	let profiles: any = [];
-	const q = query(collection(db, 'profiles'), where('public', '==', true));
-	realtimeDb = onSnapshot(q, (querySnapshot) => {
-		profiles = [];
-		querySnapshot.forEach((doc) => {
-			profiles = [...profiles, { id: doc.id, ...doc.data() }];
-		});
-		console.log('profilee', profiles);
-	});
-
-	async function getProfiles() {
-		const q = query(collection(db, 'profiles'), where('public', '==', true));
-		// Create a reference to the "profiles" collection
-		return await getDocs(q)
-			.then((res) => res.docs)
-			.catch((err) => console.log(err));
-	}
 
 	let profileToUpload: IProfile;
 	let isFirestoreUploading = false;
@@ -160,31 +143,23 @@
 	);
 
 	onDestroy(() => {
-		realtimeDb();
+		//realtimeDb();
 	});
 </script>
 
-{iframeUser?.uid}
+<section class="container mx-auto max-w-screen-xl">
+	{#if window.self === window.top}
+		<span class="italic text-gray-400 p-4">we are in the browser</span>
+	{/if}
 
-<div id="my-message">nothing</div>
+	<div class="p-4 w-1/3">
+		<Login />
+	</div>
 
-{#if window.self === window.top}
-	<div>
-		<label for="email">Email</label>
-		<input type="text" id="email" bind:value={browserEmail} placeholder="email" />
+	<div class="p-4">
+		<DocumentBrowser />
 	</div>
-	<div>
-		<label for="password">Password</label>
-		<input type="password" id="password" bind:value={browserPassword} placeholder="password" />
-	</div>
-	<div>
-		<button
-			on:click={() => {
-				login();
-			}}>Sign In</button
-		>
-	</div>
-{/if}
+</section>
 
 <div>
 	<button
@@ -195,20 +170,6 @@
 </div>
 
 <h1>Profile Cloud</h1>
-
-{#await getProfiles() then profiles}
-	{#each profiles as profile}
-		{@const data = profile.data()}
-		<a href="/{data.owner}/{data.slug}">{data.owner}</a>
-		<div>{data.name}</div>
-	{/each}
-{/await}
-
-{#each profiles as profile (profile.id)}
-	{profile.id}
-	<a href="/{profile.owner}/{profile.slug}">{profile.owner}</a>
-	<div>{profile.name}</div>
-{/each}
 
 <h1>Upload profile</h1>
 
