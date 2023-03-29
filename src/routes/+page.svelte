@@ -14,6 +14,7 @@
 	import Login from '$lib/components/Login.svelte';
 	import DocumentBrowser from '$lib/components/DocumentBrowser.svelte';
 	import type { IProfile } from '$lib/interfaces';
+	import DisplayOnWeb from '$lib/components/DisplayOnWeb.svelte';
 
 	let profileDoc: IProfile = {
 		owner: '',
@@ -71,22 +72,23 @@
 	});
 </script>
 
-<section class="container mx-auto flex flex-col md:items-center max-w-screen-xl">
-	{#if getContext('display') == 'web'}
+<section class="">
+	<DisplayOnWeb>
 		<div class="p-4 w-full lg:w-1/3">
 			<Login />
+			<div>
+				<button
+					on:click={() => {
+						logout();
+					}}>Sign Out</button
+				>
+			</div>
 		</div>
-	{/if}
+	</DisplayOnWeb>
 
-	<div class="p-4">
-		<DocumentBrowser />
+	<div class="w-full bg-neutral-100 dark:bg-neutral-950">
+		<div class="px-4 container mx-auto flex flex-col max-w-screen-xl">
+			<DocumentBrowser />
+		</div>
 	</div>
 </section>
-
-<div>
-	<button
-		on:click={() => {
-			logout();
-		}}>Sign Out</button
-	>
-</div>

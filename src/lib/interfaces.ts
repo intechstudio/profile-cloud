@@ -1,13 +1,11 @@
 import type { Timestamp } from "firebase/firestore";
 
 export interface IProfile {
-    owner: string;
+    owner: string; //unique!
     name: string;
-    public: boolean;
-    slug: string;
+    //public: boolean; // később
     description: string;
-    isGridProfile: boolean;
-    productType: string;
+    //productType: string; //később!
     editorData: string;
-    createdAt: Timestamp | undefined;
+    //createdAt: Timestamp | undefined; //később
 }

@@ -3,7 +3,13 @@ module.exports = {
   darkMode: 'class',
   content: ['./src/**/*.{html,js,svelte,ts}'],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        neutral: {
+          '950': '#121212'
+        }
+      }
+    },
   },
   plugins: [
     require('@tailwindcss/typography')

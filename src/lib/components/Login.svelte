@@ -1,13 +1,14 @@
 <script lang="ts">
 	import { auth } from '$lib/firebase';
 	import { signInWithEmailAndPassword } from 'firebase/auth';
+	import AtomicButton from './atomic/AtomicButton.svelte';
 	import AtomicInput from './atomic/AtomicInput.svelte';
 
 	let email = '';
 	let password = '';
 
-	function login() {
-		signInWithEmailAndPassword(auth, email, password)
+	async function login() {
+		await signInWithEmailAndPassword(auth, email, password)
 			.then((res) => {
 				console.log(res);
 			})
@@ -41,12 +42,7 @@
 	/>
 
 	<div class="p-2 mt-2">
-		<button
-			on:click={login}
-			class="px-4 w-full py-1 bg-blue-400 dark:bg-emerald-500 text-white font-medium border rounded focus:border-gray-800 border-gray-500 focus:outline-none focus:ring-blue-300 focus:ring-2"
-		>
-			login
-		</button>
+		<AtomicButton functionToCall={login} label={'login'} />
 	</div>
 
 	<div class="border-b border-gray-300 py-2 mx-2" />

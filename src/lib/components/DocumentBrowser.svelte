@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { db } from '$lib/firebase';
-	import { collection, getDocs, onSnapshot, query, where } from 'firebase/firestore';
+	import type { IProfile } from '$lib/interfaces';
+	import { collection, getDocs, onSnapshot, query, QuerySnapshot, where } from 'firebase/firestore';
+	import DisplayOnWeb from './DisplayOnWeb.svelte';
 	import DocumentCard from './DocumentCard.svelte';
 
 	let realtimeDb: () => void;
@@ -25,30 +27,20 @@
 	}
 </script>
 
-<div>
+<DisplayOnWeb>
 	<div class="flex justify-between items-center">
-		<h1 class="text-3xl font-bold ">profile list</h1>
-		<div>
-			<button
-				class="dark:bg-emerald-700 bg-blue-400 hover:bg-blue-500 text-white font-medium dark:hover:bg-emerald-600 rounded px-4 py-2"
-				>import profiles from cloud</button
-			>
-		</div>
+		<h1 class="text-3xl font-bold pt-8">profile list</h1>
 	</div>
-	<div
-		class="pt-4 grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 items-stretch gap-4"
-	>
-		{#await listAllPublicProfiles()}
-			loading..
-		{:then profiles}
-			{#each profiles as profile}
-				{@const data = profile.data()}
-				<div class="w-full">
-					<DocumentCard {data} />
-				</div>
-			{/each}
-		{/await}
-	</div>
+</DisplayOnWeb>
+<div class="py-8 grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 gap-4">
+	{#await listAllPublicProfiles()}
+		loading..
+	{:then profiles}
+		{#each profiles as profile}
+			{@const data = profile.data()}
+			<DocumentCard {data} />
+		{/each}
+	{/await}
 </div>
 
 <!-- {#each realtimeProfiles as profile (profile.id)}

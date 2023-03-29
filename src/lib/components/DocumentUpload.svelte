@@ -9,6 +9,7 @@
 		console.log('AUTH USED', auth);
 		profileToUpload.createdAt = Timestamp.now();
 		isFirestoreUploading = true;
+		// what
 		const res = await addDoc(collection(db, 'profiles'), profileToUpload).catch((err) =>
 			console.log(err)
 		);
