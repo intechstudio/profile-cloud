@@ -11,9 +11,7 @@
 	class:grid-rows-2={direction === 'vertical'}
 	class="grid items-center p-2"
 >
-	<label class="{direction == 'horizontal' ? 'col-span-1' : ''} text-black font-light" for=""
-		>{label}</label
-	>
+	<label class="{direction == 'horizontal' ? 'col-span-1' : ''} font-light" for="">{label}</label>
 	{#if type === 'password'}
 		<input
 			type="password"
@@ -21,7 +19,7 @@
 			bind:value={data}
 			class="{direction == 'horizontal'
 				? 'col-span-2'
-				: ''} w-full p-1 border rounded focus:border-gray-800 border-gray-500 focus:outline-none focus:ring-blue-300 focus:ring-2"
+				: ''} w-full p-1 border rounded bg-white dark:bg-neutral-800 focus:border-gray-800 border-gray-500 focus:outline-none focus:ring-blue-300 focus:ring-2"
 		/>
 	{:else if type === 'text'}
 		<input
@@ -30,7 +28,7 @@
 			bind:value={data}
 			class="{direction == 'horizontal'
 				? 'col-span-2'
-				: ''} w-full p-1 border rounded focus:border-gray-800 border-gray-500 focus:outline-none focus:ring-blue-300 focus:ring-2"
+				: ''} w-full p-1 border rounded bg-white dark:bg-neutral-800 focus:border-gray-800 border-gray-500 focus:outline-none focus:ring-blue-300 focus:ring-2"
 		/>
 	{/if}
 </div>
