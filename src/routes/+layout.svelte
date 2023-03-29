@@ -10,8 +10,6 @@
 	}
 
 	function isThisAnIframe() {
-		return true;
-
 		try {
 			return window.self !== window.top;
 		} catch (e) {
