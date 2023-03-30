@@ -1,5 +1,5 @@
 <script lang="ts">
-	let profileToUpload: IProfile;
+	let profileToUpload: Profile;
 	let isFirestoreUploading = false;
 	async function uploadProfile() {
 		profileToUpload = profileDoc;

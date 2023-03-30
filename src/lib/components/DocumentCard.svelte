@@ -1,8 +1,33 @@
 <script lang="ts">
-	import type { IProfile } from '$lib/interfaces';
+	import type { Profile } from '$lib/types';
+	import { getContext } from 'svelte';
 	import AtomicButton from './atomic/AtomicButton.svelte';
 
-	export let data: IProfile;
+	export let data: Profile;
+
+	const display = getContext('display');
+
+	const profileImportDownloadHandler = () => {
+		if (display === 'web') {
+			return downloadProfile();
+		}
+		if (display === 'editor') {
+			return importProfile();
+		}
+	};
+
+	function downloadProfile() {
+		const element = document.createElement('a');
+		const file = new Blob([JSON.stringify(data)], { type: 'application/json' });
+		element.href = URL.createObjectURL(file);
+		element.download = `${data.name}.json`;
+		document.body.appendChild(element); // Required for this to work in FireFox
+		element.click();
+	}
+
+	function importProfile() {
+		window.parent.postMessage(JSON.stringify(data?.editorData), '*');
+	}
 </script>
 
 <div
@@ -12,7 +37,7 @@
 		<h2 class="font-bold pb-2">{data.name}</h2>
 
 		<div
-			class="dark:text-white text-blacktext-opacity-60 dark:text-opacity-50 dark:bg-blue-300/5 font-mono rounded p-1"
+			class="dark:text-white text-blacktext-opacity-60 break-all dark:text-opacity-50 dark:bg-blue-300/5 font-mono text-xs rounded p-1"
 		>
 			{data.editorData?.substring(0, 100) || 'data is not present'}
 		</div>
@@ -29,7 +54,10 @@
 		>
 
 		<div class="w-1/2 ">
-			<AtomicButton label={'import'} />
+			<AtomicButton
+				label={display == 'editor' ? 'import' : 'download'}
+				functionToCall={profileImportDownloadHandler}
+			/>
 		</div>
 	</div>
 </div>

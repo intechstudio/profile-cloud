@@ -1,28 +1,15 @@
 <script lang="ts">
 	import { db } from '$lib/firebase';
-	import type { IProfile } from '$lib/interfaces';
+	import { profilesCollection } from '$lib/collections';
 	import { collection, getDocs, onSnapshot, query, QuerySnapshot, where } from 'firebase/firestore';
 	import DisplayOnWeb from './DisplayOnWeb.svelte';
 	import DocumentCard from './DocumentCard.svelte';
 
-	let realtimeDb: () => void;
-	let realtimeProfiles: any = [];
-	const q = query(collection(db, 'profiles'), where('public', '==', true));
-	realtimeDb = onSnapshot(q, (querySnapshot) => {
-		realtimeProfiles = [];
-		querySnapshot.forEach((doc) => {
-			realtimeProfiles = [...realtimeProfiles, { id: doc.id, ...doc.data() }];
-		});
-		console.log('realtimeProfiles', realtimeProfiles);
-	});
-
-	let profiles = [];
-
 	async function listAllPublicProfiles() {
 		// Create a reference to the "profiles" collection
-		const q = query(collection(db, 'profiles'), where('public', '==', true));
+		const q = query(profilesCollection);
 		// assign the returned documents to a variable, so it's easy to pass it to Grid Editor
-		profiles = await getDocs(q).then((res) => res.docs);
+		const profiles = await getDocs(q).then((res) => res.docs);
 		return profiles;
 	}
 </script>

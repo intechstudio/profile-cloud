@@ -13,18 +13,13 @@
 	import { error } from '@sveltejs/kit';
 	import Login from '$lib/components/Login.svelte';
 	import DocumentBrowser from '$lib/components/DocumentBrowser.svelte';
-	import type { IProfile } from '$lib/interfaces';
+	import type { Profile } from '$lib/types';
 	import DisplayOnWeb from '$lib/components/DisplayOnWeb.svelte';
 
-	let profileDoc: IProfile = {
+	let profileDoc: Profile = {
 		owner: '',
-		public: true,
 		name: '',
-		slug: '',
 		description: '',
-		isGridProfile: true,
-		productType: '',
-		createdAt: undefined,
 		editorData: ''
 	};
 

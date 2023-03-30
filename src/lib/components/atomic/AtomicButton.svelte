@@ -1,10 +1,15 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 
-	export let label: string = 'button';
-	export let functionToCall: Function = () => {};
+	interface FunctionToCall {
+		(): any;
+	}
 
-	const dispatch = createEventDispatcher();
+	export let label: string = 'button';
+	export let functionToCall: FunctionToCall = () => {};
+
+	// unused for now
+	//const dispatch = createEventDispatcher();
 
 	let isLoading = false;
 	async function functionWrapper() {

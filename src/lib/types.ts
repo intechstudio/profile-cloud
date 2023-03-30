@@ -1,6 +1,7 @@
 import type { Timestamp } from "firebase/firestore";
 
-export interface IProfile {
+export type Profile = {
+    _id: string;
     owner: string; //unique!
     name: string;
     //public: boolean; // később
