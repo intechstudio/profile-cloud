@@ -53,10 +53,8 @@
 	window.addEventListener(
 		'message',
 		function (event) {
-			const { credential } = event.data;
-
-			authenticateUser(credential);
-
+			if (event.data.messageType == 'editorDataSaved') {
+			}
 			console.log('Child received:  ', event.origin, window.location.origin, event.data);
 		},
 		false
