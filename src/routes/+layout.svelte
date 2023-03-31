@@ -22,6 +22,8 @@
 
 	function toggleDarkMode() {
 		darkMode = !darkMode;
+		// set class on body, so on overscrolling the background will match the app color
+		document.body.classList.toggle('bg-neutral-950');
 	}
 
 	let fontSize = getContext('display') === 'editor' ? '12px' : '16px';
@@ -36,16 +38,20 @@
 		class="dark:bg-neutral-900 flex flex-col justify-between dark:text-white dark:text-opacity-80 transition duration-200 min-h-screen"
 	>
 		<DisplayOnWeb>
-			<nav class="container mx-auto flex w-full justify-between p-4">
-				<a href="https://intech.studio">
-					<img
-						src="https://intech.studio/icon-logo-black-transparent.svg"
-						alt="Intech Studio"
-						class="h-8 p-1"
-					/>
-				</a>
-				<ToggleSwitch on:toggle={toggleDarkMode} />
-			</nav>
+			<div class="dark:bg-neutral-700">
+				<nav class=" container mx-auto flex w-full justify-between p-4">
+					<a href="https://intech.studio">
+						<img
+							src={darkMode
+								? '/icon-logo-white-transparent.svg'
+								: '/icon-logo-black-transparent.svg'}
+							alt="Intech Studio"
+							class="h-8 p-1 "
+						/>
+					</a>
+					<ToggleSwitch on:toggle={toggleDarkMode} />
+				</nav>
+			</div>
 		</DisplayOnWeb>
 
 		<slot />
