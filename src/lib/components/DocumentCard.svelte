@@ -20,8 +20,8 @@
 
 	function downloadProfile() {
 		const element = document.createElement('a');
-		const file = new Blob([JSON.parse(data?.editorData)], { type: 'application/json' });
-		element.href = URL.createObjectURL(file);
+		var dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(data.editorData);
+		element.href = dataStr;
 		element.download = `${data.name}.json`;
 		document.body.appendChild(element); // Required for this to work in FireFox
 		element.click();
