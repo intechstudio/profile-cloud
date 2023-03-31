@@ -7,6 +7,8 @@
 
 	const display = getContext('display');
 
+	let buttonLabelForEditorContext = 'import';
+
 	const profileImportDownloadHandler = () => {
 		if (display === 'web') {
 			return downloadProfile();
@@ -25,29 +27,44 @@
 		element.click();
 	}
 
-	function importProfile() {
-		// start the import process, ask editor to do it, it completes an async task.
+	type EditorReturnType = {
+		ok: boolean;
+		data: any;
+	};
 
-		window.parent.postMessage(
-			{
-				messageType: 'editorData',
-				document: data
-			},
-			'*'
-		);
+	let importResult = 'imported!';
 
-		// once editor is done, it will send a message back to the web app, and then we can resolve the promise?
+	async function importProfile() {
+		const result: EditorReturnType = await new Promise((resolve, reject) => {
+			// create a message channel to communicate with the editor in this scope
+			const messageChannel = new MessageChannel();
+			// let editor know that it should listen for messages on this channel
+			window.parent.postMessage('profileImportCommunication', '*', [messageChannel.port2]);
+			// we listen for messages on this channel
+			messageChannel.port1.onmessage = ({ data }) => {
+				messageChannel.port1.close();
+				if (data.ok) {
+					resolve(data);
+				} else {
+					reject(data);
+				}
+			};
+			// send the data to the editor
+			messageChannel.port1.postMessage({ channelMessageType: 'IMPORT_PROFILE', ...data });
+		});
 
-		// update UI to "update complete"
-
-		// const importProfileInEditor = new Promise((resolve, reject) => {
-		// 	window.addEventListener('message', (event) => {
-		// 		if (event.data.messageType === 'editorData') {
-		// 			resolve('ok');
-		// 		}
-		// 	});
-		// });
+		if (result.ok) {
+			importResult = 'ok';
+		} else {
+			// do something else
+		}
 	}
+
+	onMount(() => {
+		// we assume editor is listening for this message
+	});
+
+	onDestroy(() => {});
 </script>
 
 <div
@@ -73,7 +90,15 @@
 	>
 		<span class="text-black text-opacity-70 dark:text-white mr-4">{data.owner || 'CREATOR'}</span>
 
-		<div class="">
+		<div class="relative">
+			{#if display === 'editor' && importResult === 'ok'}
+				<div
+					class="absolute top-1.5 p-0.5 right-1.5 rounded-full bg-emerald-300 text-black text-opacity-60  text-xs"
+				>
+					<img class="w-3 h-3 p-0.5" src="/check_mark.svg" alt="check mark" />
+				</div>
+			{/if}
+
 			<AtomicButton
 				label={display == 'editor' ? 'import' : 'download'}
 				functionToCall={profileImportDownloadHandler}

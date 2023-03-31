@@ -19,7 +19,9 @@
 		<h1 class="text-3xl font-bold pt-8">profile list</h1>
 	</div>
 </DisplayOnWeb>
-<div class="py-8 grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 gap-4">
+<div
+	class="py-4 lg:py-8  grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 gap-4"
+>
 	{#await listAllPublicProfiles()}
 		loading..
 	{:then profiles}

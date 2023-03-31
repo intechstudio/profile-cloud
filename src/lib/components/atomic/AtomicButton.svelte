@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher, getContext } from 'svelte';
 
 	interface FunctionToCall {
 		(): any;
@@ -7,9 +7,6 @@
 
 	export let label: string = 'button';
 	export let functionToCall: FunctionToCall = () => {};
-
-	// unused for now
-	//const dispatch = createEventDispatcher();
 
 	let isLoading = false;
 	async function functionWrapper() {
@@ -20,14 +17,18 @@
 </script>
 
 <button
-	on:click={functionWrapper}
-	class="px-4 w-full items-center inline-flex justify-center py-1 bg-blue-400 hover:bg-blue-500 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-medium border rounded focus:border-neutral-800 border-neutral-500 dark:border-neutral-800 focus:outline-none focus:ring-blue-300 focus:ring-2"
+	on:click={() => {
+		functionWrapper();
+	}}
+	class="min-w-[96px] px-4 w-full items-center inline-flex justify-center py-1 bg-blue-400 hover:bg-blue-500 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-medium border rounded active:border-neutral-800 border-neutral-500 dark:border-neutral-800 active:outline-none active:ring-blue-300 active:ring-2"
 >
 	{#if isLoading}
 		<div role="status">
 			<svg
 				aria-hidden="true"
-				class="w-5 h-5 mr-2 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600 dark:fill-emerald-400"
+				class="{getContext('display') === 'editor'
+					? 'w-3 h-3'
+					: 'w-5 h-5'} mr-2 text-gray-200 animate-spin dark:text-neutral-600 fill-blue-600 dark:fill-emerald-300"
 				viewBox="0 0 100 101"
 				fill="none"
 				xmlns="http://www.w3.org/2000/svg"

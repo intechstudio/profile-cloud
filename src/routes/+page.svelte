@@ -65,21 +65,23 @@
 	});
 </script>
 
-<section class="">
-	<DisplayOnWeb>
-		<div class="p-4 w-full lg:w-1/3">
-			<Login />
-			<div>
-				<button
-					on:click={() => {
-						logout();
-					}}>Sign Out</button
-				>
+<section class="w-full h-full flex-grow bg-neutral-100 dark:bg-neutral-950">
+	{#if false}
+		<DisplayOnWeb>
+			<div class="p-4 w-full lg:w-1/3">
+				<Login />
+				<div>
+					<button
+						on:click={() => {
+							logout();
+						}}>Sign Out</button
+					>
+				</div>
 			</div>
-		</div>
-	</DisplayOnWeb>
+		</DisplayOnWeb>
+	{/if}
 
-	<div class="w-full bg-neutral-100 dark:bg-neutral-950">
+	<div class="w-full h-full bg-neutral-100 dark:bg-neutral-950">
 		<div class="px-4 container mx-auto flex flex-col max-w-screen-xl">
 			<DocumentBrowser />
 		</div>
