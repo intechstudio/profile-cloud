@@ -2,37 +2,21 @@
 	import { auth, db } from '$lib/firebase';
 	import {
 		AuthCredential,
+		EmailAuthCredential,
+		EmailAuthProvider,
 		getAuth,
+		GoogleAuthProvider,
 		onAuthStateChanged,
+		reauthenticateWithCredential,
 		signInWithCredential,
 		signOut,
 		type User
 	} from 'firebase/auth';
 	import { UserImpl } from '@firebase/auth/internal';
 	import { getContext, onDestroy, onMount } from 'svelte';
-	import { error } from '@sveltejs/kit';
 	import Login from '$lib/components/Login.svelte';
 	import DocumentBrowser from '$lib/components/DocumentBrowser.svelte';
-	import type { Profile } from '$lib/types';
 	import DisplayOnWeb from '$lib/components/DisplayOnWeb.svelte';
-
-	let profileDoc: Profile = {
-		owner: '',
-		name: '',
-		description: '',
-		editorData: ''
-	};
-
-	let iframeUser: any = null;
-
-	onAuthStateChanged(auth, (user) => {
-		if (user) {
-			console.log('user chabged', user);
-			iframeUser = user;
-		} else {
-			iframeUser = null;
-		}
-	});
 
 	function logout() {
 		signOut(auth);
@@ -44,16 +28,39 @@
 		auth.updateCurrentUser(user);
 	}
 
-	function authenticateUser(credential: AuthCredential) {
-		signInWithCredential(auth, credential).catch((error) => {
-			console.log(error);
-		});
+	function authenticateUser(credential: any) {
+		let cred;
+
+		if (!credential) {
+			signOut(auth);
+			return;
+		}
+
+		if (credential.providerId == 'google.com') {
+			cred = GoogleAuthProvider.credential(credential.idToken);
+		} else if (credential.providerId == 'password') {
+			cred = EmailAuthProvider.credential(credential.email, credential.password);
+		}
+
+		if (!cred) return;
+
+		signInWithCredential(auth, cred)
+			.then((user) => {
+				console.log('authenticated in iframe (profile cloud)', user);
+			})
+			.catch((error) => {
+				console.log(error);
+			});
 	}
 
 	window.addEventListener(
 		'message',
 		function (event) {
 			if (event.data.messageType == 'editorDataSaved') {
+				// to do?
+			}
+			if (event.data.messageType == 'userAuthentication') {
+				authenticateUser(event.data.credential);
 			}
 			console.log('Child received:  ', event.origin, window.location.origin, event.data);
 		},
@@ -66,7 +73,7 @@
 </script>
 
 <section class="w-full h-full flex-grow bg-neutral-100 dark:bg-neutral-950">
-	{#if false}
+	{#if true}
 		<DisplayOnWeb>
 			<div class="p-4 w-full lg:w-1/3">
 				<Login />
