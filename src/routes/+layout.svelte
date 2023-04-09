@@ -35,7 +35,7 @@
 
 <main style={'font-size: ' + fontSize} class={darkMode ? 'dark' : ''}>
 	<div
-		class="dark:bg-neutral-900 flex flex-col justify-between dark:text-white dark:text-opacity-80 transition duration-200 min-h-screen"
+		class="dark:bg-neutral-900 flex flex-col justify-between dark:text-white text-black transition duration-200 min-h-screen"
 	>
 		<DisplayOnWeb>
 			<div class="dark:bg-neutral-700">
