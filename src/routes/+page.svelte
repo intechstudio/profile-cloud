@@ -73,7 +73,7 @@
 </script>
 
 <section class="w-full h-full flex-grow bg-neutral-100 dark:bg-neutral-950">
-	{#if true}
+	{#if false}
 		<DisplayOnWeb>
 			<div class="p-4 w-full lg:w-1/3">
 				<Login />
