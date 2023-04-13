@@ -4,7 +4,7 @@ export type Profile = {
     _id: string;
     owner: string; //unique!
     name: string;
-    //public: boolean; // később
+    public: boolean;
     description: string;
     //productType: string; //később!
     editorData: string;
