@@ -2,7 +2,8 @@ import type { Timestamp } from "firebase/firestore";
 
 export type Profile = {
     _id: string;
-    owner: string; //unique!
+    owner: string; //unique? name of the profile creator
+    access: string[]; //array of uids
     name: string;
     public: boolean;
     description: string;

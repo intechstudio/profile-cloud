@@ -1,14 +1,41 @@
 <script lang="ts">
-	import { db } from '$lib/firebase';
+	import { auth, db } from '$lib/firebase';
 	import { profilesCollection } from '$lib/collections';
-	import { collection, getDocs, onSnapshot, query, QuerySnapshot, where } from 'firebase/firestore';
+	import {
+		and,
+		collection,
+		getDocs,
+		onSnapshot,
+		or,
+		query,
+		QuerySnapshot,
+		where
+	} from 'firebase/firestore';
 	import DisplayOnWeb from './DisplayOnWeb.svelte';
 	import DocumentCard from './DocumentCard.svelte';
+	import { firebaseUserStore } from '$lib/stores';
+	import { get } from 'svelte/store';
 
-	async function listAllPublicProfiles() {
-		// Create a reference to the "profiles" collection
-		const q = query(profilesCollection);
+	async function listPublicProfiles() {
+		// there is a firestore security rule to only list public profiles
+		const q = query(
+			profilesCollection,
+			and(
+				where('public', '==', true)
+				//or(where('access', 'array-contains', get(firebaseUserStore)?.uid || ''))
+			)
+		);
 		// assign the returned documents to a variable, so it's easy to pass it to Grid Editor
+		const profiles = await getDocs(q).then((res) => res.docs);
+		return profiles;
+	}
+
+	async function listPublicAndAccessibleProfiles() {
+		console.log('QUERY MORE', get(firebaseUserStore)?.uid);
+		const q = query(
+			profilesCollection,
+			where('access', 'array-contains', get(firebaseUserStore)?.uid || '')
+		);
 		const profiles = await getDocs(q).then((res) => res.docs);
 		return profiles;
 	}
@@ -22,14 +49,27 @@
 <div
 	class="py-4 lg:py-8  grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 gap-4"
 >
-	{#await listAllPublicProfiles()}
-		loading..
-	{:then profiles}
-		{#each profiles as profile}
-			{@const data = profile.data()}
-			<DocumentCard {data} />
-		{/each}
-	{/await}
+	{#if $firebaseUserStore}
+		{#await listPublicAndAccessibleProfiles()}
+			loading..
+		{:then profiles}
+			PUBLIC + USR
+			{#each profiles as profile}
+				{@const data = profile.data()}
+				<DocumentCard {data} />
+			{/each}
+		{/await}
+	{:else}
+		{#await listPublicProfiles()}
+			loading..
+		{:then profiles}
+			PUBLIC
+			{#each profiles as profile}
+				{@const data = profile.data()}
+				<DocumentCard {data} />
+			{/each}
+		{/await}
+	{/if}
 </div>
 
 <!-- {#each realtimeProfiles as profile (profile.id)}

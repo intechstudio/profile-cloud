@@ -17,6 +17,7 @@
 	import Login from '$lib/components/Login.svelte';
 	import DocumentBrowser from '$lib/components/DocumentBrowser.svelte';
 	import DisplayOnWeb from '$lib/components/DisplayOnWeb.svelte';
+	import { firebaseUserStore } from '$lib/stores';
 
 	function logout() {
 		signOut(auth);
@@ -67,13 +68,23 @@
 		false
 	);
 
+	auth.onAuthStateChanged(function (user) {
+		if (user) {
+			firebaseUserStore.set(user);
+			console.log('user is signed in', user);
+		} else {
+			firebaseUserStore.set(null);
+			console.log('user is signed out');
+		}
+	});
+
 	onDestroy(() => {
 		//realtimeDb();
 	});
 </script>
 
 <section class="w-full h-full flex-grow bg-neutral-100 dark:bg-neutral-950">
-	{#if false}
+	{#if true}
 		<DisplayOnWeb>
 			<div class="p-4 w-full lg:w-1/3">
 				<Login />
