@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { db } from '$lib/firebase';
+	import { firestore } from '$lib/firebase';
 	import { doc, getDoc } from 'firebase/firestore';
 
 	export let data;
@@ -7,7 +7,7 @@
 	console.log('fe', data);
 
 	async function loadDocument() {
-		const docRef = doc(db, 'profiles', data.params.profile);
+		const docRef = doc(firestore, 'profiles', data.params.profile);
 		const docSnap = await getDoc(docRef);
 		downloadObjectAsJson(docSnap.data(), data.params.profile);
 	}

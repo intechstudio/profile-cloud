@@ -20,9 +20,9 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-export const app = initializeApp(firebaseConfig);
-export const analytics = getAnalytics(app);
-export const db = getFirestore(app);
-export const auth = getAuth(app);
+export const firebaseApp = initializeApp(firebaseConfig);
+export const firebaseAnalytics = getAnalytics(firebaseApp);
+export const firestore = getFirestore(firebaseApp);
+export const firebaseAuth = getAuth(firebaseApp);
 //connectFirestoreEmulator(db, 'localhost', 8080);
 

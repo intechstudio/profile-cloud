@@ -6,6 +6,7 @@
 	}
 
 	export let label: string = 'button';
+	export let importance: 'primary' | 'secondary' | 'tertiary' = 'primary';
 	export let functionToCall: FunctionToCall = () => {};
 
 	let isLoading = false;
@@ -14,16 +15,18 @@
 		await functionToCall();
 		isLoading = false;
 	}
+
+	let primary = '';
 </script>
 
 <button
 	on:click={() => {
 		functionWrapper();
 	}}
-	class="min-w-[96px] px-4 w-full items-center inline-flex justify-center py-1 bg-blue-400 hover:bg-blue-500 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-medium border rounded active:border-neutral-800 border-neutral-500 dark:border-neutral-800 active:outline-none active:ring-blue-300 active:ring-2"
+	class={importance}
 >
 	{#if isLoading}
-		<div role="status">
+		<div role="status" class="">
 			<svg
 				aria-hidden="true"
 				class="{getContext('display') === 'editor'
@@ -47,3 +50,21 @@
 	<div />
 	{label}
 </button>
+
+<style lang="postcss">
+	:global(.dark) .primary {
+		@apply bg-emerald-600 hover:bg-emerald-700;
+	}
+
+	.primary {
+		@apply min-w-[96px] px-4 w-full items-center inline-flex justify-center py-1 bg-blue-400 hover:bg-blue-500 text-white font-medium border rounded active:border-neutral-800 border-neutral-500 active:outline-none active:ring-blue-300 active:ring-2;
+	}
+
+	:global(.dark) .secondary {
+		@apply text-white border-emerald-600 hover:bg-emerald-700;
+	}
+
+	.secondary {
+		@apply min-w-[96px] px-4 w-full items-center inline-flex justify-center py-1  hover:bg-blue-500  text-black hover:text-white font-medium border rounded active:border-neutral-800 border-neutral-500 active:outline-none active:ring-blue-300 active:ring-2;
+	}
+</style>

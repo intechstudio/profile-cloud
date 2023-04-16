@@ -1,16 +1,6 @@
 <script lang="ts">
-	import { auth, db } from '$lib/firebase';
 	import { profilesCollection } from '$lib/collections';
-	import {
-		and,
-		collection,
-		getDocs,
-		onSnapshot,
-		or,
-		query,
-		QuerySnapshot,
-		where
-	} from 'firebase/firestore';
+	import { and, getDocs, query, where } from 'firebase/firestore';
 	import DisplayOnWeb from './DisplayOnWeb.svelte';
 	import DocumentCard from './DocumentCard.svelte';
 	import { firebaseUserStore } from '$lib/stores';
@@ -31,10 +21,9 @@
 	}
 
 	async function listPublicAndAccessibleProfiles() {
-		console.log('QUERY MORE', get(firebaseUserStore)?.uid);
 		const q = query(
 			profilesCollection,
-			where('access', 'array-contains', get(firebaseUserStore)?.uid || '')
+			where('access', 'array-contains', get(firebaseUserStore)?.account?.uid || '')
 		);
 		const profiles = await getDocs(q).then((res) => res.docs);
 		return profiles;
@@ -49,11 +38,10 @@
 <div
 	class="py-4 lg:py-8  grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 gap-4"
 >
-	{#if $firebaseUserStore}
+	{#if $firebaseUserStore.account}
 		{#await listPublicAndAccessibleProfiles()}
 			loading..
 		{:then profiles}
-			PUBLIC + USR
 			{#each profiles as profile}
 				{@const data = profile.data()}
 				<DocumentCard {data} />
@@ -63,7 +51,6 @@
 		{#await listPublicProfiles()}
 			loading..
 		{:then profiles}
-			PUBLIC
 			{#each profiles as profile}
 				{@const data = profile.data()}
 				<DocumentCard {data} />
