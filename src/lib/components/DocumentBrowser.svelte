@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { profilesCollection } from '$lib/collections';
-	import { and, getDocs, query, where } from 'firebase/firestore';
+	import { and, getDocs, or, query, where } from 'firebase/firestore';
 	import DisplayOnWeb from './DisplayOnWeb.svelte';
 	import DocumentCard from './DocumentCard.svelte';
 	import { userAccountStore } from '$lib/stores';
@@ -10,10 +10,7 @@
 		// there is a firestore security rule to only list public profiles
 		const q = query(
 			profilesCollection,
-			and(
-				where('public', '==', true)
-				//or(where('access', 'array-contains', get(userAccountStore)?.uid || ''))
-			)
+			where('public', '==', true) // having a read rule restriction in firestore rules is not enough! We must explicitly define the query here
 		);
 		// assign the returned documents to a variable, so it's easy to pass it to Grid Editor
 		const profiles = await getDocs(q).then((res) => res.docs);
@@ -21,9 +18,15 @@
 	}
 
 	async function listPublicAndAccessibleProfiles() {
+		console.log('listPublicAndAccessibleProfiles', get(userAccountStore)?.account?.uid);
 		const q = query(
 			profilesCollection,
-			where('access', 'array-contains', get(userAccountStore)?.account?.uid || '')
+			// and(
+			or(
+				where('public', '==', true),
+				where('access', 'array-contains', get(userAccountStore)?.account?.uid || '')
+			)
+			// )
 		);
 		const profiles = await getDocs(q).then((res) => res.docs);
 		return profiles;

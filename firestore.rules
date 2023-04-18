@@ -1,9 +1,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
     match /profiles/{document=**} {
-      allow read;
+      // the uid access is not 100% okay: https://stackoverflow.com/questions/54522477/restrict-firestore-access-to-authenticated-users
+      allow read: if resource.data.public == true || (request.auth != null && request.auth.uid in resource.data.access);
       allow write: if resource.data.access[request.auth.uid] != null;
     }
   }
