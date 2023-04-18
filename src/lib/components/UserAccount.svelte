@@ -4,13 +4,13 @@
 	import AtomicButton from './atomic/AtomicButton.svelte';
 	import AtomicInput from './atomic/AtomicInput.svelte';
 	import GoogleAuth from './GoogleAuth.svelte';
-	import { firebaseUserStore } from '$lib/stores';
+	import { userAccountStore } from '$lib/stores';
 
 	let email = '';
 	let password = '';
 
 	async function login() {
-		firebaseUserStore.authenticateUser({
+		userAccountStore.authenticateUser({
 			providerId: 'password',
 			email: email,
 			password: password
@@ -22,7 +22,7 @@
 			return;
 		}
 
-		firebaseUserStore.authenticateUser({
+		userAccountStore.authenticateUser({
 			providerId: 'google.com',
 			idToken: event.detail
 		});
@@ -32,7 +32,7 @@
 <div
 	class="w-full h-full flex flex-col p-1 bg-neutral-50 dark:bg-neutral-700 dark:text-white/80 rounded-md border border-black/10 shadow"
 >
-	{#if !$firebaseUserStore.account}
+	{#if !$userAccountStore.account}
 		<div class="flex items-center p-2">
 			<div class="bg-gray-300 rounded-full w-10 h-10" />
 			<h1 class="font-bold px-2">login to profile cloud</h1>
@@ -70,13 +70,13 @@
 		<div class="flex items-center justify-between">
 			<div class="flex items-center p-2">
 				<div class="bg-gray-300 rounded-full w-10 h-10">
-					<img class="rounded-full" alt="" src={$firebaseUserStore.account.photoURL} />
+					<img class="rounded-full" alt="" src={$userAccountStore.account.photoURL} />
 				</div>
-				<h1 class="font-bold px-2">Welcome {$firebaseUserStore.account.displayName}!</h1>
+				<h1 class="font-bold px-2">Welcome {$userAccountStore.account.displayName}!</h1>
 			</div>
 			<div class="w-24 mr-2">
 				<AtomicButton
-					functionToCall={firebaseUserStore.logout}
+					functionToCall={userAccountStore.logout}
 					importance={'secondary'}
 					label={'sign out'}
 				/>

@@ -2,7 +2,7 @@ import { EmailAuthProvider, GoogleAuthProvider, onAuthStateChanged, signInWithCr
 import { writable } from "svelte/store";
 import { firebaseAuth } from "./firebase";
 
-function createFirebaseUserStore() {
+function createUserAccountStore() {
 
     const { subscribe, set, update } = writable<{ account: User | null, credential?: null }>(
         { account: null },
@@ -13,10 +13,12 @@ function createFirebaseUserStore() {
             }
         });
 
-    async function authenticateUser(credential: { providerId: string, idToken?: string, email?: string, password?: string }) {
+    async function authenticateUser(credential: { event?: string, providerId?: string, idToken?: string, email?: string, password?: string }) {
         let cred;
 
-        if (!credential) {
+        console.log('Authentication stuff from editor', credential)
+
+        if (!credential || credential?.event == 'logout') {
             signOut(firebaseAuth);
             return;
         }
@@ -65,9 +67,6 @@ function createFirebaseUserStore() {
 
 }
 
-
-export const userAccountStore = createFirebaseUserStore();
-
 function createProfileStore() {
     const { subscribe, set, update } = writable({});
     return {
@@ -77,5 +76,5 @@ function createProfileStore() {
     };
 }
 
-export const firebaseUserStore = createFirebaseUserStore();
+export const userAccountStore = createUserAccountStore();
 export const profileStore = createProfileStore();

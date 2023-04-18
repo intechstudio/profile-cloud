@@ -2,7 +2,7 @@
 	import { onDestroy } from 'svelte';
 	import DocumentBrowser from '$lib/components/DocumentBrowser.svelte';
 	import DisplayOnWeb from '$lib/components/DisplayOnWeb.svelte';
-	import { firebaseUserStore } from '$lib/stores';
+	import { userAccountStore } from '$lib/stores';
 	import UserAccount from '$lib/components/UserAccount.svelte';
 
 	function editorMessageListener(event: MessageEvent) {
@@ -10,7 +10,7 @@
 			// to do?
 		}
 		if (event.data.messageType == 'userAuthentication') {
-			firebaseUserStore.authenticateUser(event.data.credential);
+			userAccountStore.authenticateUser(event.data.authEvent);
 		}
 		console.log('Child received:  ', event.origin, window.location.origin, event.data);
 	}
@@ -30,6 +30,8 @@
 			</div>
 		</DisplayOnWeb>
 	{/if}
+
+	{JSON.stringify($userAccountStore.account?.uid)}
 
 	<div class="w-full h-full bg-neutral-100 dark:bg-neutral-950">
 		<div class="px-4 container mx-auto flex flex-col max-w-screen-xl">
