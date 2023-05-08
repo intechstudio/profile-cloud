@@ -11,3 +11,8 @@ export type Profile = {
     editorData: string;
     //createdAt: Timestamp | undefined; //később
 }
+
+export type EditorReturnType = {
+    ok: boolean;
+    data: any;
+};

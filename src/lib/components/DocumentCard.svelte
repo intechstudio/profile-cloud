@@ -1,13 +1,14 @@
 <script lang="ts">
-	import type { Profile } from '$lib/types';
-	import { getContext, onDestroy, onMount } from 'svelte';
+	import type { EditorReturnType, Profile } from '$lib/types';
+	import { createEventDispatcher, getContext, onDestroy, onMount } from 'svelte';
 	import AtomicButton from './atomic/AtomicButton.svelte';
+	import SvgIcon from '$lib/icons/SvgIcon.svelte';
+
+	const dispatchEvent = createEventDispatcher();
 
 	export let data: Profile;
 
 	const display = getContext('display');
-
-	let buttonLabelForEditorContext = 'import';
 
 	const profileImportDownloadHandler = () => {
 		if (display === 'web') {
@@ -26,11 +27,6 @@
 		document.body.appendChild(element); // Required for this to work in FireFox
 		element.click();
 	}
-
-	type EditorReturnType = {
-		ok: boolean;
-		data: any;
-	};
 
 	let importResult = 'imported!';
 
@@ -67,8 +63,11 @@
 	onDestroy(() => {});
 </script>
 
-<div
-	class="flex flex-col justify-between w-full h-full bg-white rounded-lg border border-black/10 shadow dark:bg-neutral-800"
+<button
+	on:click={() => {
+		dispatchEvent('click', {});
+	}}
+	class="{$$props.class} flex flex-col justify-between items-start text-left w-full h-full bg-white rounded-lg border border-black/10 shadow dark:bg-black dark:bg-opacity-60"
 >
 	<div class="p-3">
 		<h2 class="font-bold pb-2">{data.name}</h2>
@@ -76,7 +75,9 @@
 		<div
 			class="dark:text-white text-blacktext-opacity-60 break-all bg-blue-600/5 dark:text-opacity-50 dark:bg-blue-300/5 font-mono text-xs rounded p-1"
 		>
-			{data.editorData?.substring(0, 75) || 'data is not present'}
+			{data.editorData?.substring(0, 75) ||
+				JSON.stringify(data)?.substring(0, 75) ||
+				'data is not present'}
 		</div>
 		<div class="dark:text-white pt-2 text-black text-opacity-80 dark:text-opacity-70">
 			{data.description?.substring(0, 100) || 'description is not available'}
@@ -84,7 +85,7 @@
 	</div>
 
 	<div
-		class="flex pb-3 px-3 md:p-3 justify-between {display === 'editor'
+		class="w-full flex pb-3 px-3 md:p-3 justify-between {display === 'editor'
 			? 'items-end'
 			: 'items-center'} md:border-t-2 border-neutral-200 dark:border-neutral-700"
 	>
@@ -99,10 +100,7 @@
 				</div>
 			{/if}
 
-			<AtomicButton
-				label={display == 'editor' ? 'import' : 'download'}
-				functionToCall={profileImportDownloadHandler}
-			/>
+			<slot name="import-button" />
 		</div>
 	</div>
-</div>
+</button>

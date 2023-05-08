@@ -14,7 +14,7 @@
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^2.0.0",
 		"@sveltejs/adapter-static": "^2.0.1",
-		"@sveltejs/kit": "^1.5.0",
+		"@sveltejs/kit": "^1.16.2",
 		"@tailwindcss/typography": "^0.5.9",
 		"@typescript-eslint/eslint-plugin": "^5.45.0",
 		"@typescript-eslint/parser": "^5.45.0",
@@ -35,6 +35,9 @@
 	"type": "module",
 	"dependencies": {
 		"@toast-ui/editor": "^3.2.2",
-		"firebase": "^9.18.0"
+		"audit": "^0.0.6",
+		"firebase": "^9.18.0",
+		"fix": "^0.0.6",
+		"svelte-splitpanes": "^0.7.13"
 	}
 }

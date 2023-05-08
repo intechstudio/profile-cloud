@@ -33,6 +33,10 @@
 	console.log('Application context:', getContext('display'));
 </script>
 
+<svelte:head>
+	<link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+</svelte:head>
+
 <main style={'font-size: ' + fontSize} class={darkMode ? 'dark' : ''}>
 	<div
 		class="dark:bg-neutral-900 flex flex-col justify-between dark:text-white text-black transition duration-200 min-h-screen"
