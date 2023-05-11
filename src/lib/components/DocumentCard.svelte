@@ -67,7 +67,7 @@
 	on:click={() => {
 		dispatchEvent('click', {});
 	}}
-	class="{$$props.class} flex flex-col justify-between items-start text-left w-full h-full bg-white rounded-lg border border-black/10 shadow dark:bg-black dark:bg-opacity-60"
+	class="{$$props.class} flex flex-col justify-between items-start text-left w-full bg-white rounded-lg border border-black/10 shadow dark:bg-black dark:bg-opacity-60"
 >
 	<div class="p-3">
 		<h2 class="font-bold pb-2">{data.name}</h2>
@@ -85,9 +85,7 @@
 	</div>
 
 	<div
-		class="w-full flex pb-3 px-3 md:p-3 justify-between {display === 'editor'
-			? 'items-end'
-			: 'items-center'} md:border-t-2 border-neutral-200 dark:border-neutral-700"
+		class="w-full flex pb-3 px-3 md:p-3 justify-between items-center md:border-t-2 border-neutral-200 dark:border-neutral-700"
 	>
 		<span class="text-black text-opacity-70 dark:text-white mr-4">{data.owner || 'CREATOR'}</span>
 

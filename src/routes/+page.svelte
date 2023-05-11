@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Pane, Splitpanes } from 'svelte-splitpanes';
 
-	import { onDestroy, onMount } from 'svelte';
+	import { getContext, onDestroy, onMount } from 'svelte';
 	import DisplayOnWeb from '$lib/components/DisplayOnWeb.svelte';
 	import { userAccountStore } from '$lib/stores';
 	import UserAccount from '$lib/components/UserAccount.svelte';
@@ -11,6 +11,8 @@
 	import { profilesCollection } from '$lib/collections';
 	import LocalProfileCard from './LocalProfileCard.svelte';
 	import SvgIcon from '$lib/icons/SvgIcon.svelte';
+
+	const display = getContext('display');
 
 	let selectedLocalProfileIndex: number | undefined = undefined;
 	let selectedCloudProfileIndex: number | undefined = undefined;
@@ -173,82 +175,121 @@
 				</div>
 			</DisplayOnWeb>
 
-			<div class="flex flex-grow h-screen relative z-0">
-				<Splitpanes horizontal={true} theme="modern-theme">
-					<Pane size={31}>
-						<div class="flex flex-col py-4 h-full ">
-							<div class="pb-4 px-2 flex items-center justify-between">
-								<div class="">Local profiles</div>
-								<div>
-									<button
-										on:click={() => {
-											createNewLocalProfileWithTheSelectedModulesConfigurationFromEditor();
-										}}
-										class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
-										>save profile</button
-									>
+			{#if display == 'editor'}
+				<div class="flex flex-grow h-screen relative z-0">
+					<Splitpanes horizontal={true} theme="modern-theme">
+						<Pane size={31}>
+							<div class="flex flex-col py-4 h-full ">
+								<div class="pb-4 px-2 flex items-center justify-between">
+									<div class="">Local profiles</div>
+									<div>
+										<button
+											on:click={() => {
+												createNewLocalProfileWithTheSelectedModulesConfigurationFromEditor();
+											}}
+											class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
+											>save profile</button
+										>
+									</div>
+								</div>
+								<div
+									class="overflow-y-auto h-full p-2 lg:py-8  grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 gap-4"
+								>
+									{#each localProfiles.filter((p) => p.folder == 'local') as profile, index}
+										<LocalProfileCard
+											on:click={() => {
+												provideSelectedProfileForOptionalUploadingToOneOreMoreModules(profile);
+												selectedLocalProfileIndex = index;
+												selectedCloudProfileIndex = undefined;
+											}}
+											on:delete={() => {
+												deleteLocalProfile(profile);
+											}}
+											class={index == selectedLocalProfileIndex ? 'border-emerald-500' : ''}
+											data={profile}
+										/>
+									{/each}
 								</div>
 							</div>
-							<div
-								class="overflow-y-auto h-full p-2 lg:py-8  grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 gap-4"
-							>
-								{#each localProfiles.filter((p) => p.folder == 'local') as profile, index}
-									<LocalProfileCard
-										on:click={() => {
-											provideSelectedProfileForOptionalUploadingToOneOreMoreModules(profile);
-											selectedLocalProfileIndex = index;
-											selectedCloudProfileIndex = undefined;
-										}}
-										on:delete={() => {
-											deleteLocalProfile(profile);
-										}}
-										class={index == selectedLocalProfileIndex ? 'border-emerald-500' : ''}
-										data={profile}
-									/>
-								{/each}
+						</Pane>
+						<Pane minSize={28}>
+							<div class="flex py-4 h-full ">
+								<div
+									class="overflow-y-auto h-full p-2 lg:py-8  grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 gap-4"
+								>
+									{#await listPublicProfiles()}
+										loading..
+									{:then profiles}
+										{#each profiles as profile, index}
+											{@const data = profile.data()}
+											<DocumentCard
+												on:click={() => {
+													provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
+													selectedCloudProfileIndex = index;
+													selectedLocalProfileIndex = undefined;
+												}}
+												class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
+												{data}
+											>
+												<span slot="import-button">
+													<button
+														on:click|stopPropagation={() => {
+															saveCloudProfileToLocalFolder(data);
+														}}
+														class="flex items-center"
+													>
+														{#if importFlag}
+															loading...
+														{/if}
+														<SvgIcon class="w-4" iconPath="import" />
+													</button>
+												</span>
+											</DocumentCard>
+										{/each}
+									{/await}
+								</div>
 							</div>
-						</div>
-					</Pane>
-					<Pane minSize={28}>
-						<div class="flex py-4 h-full ">
-							<div
-								class="overflow-y-auto h-full p-2 lg:py-8  grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 gap-4"
-							>
-								{#await listPublicProfiles()}
-									loading..
-								{:then profiles}
-									{#each profiles as profile, index}
-										{@const data = profile.data()}
-										<DocumentCard
-											on:click={() => {
-												provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
-												selectedCloudProfileIndex = index;
-												selectedLocalProfileIndex = undefined;
+						</Pane>
+					</Splitpanes>
+				</div>
+			{:else}
+				<div class="flex py-4 h-full ">
+					<div
+						class="overflow-y-auto h-full p-2 lg:py-8  grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 gap-4"
+					>
+						{#await listPublicProfiles()}
+							loading..
+						{:then profiles}
+							{#each profiles as profile, index}
+								{@const data = profile.data()}
+								<DocumentCard
+									on:click={() => {
+										provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
+										selectedCloudProfileIndex = index;
+										selectedLocalProfileIndex = undefined;
+									}}
+									class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
+									{data}
+								>
+									<span slot="import-button">
+										<button
+											on:click|stopPropagation={() => {
+												saveCloudProfileToLocalFolder(data);
 											}}
-											class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
-											{data}
+											class=""
 										>
-											<span slot="import-button">
-												<button
-													on:click|stopPropagation={() => {
-														saveCloudProfileToLocalFolder(data);
-													}}
-													class=""
-												>
-													{#if importFlag}
-														loading...
-													{/if}
-													<SvgIcon class="w-4" iconPath="import" />
-												</button>
-											</span>
-										</DocumentCard>
-									{/each}
-								{/await}
-							</div>
-						</div>
-					</Pane>
-				</Splitpanes>
-			</div>
+											{#if importFlag}
+												loading...
+											{/if}
+											<SvgIcon class="w-4" iconPath="import" />
+										</button>
+									</span>
+								</DocumentCard>
+							{/each}
+						{/await}
+					</div>
+				</div>
+			{/if}
 		</div>
 	</div>
 </section>
