@@ -7,10 +7,12 @@
 	import UserAccount from '$lib/components/UserAccount.svelte';
 	import type { EditorReturnType, Profile } from '$lib/types';
 	import DocumentCard from '$lib/components/DocumentCard.svelte';
-	import { getDocs, query, where } from 'firebase/firestore';
+	import { doc, getDocs, or, query, setDoc, where } from 'firebase/firestore';
 	import { profilesCollection } from '$lib/collections';
 	import LocalProfileCard from './LocalProfileCard.svelte';
 	import SvgIcon from '$lib/icons/SvgIcon.svelte';
+	import { get } from 'svelte/store';
+	import { firestore } from '$lib/firebase';
 
 	const display = getContext('display');
 
@@ -80,7 +82,7 @@
 		}
 	}
 
-	async function deleteLocalProfile(profile: Profile) {
+	async function deleteLocalProfile(profile: typeof Object) {
 		const result = await parentIframeCommunication({
 			windowPostMessageName: 'deleteLocalProfile',
 			channelPostMessage: {
@@ -127,6 +129,62 @@
 		}
 	}
 
+	async function renameLocalProfile(newName: string, profile: typeof Object) {
+		const result = await parentIframeCommunication({
+			windowPostMessageName: 'renameLocalProfile',
+			channelPostMessage: {
+				channelMessageType: 'RENAME_LOCAL_PROFILE'
+			},
+			dataForParent: { newName, profile }
+		});
+		if (result.ok) {
+			console.log('update success', result.data);
+			getListOfLocalProfiles();
+		}
+	}
+
+	async function overwriteLocalProfile(profile: typeof Object) {
+		console.log('overwriteLocalProfile', profile);
+		const result = await parentIframeCommunication({
+			windowPostMessageName: 'overwriteLocalProfile',
+			channelPostMessage: {
+				channelMessageType: 'OVERWRITE_LOCAL_PROFILE'
+			},
+			dataForParent: { profileToOverwrite: profile }
+		});
+		if (result.ok) {
+			console.log('update success', result.data);
+			getListOfLocalProfiles();
+		}
+	}
+
+	async function saveLocalProfileToCloud(profile: typeof Object) {
+		const newProfileRef = doc(profilesCollection);
+		const userData = get(userAccountStore)?.account;
+		if (!userData) {
+			console.log('no user data');
+			return;
+		}
+		let newProfile: Profile = {
+			owner: userData.displayName,
+			access: [userData.uid],
+			public: false,
+			description: 'new profile',
+			name: profile.name,
+			editorData: JSON.stringify(profile)
+		};
+
+		await setDoc(newProfileRef, newProfile)
+			.then(() => {
+				// profile is successfully saved to cloud
+				deleteLocalProfile(profile);
+			})
+			.catch(() => {
+				// profile is not saved to cloud
+				console.error('Profile save to cloud was unsuccessful');
+			});
+	}
+
 	async function listPublicProfiles() {
 		// there is a firestore security rule to only list public profiles
 		const q = query(
@@ -134,6 +192,18 @@
 			where('public', '==', true) // having a read rule restriction in firestore rules is not enough! We must explicitly define the query here
 		);
 		// assign the returned documents to a variable, so it's easy to pass it to Grid Editor
+		const profiles = await getDocs(q).then((res) => res.docs);
+		return profiles;
+	}
+
+	async function listPublicAndAccessibleProfiles() {
+		const q = query(
+			profilesCollection,
+			or(
+				where('public', '==', true),
+				where('access', 'array-contains', get(userAccountStore)?.account?.uid || '')
+			)
+		);
 		const profiles = await getDocs(q).then((res) => res.docs);
 		return profiles;
 	}
@@ -175,6 +245,8 @@
 				</div>
 			</DisplayOnWeb>
 
+			{$userAccountStore?.account?.uid}
+
 			{#if display == 'editor'}
 				<div class="flex flex-grow h-screen relative z-0">
 					<Splitpanes horizontal={true} theme="modern-theme">
@@ -198,12 +270,25 @@
 									{#each localProfiles.filter((p) => p.folder == 'local') as profile, index}
 										<LocalProfileCard
 											on:click={() => {
+												if (selectedLocalProfileIndex == index) {
+													return;
+												}
 												provideSelectedProfileForOptionalUploadingToOneOreMoreModules(profile);
 												selectedLocalProfileIndex = index;
 												selectedCloudProfileIndex = undefined;
 											}}
+											on:save-to-cloud={() => {
+												saveLocalProfileToCloud(profile);
+											}}
 											on:delete={() => {
 												deleteLocalProfile(profile);
+											}}
+											on:name-change={(e) => {
+												const { newName } = e.detail;
+												renameLocalProfile(newName, profile);
+											}}
+											on:overwrite-profile={() => {
+												overwriteLocalProfile(profile);
 											}}
 											class={index == selectedLocalProfileIndex ? 'border-emerald-500' : ''}
 											data={profile}
@@ -217,36 +302,75 @@
 								<div
 									class="overflow-y-auto h-full p-2 lg:py-8  grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 gap-4"
 								>
-									{#await listPublicProfiles()}
-										loading..
-									{:then profiles}
-										{#each profiles as profile, index}
-											{@const data = profile.data()}
-											<DocumentCard
-												on:click={() => {
-													provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
-													selectedCloudProfileIndex = index;
-													selectedLocalProfileIndex = undefined;
-												}}
-												class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
-												{data}
-											>
-												<span slot="import-button">
-													<button
-														on:click|stopPropagation={() => {
-															saveCloudProfileToLocalFolder(data);
-														}}
-														class="flex items-center"
-													>
-														{#if importFlag}
-															loading...
-														{/if}
-														<SvgIcon class="w-4" iconPath="import" />
-													</button>
-												</span>
-											</DocumentCard>
-										{/each}
-									{/await}
+									{#if $userAccountStore.account}
+										{#await listPublicAndAccessibleProfiles()}
+											loading..
+										{:then profiles}
+											{#each profiles as profile, index}
+												{@const data = profile.data()}
+												<DocumentCard
+													on:click={() => {
+														if (selectedCloudProfileIndex == index) {
+															return;
+														}
+														provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
+														selectedCloudProfileIndex = index;
+														selectedLocalProfileIndex = undefined;
+													}}
+													class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
+													{data}
+												>
+													<span slot="import-button">
+														<button
+															on:click|stopPropagation={() => {
+																saveCloudProfileToLocalFolder(data);
+															}}
+															class="flex items-center"
+														>
+															{#if importFlag}
+																loading...
+															{/if}
+															<SvgIcon class="w-4" iconPath="import" />
+														</button>
+													</span>
+												</DocumentCard>
+											{/each}
+										{/await}
+									{:else}
+										{#await listPublicProfiles()}
+											loading..
+										{:then profiles}
+											{#each profiles as profile, index}
+												{@const data = profile.data()}
+												<DocumentCard
+													on:click={() => {
+														if (selectedCloudProfileIndex == index) {
+															return;
+														}
+														provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
+														selectedCloudProfileIndex = index;
+														selectedLocalProfileIndex = undefined;
+													}}
+													class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
+													{data}
+												>
+													<span slot="import-button">
+														<button
+															on:click|stopPropagation={() => {
+																saveCloudProfileToLocalFolder(data);
+															}}
+															class="flex items-center"
+														>
+															{#if importFlag}
+																loading...
+															{/if}
+															<SvgIcon class="w-4" iconPath="import" />
+														</button>
+													</span>
+												</DocumentCard>
+											{/each}
+										{/await}
+									{/if}
 								</div>
 							</div>
 						</Pane>
