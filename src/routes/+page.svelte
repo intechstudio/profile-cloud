@@ -7,7 +7,7 @@
 	import UserAccount from '$lib/components/UserAccount.svelte';
 	import type { EditorReturnType, Profile } from '$lib/types';
 	import DocumentCard from '$lib/components/DocumentCard.svelte';
-	import { doc, getDocs, or, query, setDoc, where } from 'firebase/firestore';
+	import { and, doc, getDocs, or, query, setDoc, where } from 'firebase/firestore';
 	import { profilesCollection } from '$lib/collections';
 	import LocalProfileCard from './LocalProfileCard.svelte';
 	import SvgIcon from '$lib/icons/SvgIcon.svelte';
@@ -56,20 +56,27 @@
 		});
 	}
 
+	let publicProfiles: any[] = [];
+	let myProfiles: any[] = [];
 	let localProfiles: any[] = [];
 	async function getListOfLocalProfiles() {
+		if (display == 'web') {
+			return [];
+		}
+
 		const result = await parentIframeCommunication({
 			windowPostMessageName: 'getListOfLocalProfiles',
 			channelPostMessage: { channelMessageType: 'GET_LIST_OF_LOCAL_PROFILES' },
 			dataForParent: {}
 		});
 		if (result.ok) {
-			console.log(result.data);
-			localProfiles = result.data;
+			return result.data;
 		}
 	}
 
-	async function provideSelectedProfileForOptionalUploadingToOneOreMoreModules(profile: Profile) {
+	async function provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+		profile: typeof Object
+	) {
 		const result = await parentIframeCommunication({
 			windowPostMessageName: 'provideSelectedProfileForOptionalUploadingToOneOreMoreModules',
 			channelPostMessage: {
@@ -92,7 +99,7 @@
 		});
 		if (result.ok) {
 			console.log('delete success', result.data);
-			getListOfLocalProfiles();
+			localProfiles = await getListOfLocalProfiles();
 		}
 	}
 
@@ -107,7 +114,7 @@
 		});
 		if (result.ok) {
 			console.log('create success', result.data);
-			getListOfLocalProfiles();
+			localProfiles = await getListOfLocalProfiles();
 		}
 	}
 
@@ -124,7 +131,7 @@
 		console.log('return result', result);
 		if (result.ok) {
 			console.log('save success', result.data);
-			getListOfLocalProfiles();
+			localProfiles = await getListOfLocalProfiles();
 			importFlag = false;
 		}
 	}
@@ -139,7 +146,7 @@
 		});
 		if (result.ok) {
 			console.log('update success', result.data);
-			getListOfLocalProfiles();
+			localProfiles = await getListOfLocalProfiles();
 		}
 	}
 
@@ -154,7 +161,7 @@
 		});
 		if (result.ok) {
 			console.log('update success', result.data);
-			getListOfLocalProfiles();
+			localProfiles = await getListOfLocalProfiles();
 		}
 	}
 
@@ -175,9 +182,10 @@
 		};
 
 		await setDoc(newProfileRef, newProfile)
-			.then(() => {
+			.then(async () => {
 				// profile is successfully saved to cloud
 				deleteLocalProfile(profile);
+				myProfiles = await getListMyPrivateProfiles();
 			})
 			.catch(() => {
 				// profile is not saved to cloud
@@ -185,7 +193,7 @@
 			});
 	}
 
-	async function listPublicProfiles() {
+	async function getListPublicProfiles() {
 		// there is a firestore security rule to only list public profiles
 		const q = query(
 			profilesCollection,
@@ -196,21 +204,31 @@
 		return profiles;
 	}
 
-	async function listPublicAndAccessibleProfiles() {
+	async function getListMyPrivateProfiles() {
 		const q = query(
 			profilesCollection,
-			or(
-				where('public', '==', true),
+			and(
+				where('public', '==', false),
 				where('access', 'array-contains', get(userAccountStore)?.account?.uid || '')
 			)
 		);
-		const profiles = await getDocs(q).then((res) => res.docs);
+		const profiles = await getDocs(q)
+			.then((res) => res.docs)
+			.catch((err) => {
+				console.log('user not logged in');
+			});
 		return profiles;
 	}
 
-	onMount(() => {
+	onMount(async () => {
 		window.addEventListener('message', editorMessageListener);
-		getListOfLocalProfiles();
+
+		localProfiles = await getListOfLocalProfiles();
+		console.log('yaaas', publicProfiles);
+
+		publicProfiles = await getListPublicProfiles();
+
+		myProfiles = await getListMyPrivateProfiles();
 	});
 
 	onDestroy(() => {
@@ -303,73 +321,65 @@
 									class="overflow-y-auto h-full p-2 lg:py-8  grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 gap-4"
 								>
 									{#if $userAccountStore.account}
-										{#await listPublicAndAccessibleProfiles()}
-											loading..
-										{:then profiles}
-											{#each profiles as profile, index}
-												{@const data = profile.data()}
-												<DocumentCard
-													on:click={() => {
-														if (selectedCloudProfileIndex == index) {
-															return;
-														}
-														provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
-														selectedCloudProfileIndex = index;
-														selectedLocalProfileIndex = undefined;
-													}}
-													class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
-													{data}
-												>
-													<span slot="import-button">
-														<button
-															on:click|stopPropagation={() => {
-																saveCloudProfileToLocalFolder(data);
-															}}
-															class="flex items-center"
-														>
-															{#if importFlag}
-																loading...
-															{/if}
-															<SvgIcon class="w-4" iconPath="import" />
-														</button>
-													</span>
-												</DocumentCard>
-											{/each}
-										{/await}
+										{#each myProfiles as profile, index}
+											{@const data = profile.data()}
+											<DocumentCard
+												on:click={() => {
+													if (selectedCloudProfileIndex == index) {
+														return;
+													}
+													provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
+													selectedCloudProfileIndex = index;
+													selectedLocalProfileIndex = undefined;
+												}}
+												class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
+												{data}
+											>
+												<span slot="import-button">
+													<button
+														on:click|stopPropagation={() => {
+															saveCloudProfileToLocalFolder(data);
+														}}
+														class="flex items-center"
+													>
+														{#if importFlag}
+															loading...
+														{/if}
+														<SvgIcon class="w-4" iconPath="import" />
+													</button>
+												</span>
+											</DocumentCard>
+										{/each}
 									{:else}
-										{#await listPublicProfiles()}
-											loading..
-										{:then profiles}
-											{#each profiles as profile, index}
-												{@const data = profile.data()}
-												<DocumentCard
-													on:click={() => {
-														if (selectedCloudProfileIndex == index) {
-															return;
-														}
-														provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
-														selectedCloudProfileIndex = index;
-														selectedLocalProfileIndex = undefined;
-													}}
-													class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
-													{data}
-												>
-													<span slot="import-button">
-														<button
-															on:click|stopPropagation={() => {
-																saveCloudProfileToLocalFolder(data);
-															}}
-															class="flex items-center"
-														>
-															{#if importFlag}
-																loading...
-															{/if}
-															<SvgIcon class="w-4" iconPath="import" />
-														</button>
-													</span>
-												</DocumentCard>
-											{/each}
-										{/await}
+										{#each publicProfiles as profile, index}
+											{@const data = profile.data()}
+											<DocumentCard
+												on:click={() => {
+													if (selectedCloudProfileIndex == index) {
+														return;
+													}
+													provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
+													selectedCloudProfileIndex = index;
+													selectedLocalProfileIndex = undefined;
+												}}
+												class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
+												{data}
+											>
+												<span slot="import-button">
+													<button
+														on:click|stopPropagation={() => {
+															saveCloudProfileToLocalFolder(data);
+														}}
+														class="flex items-center"
+													>
+														{#if importFlag}
+															loading...
+														{/if}
+														<SvgIcon class="w-4" iconPath="import" />
+													</button>
+												</span>
+											</DocumentCard>
+										{/each}
 									{/if}
 								</div>
 							</div>
@@ -381,36 +391,32 @@
 					<div
 						class="overflow-y-auto h-full p-2 lg:py-8  grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 gap-4"
 					>
-						{#await listPublicProfiles()}
-							loading..
-						{:then profiles}
-							{#each profiles as profile, index}
-								{@const data = profile.data()}
-								<DocumentCard
-									on:click={() => {
-										provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
-										selectedCloudProfileIndex = index;
-										selectedLocalProfileIndex = undefined;
-									}}
-									class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
-									{data}
-								>
-									<span slot="import-button">
-										<button
-											on:click|stopPropagation={() => {
-												saveCloudProfileToLocalFolder(data);
-											}}
-											class=""
-										>
-											{#if importFlag}
-												loading...
-											{/if}
-											<SvgIcon class="w-4" iconPath="import" />
-										</button>
-									</span>
-								</DocumentCard>
-							{/each}
-						{/await}
+						{#each publicProfiles as profile, index}
+							{@const data = profile.data()}
+							<DocumentCard
+								on:click={() => {
+									provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
+									selectedCloudProfileIndex = index;
+									selectedLocalProfileIndex = undefined;
+								}}
+								class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
+								{data}
+							>
+								<span slot="import-button">
+									<button
+										on:click|stopPropagation={() => {
+											saveCloudProfileToLocalFolder(data);
+										}}
+										class=""
+									>
+										{#if importFlag}
+											loading...
+										{/if}
+										<SvgIcon class="w-4" iconPath="import" />
+									</button>
+								</span>
+							</DocumentCard>
+						{/each}
 					</div>
 				</div>
 			{/if}
