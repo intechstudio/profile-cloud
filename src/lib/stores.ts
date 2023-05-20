@@ -19,6 +19,7 @@ function createUserAccountStore() {
         console.log('Authentication stuff from editor', credential)
 
         if (!credential || credential?.event == 'logout') {
+            console.log('signing out')
             signOut(firebaseAuth);
             return;
         }

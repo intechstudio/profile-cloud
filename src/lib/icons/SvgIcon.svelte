@@ -1,6 +1,7 @@
 <script lang="ts">
 	export let iconPath = '';
 	export let activeState = false;
+	export let display = false;
 	let rawSvg: HTMLElement;
 
 	importAsComponent(iconPath).then((res) => {
@@ -14,7 +15,9 @@
 
 <svg
 	class:text-opacity-100={activeState}
-	class="{$$props.class} h-6 max-w-[1.5rem] p-0.5 text-white fill-current text-opacity-60 group-hover:text-opacity-100 hover:text-opacity-100"
+	class="h-6 max-w-[1.5rem] p-0.5 text-white fill-current {display
+		? ''
+		: 'text-opacity-70'} group-hover:text-opacity-100 hover:text-opacity-100 {$$props.class} "
 >
 	<g>
 		{@html rawSvg}

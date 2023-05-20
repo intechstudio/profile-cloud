@@ -87,7 +87,16 @@
 	<div
 		class="w-full flex pb-3 px-3 md:p-3 justify-between items-center md:border-t-2 border-neutral-200 dark:border-neutral-700"
 	>
-		<span class="text-black text-opacity-70 dark:text-white mr-4">{data.owner || 'CREATOR'}</span>
+		<div class="flex items-center gap-x-1">
+			<div class="mr-1">
+				{#if data.public}
+					<SvgIcon display={true} iconPath={'public'} />
+				{:else}
+					<SvgIcon display={true} iconPath={'private'} />
+				{/if}
+			</div>
+			<span class="text-black text-opacity-70 dark:text-white mr-4">{data.owner || 'CREATOR'}</span>
+		</div>
 
 		<div class="relative">
 			{#if display === 'editor' && importResult === 'ok'}

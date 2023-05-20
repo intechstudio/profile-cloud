@@ -19,6 +19,19 @@
 	let selectedLocalProfileIndex: number | undefined = undefined;
 	let selectedCloudProfileIndex: number | undefined = undefined;
 
+	let publicProfiles: any[] = [];
+	let myProfiles: any[] = [];
+	let localProfiles: any[] = [];
+
+	const userAccountSubscription = userAccountStore.subscribe(async (userAccount) => {
+		if (userAccount.account) {
+			myProfiles = await getListMyPrivateProfiles();
+		} else {
+			console.log('reset myprofiles');
+			myProfiles = [];
+		}
+	});
+
 	function editorMessageListener(event: MessageEvent) {
 		if (event.data.messageType == 'editorDataSaved') {
 			// to do?
@@ -56,9 +69,6 @@
 		});
 	}
 
-	let publicProfiles: any[] = [];
-	let myProfiles: any[] = [];
-	let localProfiles: any[] = [];
 	async function getListOfLocalProfiles() {
 		if (display == 'web') {
 			return [];
@@ -176,9 +186,7 @@
 			owner: userData.displayName,
 			access: [userData.uid],
 			public: false,
-			description: 'new profile',
-			name: profile.name,
-			editorData: JSON.stringify(profile)
+			...profile
 		};
 
 		await setDoc(newProfileRef, newProfile)
@@ -216,15 +224,25 @@
 			.then((res) => res.docs)
 			.catch((err) => {
 				console.log('user not logged in');
+				return [];
 			});
 		return profiles;
+	}
+
+	async function loginToProfileCloud() {
+		await parentIframeCommunication({
+			windowPostMessageName: 'loginToProfileCloud',
+			channelPostMessage: {
+				channelMessageType: 'LOGIN_TO_PROFILE_CLOUD'
+			},
+			dataForParent: {}
+		});
 	}
 
 	onMount(async () => {
 		window.addEventListener('message', editorMessageListener);
 
 		localProfiles = await getListOfLocalProfiles();
-		console.log('yaaas', publicProfiles);
 
 		publicProfiles = await getListPublicProfiles();
 
@@ -233,6 +251,7 @@
 
 	onDestroy(() => {
 		window.removeEventListener('message', editorMessageListener);
+		userAccountSubscription();
 	});
 </script>
 
@@ -262,8 +281,6 @@
 					</p>
 				</div>
 			</DisplayOnWeb>
-
-			{$userAccountStore?.account?.uid}
 
 			{#if display == 'editor'}
 				<div class="flex flex-grow h-screen relative z-0">
@@ -315,72 +332,108 @@
 								</div>
 							</div>
 						</Pane>
+
 						<Pane minSize={28}>
-							<div class="flex py-4 h-full ">
-								<div
-									class="overflow-y-auto h-full p-2 lg:py-8  grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 gap-4"
-								>
+							<div class="flex flex-col py-2 h-full ">
+								<div class="py-4">
 									{#if $userAccountStore.account}
-										{#each myProfiles as profile, index}
-											{@const data = profile.data()}
-											<DocumentCard
-												on:click={() => {
-													if (selectedCloudProfileIndex == index) {
-														return;
-													}
-													provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
-													selectedCloudProfileIndex = index;
-													selectedLocalProfileIndex = undefined;
-												}}
-												class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
-												{data}
+										<div class="flex items-center justify-between">
+											<div class="flex items-center">
+												<img
+													class="h-8 w-8 rounded-full"
+													src={$userAccountStore?.account?.photoURL}
+													alt="user profile"
+												/>
+
+												<div class="ml-2">{$userAccountStore.account?.displayName}</div>
+											</div>
+											<!-- <div>
+											<button
+												class="rounded px-4 py-1 border dark:border-white dark:border-opacity-20 dark:hover:bg-emerald-700 font-medium"
 											>
-												<span slot="import-button">
-													<button
-														on:click|stopPropagation={() => {
-															saveCloudProfileToLocalFolder(data);
-														}}
-														class="flex items-center"
-													>
-														{#if importFlag}
-															loading...
-														{/if}
-														<SvgIcon class="w-4" iconPath="import" />
-													</button>
-												</span>
-											</DocumentCard>
-										{/each}
+												logout
+											</button>
+										</div> -->
+										</div>
 									{:else}
-										{#each publicProfiles as profile, index}
-											{@const data = profile.data()}
-											<DocumentCard
-												on:click={() => {
-													if (selectedCloudProfileIndex == index) {
-														return;
-													}
-													provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
-													selectedCloudProfileIndex = index;
-													selectedLocalProfileIndex = undefined;
-												}}
-												class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
-												{data}
-											>
-												<span slot="import-button">
-													<button
-														on:click|stopPropagation={() => {
-															saveCloudProfileToLocalFolder(data);
-														}}
-														class="flex items-center"
-													>
-														{#if importFlag}
-															loading...
-														{/if}
-														<SvgIcon class="w-4" iconPath="import" />
-													</button>
-												</span>
-											</DocumentCard>
-										{/each}
+										<div class="rounded-md border border-amber-500 p-4 bg-neutral-900">
+											<div class="pb-1 text-white">login to save and browse your profiles</div>
+											<div class="pt-1">
+												<button
+													on:click={() => {
+														loginToProfileCloud();
+													}}
+													class="rounded px-4 py-1 border dark:border-emerald-500 dark:hover:bg-emerald-700 font-medium"
+												>
+													login
+												</button>
+											</div>
+										</div>
 									{/if}
+								</div>
+								<div
+									class="overflow-y-auto h-full py-2 pr-2 lg:py-8  grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 gap-4"
+								>
+									<!-- {#if $userAccountStore.account} -->
+									{#each [...myProfiles, ...publicProfiles] as profile, index}
+										{@const data = profile.data()}
+										<DocumentCard
+											on:click={() => {
+												if (selectedCloudProfileIndex == index) {
+													return;
+												}
+												provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
+												selectedCloudProfileIndex = index;
+												selectedLocalProfileIndex = undefined;
+											}}
+											class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
+											{data}
+										>
+											<span slot="import-button">
+												<button
+													on:click|stopPropagation={() => {
+														saveCloudProfileToLocalFolder(data);
+													}}
+													class="flex items-center"
+												>
+													{#if importFlag}
+														loading...
+													{/if}
+													<SvgIcon class="w-4" iconPath="import" />
+												</button>
+											</span>
+										</DocumentCard>
+									{/each}
+									<!-- {/if} -->
+									<!-- {#each publicProfiles as profile, index}
+										{@const data = profile.data()}
+										<DocumentCard
+											on:click={() => {
+												if (selectedCloudProfileIndex == index) {
+													return;
+												}
+												provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
+												selectedCloudProfileIndex = index;
+												selectedLocalProfileIndex = undefined;
+											}}
+											class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
+											{data}
+										>
+											<span slot="import-button">
+												<button
+													on:click|stopPropagation={() => {
+														saveCloudProfileToLocalFolder(data);
+													}}
+													class="flex items-center"
+												>
+													{#if importFlag}
+														loading...
+													{/if}
+													<SvgIcon class="w-4" iconPath="import" />
+												</button>
+											</span>
+										</DocumentCard>
+									{/each} -->
 								</div>
 							</div>
 						</Pane>
