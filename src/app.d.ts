@@ -9,4 +9,6 @@ declare global {
 	}
 }
 
-export {};
+declare var google: any
+
+export { };

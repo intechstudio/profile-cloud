@@ -2,7 +2,7 @@ import { EmailAuthProvider, GoogleAuthProvider, onAuthStateChanged, signInWithCr
 import { writable } from "svelte/store";
 import { firebaseAuth } from "./firebase";
 
-function createUserAccountStore() {
+function createUserAccountService() {
 
     const { subscribe, set, update } = writable<{ account: User | null, credential?: null }>(
         { account: null },
@@ -68,14 +68,4 @@ function createUserAccountStore() {
 
 }
 
-function createProfileStore() {
-    const { subscribe, set, update } = writable({});
-    return {
-        subscribe,
-        set,
-        update,
-    };
-}
-
-export const userAccountStore = createUserAccountStore();
-export const profileStore = createProfileStore();
+export const userAccountService = createUserAccountService();

@@ -3,16 +3,27 @@
 
 	import { getContext, onDestroy, onMount } from 'svelte';
 	import DisplayOnWeb from '$lib/components/DisplayOnWeb.svelte';
-	import { userAccountStore } from '$lib/stores';
+	import { userAccountService } from '$lib/stores';
 	import UserAccount from '$lib/components/UserAccount.svelte';
-	import type { EditorReturnType, Profile } from '$lib/types';
-	import DocumentCard from '$lib/components/DocumentCard.svelte';
-	import { and, doc, getDocs, or, query, setDoc, where } from 'firebase/firestore';
+	import type { EditorReturnType } from '$lib/types';
+	import DocumentCard from './CloudProfileCard.svelte';
+	import {
+		and,
+		deleteDoc,
+		doc,
+		getDocs,
+		or,
+		query,
+		setDoc,
+		updateDoc,
+		where
+	} from 'firebase/firestore';
 	import { profilesCollection } from '$lib/collections';
 	import LocalProfileCard from './LocalProfileCard.svelte';
 	import SvgIcon from '$lib/icons/SvgIcon.svelte';
 	import { get } from 'svelte/store';
 	import { firestore } from '$lib/firebase';
+	import { ProfileSchema, type Profile } from '$lib/schemas';
 
 	const display = getContext('display');
 
@@ -23,7 +34,7 @@
 	let myProfiles: any[] = [];
 	let localProfiles: any[] = [];
 
-	const userAccountSubscription = userAccountStore.subscribe(async (userAccount) => {
+	const userAccountSubscription = userAccountService.subscribe(async (userAccount) => {
 		if (userAccount.account) {
 			myProfiles = await getListMyPrivateProfiles();
 		} else {
@@ -37,7 +48,7 @@
 			// to do?
 		}
 		if (event.data.messageType == 'userAuthentication') {
-			userAccountStore.authenticateUser(event.data.authEvent);
+			userAccountService.authenticateUser(event.data.authEvent);
 		}
 	}
 
@@ -99,7 +110,7 @@
 		}
 	}
 
-	async function deleteLocalProfile(profile: typeof Object) {
+	async function deleteLocalProfile(profile: Profile) {
 		const result = await parentIframeCommunication({
 			windowPostMessageName: 'deleteLocalProfile',
 			channelPostMessage: {
@@ -146,13 +157,34 @@
 		}
 	}
 
-	async function renameLocalProfile(newName: string, profile: typeof Object) {
+	async function splitLocalProfile(profile: Profile) {
 		const result = await parentIframeCommunication({
-			windowPostMessageName: 'renameLocalProfile',
+			windowPostMessageName: 'splitLocalProfile',
 			channelPostMessage: {
-				channelMessageType: 'RENAME_LOCAL_PROFILE'
+				channelMessageType: 'SPLIT_LOCAL_PROFILE'
 			},
-			dataForParent: { newName, profile }
+			dataForParent: { profileToSplit: profile }
+		});
+		if (result.ok) {
+			console.log('split success', result.data);
+		}
+	}
+
+	async function textEditLocalProfile({
+		name,
+		description,
+		profile
+	}: {
+		name?: string;
+		description?: string;
+		profile: Profile;
+	}) {
+		const result = await parentIframeCommunication({
+			windowPostMessageName: 'textEditLocalProfile',
+			channelPostMessage: {
+				channelMessageType: 'TEXT_EDIT_LOCAL_PROFILE'
+			},
+			dataForParent: { name, description, profile }
 		});
 		if (result.ok) {
 			console.log('update success', result.data);
@@ -160,8 +192,39 @@
 		}
 	}
 
-	async function overwriteLocalProfile(profile: typeof Object) {
-		console.log('overwriteLocalProfile', profile);
+	async function textEditCloudProfile({
+		name,
+		description,
+		profile
+	}: {
+		name?: string;
+		description?: string;
+		profile: Profile;
+	}) {
+		interface ProfileTextDetails {
+			name?: string;
+			description?: string;
+		}
+
+		let details: ProfileTextDetails = {};
+		if (name) details['name'] = name;
+		if (description) details['description'] = description;
+
+		console.log('details', details);
+
+		await updateDoc(doc(profilesCollection, profile.id), {
+			...details
+		})
+			.then(async () => {
+				console.log('profile updated');
+				myProfiles = await getListMyPrivateProfiles();
+			})
+			.catch((error) => {
+				console.log('error updating profile', error);
+			});
+	}
+
+	async function overwriteLocalProfile(profile: Profile) {
 		const result = await parentIframeCommunication({
 			windowPostMessageName: 'overwriteLocalProfile',
 			channelPostMessage: {
@@ -170,34 +233,53 @@
 			dataForParent: { profileToOverwrite: profile }
 		});
 		if (result.ok) {
-			console.log('update success', result.data);
 			localProfiles = await getListOfLocalProfiles();
 		}
 	}
 
-	async function saveLocalProfileToCloud(profile: typeof Object) {
+	async function saveLocalProfileToCloud(profile: Profile) {
 		const newProfileRef = doc(profilesCollection);
-		const userData = get(userAccountStore)?.account;
+		const userData = get(userAccountService)?.account;
 		if (!userData) {
 			console.log('no user data');
 			return;
 		}
-		let newProfile: Profile = {
-			owner: userData.displayName,
-			access: [userData.uid],
-			public: false,
-			...profile
-		};
 
-		await setDoc(newProfileRef, newProfile)
+		profile.owner = userData.displayName;
+		profile.access = [userData.uid];
+		profile.public = false;
+
+		const isObjectValid = ProfileSchema.safeParse(profile);
+
+		if (isObjectValid.success) {
+			console.log('profile object is valid');
+		} else {
+			console.log('profile is not valid');
+			console.log(isObjectValid.error);
+			return;
+		}
+
+		await setDoc(newProfileRef, profile)
 			.then(async () => {
 				// profile is successfully saved to cloud
-				deleteLocalProfile(profile);
+				await deleteLocalProfile(profile); // tofi: possibly this should not be awaited, needs to be checked.
 				myProfiles = await getListMyPrivateProfiles();
 			})
 			.catch(() => {
 				// profile is not saved to cloud
 				console.error('Profile save to cloud was unsuccessful');
+			});
+	}
+
+	async function deleteCloudProfile(profile: Profile) {
+		const profileRef = doc(profilesCollection, profile.id!);
+		await deleteDoc(profileRef)
+			.then(async (res) => {
+				console.log('Profile successfully deleted', res);
+				myProfiles = await getListMyPrivateProfiles();
+			})
+			.catch((err) => {
+				console.log('Error deleting profile', err);
 			});
 	}
 
@@ -217,7 +299,7 @@
 			profilesCollection,
 			and(
 				where('public', '==', false),
-				where('access', 'array-contains', get(userAccountStore)?.account?.uid || '')
+				where('access', 'array-contains', get(userAccountService)?.account?.uid || '')
 			)
 		);
 		const profiles = await getDocs(q)
@@ -300,7 +382,7 @@
 									</div>
 								</div>
 								<div
-									class="overflow-y-auto h-full p-2 lg:py-8  grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 gap-4"
+									class="overflow-y-scroll h-full py-2 pr-2 lg:py-8  grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 gap-4"
 								>
 									{#each localProfiles.filter((p) => p.folder == 'local') as profile, index}
 										<LocalProfileCard
@@ -310,17 +392,26 @@
 												}
 												provideSelectedProfileForOptionalUploadingToOneOreMoreModules(profile);
 												selectedLocalProfileIndex = index;
-												selectedCloudProfileIndex = undefined;
+											}}
+											on:blur={() => {
+												selectedLocalProfileIndex = undefined;
 											}}
 											on:save-to-cloud={() => {
 												saveLocalProfileToCloud(profile);
 											}}
-											on:delete={() => {
+											on:delete-local={() => {
 												deleteLocalProfile(profile);
+											}}
+											on:split-profile={() => {
+												splitLocalProfile(profile);
 											}}
 											on:name-change={(e) => {
 												const { newName } = e.detail;
-												renameLocalProfile(newName, profile);
+												textEditLocalProfile({ name: newName, profile });
+											}}
+											on:description-change={(e) => {
+												const { newDescription } = e.detail;
+												textEditLocalProfile({ description: newDescription, profile });
 											}}
 											on:overwrite-profile={() => {
 												overwriteLocalProfile(profile);
@@ -336,16 +427,16 @@
 						<Pane minSize={28}>
 							<div class="flex flex-col py-2 h-full ">
 								<div class="py-4">
-									{#if $userAccountStore.account}
+									{#if $userAccountService.account}
 										<div class="flex items-center justify-between">
 											<div class="flex items-center">
 												<img
 													class="h-8 w-8 rounded-full"
-													src={$userAccountStore?.account?.photoURL}
+													src={$userAccountService?.account?.photoURL}
 													alt="user profile"
 												/>
 
-												<div class="ml-2">{$userAccountStore.account?.displayName}</div>
+												<div class="ml-2">{$userAccountService.account?.displayName}</div>
 											</div>
 											<!-- <div>
 											<button
@@ -372,9 +463,9 @@
 									{/if}
 								</div>
 								<div
-									class="overflow-y-auto h-full py-2 pr-2 lg:py-8  grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 gap-4"
+									class="overflow-y-scroll h-full py-2 pr-2 lg:py-8  grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 gap-4"
 								>
-									<!-- {#if $userAccountStore.account} -->
+									<!-- {#if $userAccountService.account} -->
 									{#each [...myProfiles, ...publicProfiles] as profile, index}
 										{@const data = profile.data()}
 										<DocumentCard
@@ -384,7 +475,20 @@
 												}
 												provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
 												selectedCloudProfileIndex = index;
-												selectedLocalProfileIndex = undefined;
+											}}
+											on:blur={() => {
+												selectedCloudProfileIndex = undefined;
+											}}
+											on:delete-cloud={() => {
+												deleteCloudProfile(profile);
+											}}
+											on:description-change={(e) => {
+												const { newDescription } = e.detail;
+												textEditCloudProfile({ description: newDescription, profile });
+											}}
+											on:name-change={(e) => {
+												const { newName } = e.detail;
+												textEditCloudProfile({ name: newName, profile });
 											}}
 											class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
 											{data}

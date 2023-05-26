@@ -4,7 +4,8 @@ service cloud.firestore {
     match /profiles/{document=**} {
       // the uid access is not 100% okay: https://stackoverflow.com/questions/54522477/restrict-firestore-access-to-authenticated-users
       allow read: if resource.data.public == true || (request.auth != null && request.auth.uid in resource.data.access);
-      allow write: if request.auth.uid != null;
+      allow create, update: if request.auth.uid != null;
+      allow delete: if request.auth != null && request.auth.uid in resource.data.access;
     }
   }
 }

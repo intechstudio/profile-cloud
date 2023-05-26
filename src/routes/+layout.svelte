@@ -79,7 +79,7 @@
 	</div>
 </main>
 
-<style>
+<style lang="postcss">
 	/**
 	This is the global style for the scrollbar from the editor.
 	*/
@@ -87,14 +87,17 @@
 		height: 6px;
 		width: 6px;
 		background: #1e2628;
+		@apply rounded-md;
 	}
 
 	:global(::-webkit-scrollbar-thumb) {
 		background: #286787;
 		box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.75);
+		@apply rounded-md;
 	}
 
 	:global(::-webkit-scrollbar-corner) {
 		background: #1e2628;
+		@apply rounded-md;
 	}
 </style>
