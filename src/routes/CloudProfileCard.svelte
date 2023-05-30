@@ -99,16 +99,16 @@
 	}}
 	class="{$$props.class} flex flex-col justify-between items-start text-left w-full bg-white rounded-lg border border-black/10 shadow dark:bg-black dark:bg-opacity-60"
 >
-	<div class="p-3">
-		<div>
+	<div class="p-3 w-full">
+		<div class="w-full">
 			<input
 				bind:this={nameInputField.element}
-				class="w-full mr-1 font-bold border bg-transparent focus:outline-none {nameInputField.doubleClicked
+				class="w-full mr-1 font-bold border bg-transparent hover:bg-neutral-800 focus:outline-none {nameInputField.doubleClicked
 					? 'border-emerald-500'
 					: 'border-transparent'}"
 				readonly={!nameInputField.doubleClicked}
 				on:keydown={(e) => {
-					if (e.key == 'Enter') {
+					if (e.key == 'Enter' && !e.shiftKey) {
 						nameInputField.element?.blur();
 					}
 				}}
@@ -117,7 +117,7 @@
 					nameInputField.doubleClicked = false;
 					// reset input value if user clicked out without changing the value
 					if (nameInputField.element?.value == '') {
-						nameInputField.element.value = nameInputField.currentSelection;
+						nameInputField.element.value = 'Add name';
 					}
 					if (nameInputField.element?.value != nameInputField.currentSelection) {
 						dispatchEvent('name-change', { newName: nameInputField.element?.value });
@@ -131,20 +131,15 @@
 				value={data.name}
 			/>
 		</div>
-		<div
-			class="dark:text-white text-blacktext-opacity-60 break-all bg-blue-600/5 dark:text-opacity-50 dark:bg-blue-300/5 font-mono text-xs rounded p-1"
-		>
-			{JSON.stringify(data.configs)?.substring(0, 75) || 'data is not present'}
-		</div>
 		<div class="dark:text-white pt-2 text-black text-opacity-80 dark:text-opacity-70">
 			<textarea
 				bind:this={descriptionTextarea.element}
-				class="w-full border bg-transparent focus:outline-none {descriptionTextarea.doubleClicked
+				class="w-full border bg-neutral-900 hover:bg-neutral-800 focus:outline-none {descriptionTextarea.doubleClicked
 					? 'border-emerald-500'
 					: 'border-transparent'}"
 				readonly={!descriptionTextarea.doubleClicked}
 				on:keydown={(e) => {
-					if (e.key == 'Enter') {
+					if (e.key == 'Enter' && !e.shiftKey) {
 						descriptionTextarea.element?.blur();
 					}
 				}}
@@ -153,7 +148,7 @@
 					descriptionTextarea.doubleClicked = false;
 					// reset input value if user clicked out without changing the value
 					if (descriptionTextarea.element?.value == '') {
-						descriptionTextarea.element.value = descriptionTextarea.currentSelection;
+						descriptionTextarea.element.value = 'Add description';
 					}
 					if (descriptionTextarea.element?.value != descriptionTextarea.currentSelection) {
 						dispatchEvent('description-change', {
@@ -180,9 +175,23 @@
 		<div class="flex items-center gap-x-1">
 			<div class="mr-1">
 				{#if data.public}
-					<SvgIcon display={true} iconPath={'public'} />
+					<div class="relative group">
+						<SvgIcon display={true} iconPath={'public'} />
+						<div
+							class="group-hover:block font-medium hidden absolute mt-1 left-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+						>
+							Public
+						</div>
+					</div>
 				{:else}
-					<SvgIcon display={true} iconPath={'private_simpler'} />
+					<div class="relative group">
+						<SvgIcon display={true} iconPath={'private_simpler'} />
+						<div
+							class="group-hover:block font-medium hidden absolute mt-1 left-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+						>
+							Private
+						</div>
+					</div>
 				{/if}
 			</div>
 			<span class="text-black text-opacity-70 dark:text-white mr-4">{data.owner || 'Unknown'}</span>
@@ -192,12 +201,17 @@
 			{#if userCanDelete(data.access)}
 				{#if deleteConfirmFlag == false}
 					<button
-						class="flex"
+						class="flex group relative"
 						on:click={() => {
 							deleteConfirmFlag = true;
 						}}
 					>
 						<SvgIcon class="w-5" iconPath="delete" />
+						<div
+							class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+						>
+							Delete
+						</div>
 					</button>
 				{:else}
 					<button
