@@ -18,4 +18,9 @@ export const ProfileSchema = z.object({
     configs: z.any()
 });
 
+export const ProfileLinkSchema = ProfileSchema.extend({
+    linked: z.boolean().default(true),
+})
+
 export type Profile = z.infer<typeof ProfileSchema>;
+export type ProfileLink = z.infer<typeof ProfileLinkSchema>;

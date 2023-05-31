@@ -11,6 +11,7 @@
 		and,
 		deleteDoc,
 		doc,
+		getDoc,
 		getDocs,
 		or,
 		query,
@@ -18,11 +19,11 @@
 		updateDoc,
 		where
 	} from 'firebase/firestore';
-	import { profilesCollection } from '$lib/collections';
+	import { profileLinksCollection, profilesCollection } from '$lib/collections';
 	import LocalProfileCard from './LocalProfileCard.svelte';
 	import SvgIcon from '$lib/icons/SvgIcon.svelte';
 	import { get } from 'svelte/store';
-	import { ProfileSchema, type Profile } from '$lib/schemas';
+	import { ProfileSchema, type Profile, type ProfileLink, ProfileLinkSchema } from '$lib/schemas';
 
 	const display = getContext('display');
 
@@ -41,18 +42,27 @@
 		}
 	});
 
-	function editorMessageListener(event: MessageEvent) {
+	async function editorMessageListener(event: MessageEvent) {
 		if (event.data.messageType == 'editorDataSaved') {
 			// to do?
 		}
 		if (event.data.messageType == 'userAuthentication') {
 			userAccountService.authenticateUser(event.data.authEvent);
 		}
-		console.log(event.data);
+
 		if (event.data.messageType == 'profileLink') {
-			localProfiles = [...localProfiles, { ...JSON.parse(event.data.profileLink), linked: true }];
-			console.log(localProfiles);
+			const linkedProfile = await getLinkedProfile(event.data.profileLinkId);
+			localProfiles = [...localProfiles, linkedProfile];
 		}
+	}
+
+	async function getLinkedProfile(id: string) {
+		const docRef = doc(profileLinksCollection, id);
+		const profileLink = await getDoc(docRef)
+			.then((res) => res.data())
+			.catch((err) => console.log(err));
+		console.log(profileLink);
+		return profileLink;
 	}
 
 	async function parentIframeCommunication({
@@ -119,7 +129,10 @@
 				channelMessageType: 'DELETE_LOCAL_PROFILE'
 			},
 			dataForParent: { profile }
+		}).catch((err) => {
+			return { ok: false, data: {} };
 		});
+
 		if (result.ok) {
 			console.log('delete success', result.data);
 			localProfiles = await getListOfLocalProfiles();
@@ -151,7 +164,6 @@
 			},
 			dataForParent: profile
 		});
-		console.log('return result', result);
 		if (result.ok) {
 			console.log('save success', result.data);
 			localProfiles = await getListOfLocalProfiles();
@@ -212,8 +224,6 @@
 		if (name) details['name'] = name;
 		if (description) details['description'] = description;
 
-		console.log('details', details);
-
 		await updateDoc(doc(profilesCollection, profile.id), {
 			...details
 		})
@@ -247,11 +257,15 @@
 			return;
 		}
 
-		profile.owner = userData.displayName || userData.email;
-		profile.access = [userData.uid];
-		profile.public = false;
+		// reassign, else profile to delete id is overwritten!
+		const profileToSave = { ...profile };
 
-		const isObjectValid = ProfileSchema.safeParse(profile);
+		profileToSave.owner = userData.displayName || userData.email;
+		profileToSave.access = [userData.uid];
+		profileToSave.public = false;
+		profileToSave.id = newProfileRef.id;
+
+		const isObjectValid = ProfileSchema.safeParse(profileToSave);
 
 		if (isObjectValid.success) {
 			console.log('profile object is valid');
@@ -261,16 +275,17 @@
 			return;
 		}
 
-		await setDoc(newProfileRef, profile)
+		await setDoc(newProfileRef, profileToSave)
 			.then(async () => {
 				// profile is successfully saved to cloud
-				await deleteLocalProfile(profile); // tofi: possibly this should not be awaited, needs to be checked.
-				myProfiles = await getListMyPrivateProfiles();
 			})
-			.catch(() => {
+			.catch((error) => {
 				// profile is not saved to cloud
-				console.error('Profile save to cloud was unsuccessful');
+				console.error('Profile save to cloud was unsuccessful', error);
 			});
+
+		await deleteLocalProfile(profile);
+		myProfiles = await getListMyPrivateProfiles();
 	}
 
 	async function deleteCloudProfile(profile: Profile) {
@@ -334,8 +349,45 @@
 	}
 
 	async function createCloudProfileLink(profile: Profile) {
-		const profileLinkUrl =
-			'grid-editor-dev://?profile-link=' + encodeURIComponent(JSON.stringify(profile));
+		const newProfileLinkRef = doc(profileLinksCollection);
+		const userData = get(userAccountService)?.account;
+		if (!userData) {
+			loginToProfileCloud();
+			return;
+		}
+
+		const profileLink: ProfileLink = {
+			...profile,
+			linked: true
+		};
+
+		profileLink.owner = userData.displayName || userData.email;
+		profileLink.access = [userData.uid];
+		profileLink.public = true;
+		profileLink.id = newProfileLinkRef.id;
+
+		const isObjectValid = ProfileLinkSchema.safeParse(profileLink);
+
+		if (isObjectValid.success) {
+			// do nothing, continue
+		} else {
+			console.log(isObjectValid.error);
+			return;
+		}
+
+		await setDoc(newProfileLinkRef, profileLink)
+			.then(async (res) => {
+				getDoc(newProfileLinkRef).then((snap) => {
+					console.log('Here is the document you wrote to', snap.data());
+				});
+			})
+			.catch(() => {
+				// profile is not saved to cloud
+				console.error('Profile link save to cloud was unsuccessful');
+			});
+
+		const profileLinkUrl = 'grid-editor-dev://?profile-link=' + newProfileLinkRef.id;
+
 		await parentIframeCommunication({
 			windowPostMessageName: 'createCloudProfileLink',
 			channelPostMessage: {
@@ -444,7 +496,9 @@
 											on:overwrite-profile={() => {
 												overwriteLocalProfile(profile);
 											}}
-											class={index == selectedLocalProfileIndex ? 'border-emerald-500' : ''}
+											class={index == selectedLocalProfileIndex
+												? 'border-emerald-500'
+												: 'border-transparent'}
 											data={profile}
 										/>
 									{/each}
@@ -520,9 +574,6 @@
 											on:delete-cloud={() => {
 												deleteCloudProfile(data);
 											}}
-											on:create-link={() => {
-												createCloudProfileLink(data);
-											}}
 											on:description-change={(e) => {
 												const { newDescription } = e.detail;
 												textEditCloudProfile({ description: newDescription, profile: data });
@@ -534,7 +585,22 @@
 											class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
 											{data}
 										>
-											<span slot="import-button">
+											<svelte:fragment>
+												<button
+													class="relative group flex"
+													on:click={() => {
+														createCloudProfileLink(data);
+													}}
+												>
+													<SvgIcon class="w-5" iconPath="link" />
+													<div
+														class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+													>
+														Link
+													</div>
+												</button>
+											</svelte:fragment>
+											<svelte:fragment slot="import-button">
 												<button
 													on:click|stopPropagation={() => {
 														saveCloudProfileToLocalFolder(data);
@@ -551,7 +617,7 @@
 														Import
 													</div>
 												</button>
-											</span>
+											</svelte:fragment>
 										</CloudProfileCard>
 									{/each}
 								</div>

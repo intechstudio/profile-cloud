@@ -160,20 +160,7 @@
 						>
 					{/if}
 				{/if}
-				<button
-					class="relative group flex"
-					on:click={() => {
-						dispatchEvent('create-link');
-						deleteConfirmFlag = false;
-					}}
-				>
-					<SvgIcon class="w-5" iconPath="link" />
-					<div
-						class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-					>
-						Link
-					</div>
-				</button>
+				<slot name="link-button" />
 				<slot name="import-button" />
 			</div>
 		</div>

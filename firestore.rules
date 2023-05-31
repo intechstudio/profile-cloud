@@ -7,5 +7,10 @@ service cloud.firestore {
       allow create, update: if request.auth.uid != null;
       allow delete: if request.auth != null && request.auth.uid in resource.data.access;
     }
+     match /profileLinks/{document=**} {
+      // the uid access is not 100% okay: https://stackoverflow.com/questions/54522477/restrict-firestore-access-to-authenticated-users
+      allow read;
+      allow create, update: if request.auth.uid != null;
+    }
   }
 }
