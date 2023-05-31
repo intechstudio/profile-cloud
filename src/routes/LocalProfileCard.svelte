@@ -30,7 +30,7 @@
 		dispatchEvent('click', {});
 	}}
 	on:blur={() => {
-		dispatchEvent('blur', {});
+		dispatchEvent('blur');
 	}}
 	class="{$$props.class} flex flex-col justify-between items-start text-left w-full bg-white rounded-lg border border-black/10 shadow dark:bg-black dark:bg-opacity-60"
 >
@@ -121,6 +121,7 @@
 			</div>
 			<div class="dark:text-white pt-2 text-black text-opacity-80 dark:text-opacity-70">
 				<textarea
+					rows={2}
 					bind:this={descriptionTextarea.element}
 					class="w-full border bg-neutral-950 hover:bg-neutral-800 focus:outline-none {descriptionTextarea.doubleClicked
 						? 'border-emerald-500'
@@ -154,6 +155,9 @@
 					}}
 					value={data.description}
 				/>
+			</div>
+			<div class="pt-1 dark:text-white text-black text-opacity-80 dark:text-opacity-70">
+				{data.type}
 			</div>
 		</div>
 	</div>

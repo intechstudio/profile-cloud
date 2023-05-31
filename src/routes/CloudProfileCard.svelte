@@ -100,7 +100,7 @@
 	class="{$$props.class} flex flex-col justify-between items-start text-left w-full bg-white rounded-lg border border-black/10 shadow dark:bg-black dark:bg-opacity-60"
 >
 	<div class="p-3 w-full">
-		<div class="w-full">
+		<div class="w-full flex items-center justify-between">
 			<input
 				bind:this={nameInputField.element}
 				class="w-full mr-1 font-bold border bg-transparent hover:bg-neutral-800 focus:outline-none {nameInputField.doubleClicked
@@ -130,9 +130,56 @@
 				}}
 				value={data.name}
 			/>
+			<div class="relative flex items-center gap-x-1">
+				{#if userCanDelete(data.access)}
+					{#if deleteConfirmFlag == false}
+						<button
+							class="flex group relative"
+							on:click={() => {
+								deleteConfirmFlag = true;
+							}}
+						>
+							<SvgIcon class="w-5" iconPath="delete" />
+							<div
+								class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+							>
+								Delete
+							</div>
+						</button>
+					{:else}
+						<button
+							use:applyFocus
+							on:blur={() => {
+								deleteConfirmFlag = false;
+							}}
+							on:click={() => {
+								dispatchEvent('delete-cloud');
+								deleteConfirmFlag = false;
+							}}
+							class="bg-red-600 rounded px-1 py-0.5 text-xs">confirm</button
+						>
+					{/if}
+				{/if}
+				<button
+					class="relative group flex"
+					on:click={() => {
+						dispatchEvent('create-link');
+						deleteConfirmFlag = false;
+					}}
+				>
+					<SvgIcon class="w-5" iconPath="link" />
+					<div
+						class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+					>
+						Link
+					</div>
+				</button>
+				<slot name="import-button" />
+			</div>
 		</div>
 		<div class="dark:text-white pt-2 text-black text-opacity-80 dark:text-opacity-70">
 			<textarea
+				rows={2}
 				bind:this={descriptionTextarea.element}
 				class="w-full border bg-neutral-900 hover:bg-neutral-800 focus:outline-none {descriptionTextarea.doubleClicked
 					? 'border-emerald-500'
@@ -195,39 +242,6 @@
 				{/if}
 			</div>
 			<span class="text-black text-opacity-70 dark:text-white mr-4">{data.owner || 'Unknown'}</span>
-		</div>
-
-		<div class="relative flex items-center gap-x-1">
-			{#if userCanDelete(data.access)}
-				{#if deleteConfirmFlag == false}
-					<button
-						class="flex group relative"
-						on:click={() => {
-							deleteConfirmFlag = true;
-						}}
-					>
-						<SvgIcon class="w-5" iconPath="delete" />
-						<div
-							class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-						>
-							Delete
-						</div>
-					</button>
-				{:else}
-					<button
-						use:applyFocus
-						on:blur={() => {
-							deleteConfirmFlag = false;
-						}}
-						on:click={() => {
-							dispatchEvent('delete-cloud');
-							deleteConfirmFlag = false;
-						}}
-						class="bg-red-600 rounded px-1 py-0.5 text-xs">confirm</button
-					>
-				{/if}
-			{/if}
-			<slot name="import-button" />
 		</div>
 	</div>
 </button>

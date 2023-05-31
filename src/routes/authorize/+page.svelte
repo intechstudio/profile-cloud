@@ -33,7 +33,7 @@
 
 	function buildProtocolUrl(credential: string) {
 		let url = PUBLIC_APP_ENV === 'development' ? 'grid-editor-dev://' : 'grid-editor://';
-		return url + 'credential=' + credential;
+		return url + '?credential=' + credential;
 	}
 
 	function handleCredentialResponse(event: CustomEvent) {

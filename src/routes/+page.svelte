@@ -48,6 +48,11 @@
 		if (event.data.messageType == 'userAuthentication') {
 			userAccountService.authenticateUser(event.data.authEvent);
 		}
+		console.log(event.data);
+		if (event.data.messageType == 'profileLink') {
+			localProfiles = [...localProfiles, { ...JSON.parse(event.data.profileLink), linked: true }];
+			console.log(localProfiles);
+		}
 	}
 
 	async function parentIframeCommunication({
@@ -104,7 +109,6 @@
 			dataForParent: { profile }
 		});
 		if (result.ok) {
-			console.log('provider...', result.data);
 		}
 	}
 
@@ -243,7 +247,7 @@
 			return;
 		}
 
-		profile.owner = userData.displayName;
+		profile.owner = userData.displayName || userData.email;
 		profile.access = [userData.uid];
 		profile.public = false;
 
@@ -329,6 +333,20 @@
 		});
 	}
 
+	async function createCloudProfileLink(profile: Profile) {
+		const profileLinkUrl =
+			'grid-editor-dev://?profile-link=' + encodeURIComponent(JSON.stringify(profile));
+		await parentIframeCommunication({
+			windowPostMessageName: 'createCloudProfileLink',
+			channelPostMessage: {
+				channelMessageType: 'CREATE_CLOUD_PROFILE_LINK'
+			},
+			dataForParent: { profileLinkUrl }
+		}).then((res) => {
+			console.log('createCloudProfileLink', res);
+		});
+	}
+
 	onMount(async () => {
 		window.addEventListener('message', editorMessageListener);
 
@@ -398,11 +416,13 @@
 												if (selectedLocalProfileIndex == index) {
 													return;
 												}
+												// reset the selected cloud profile index
+												selectedCloudProfileIndex = undefined;
 												provideSelectedProfileForOptionalUploadingToOneOreMoreModules(profile);
 												selectedLocalProfileIndex = index;
 											}}
-											on:blur={() => {
-												selectedLocalProfileIndex = undefined;
+											on:blur={(e) => {
+												//selectedLocalProfileIndex = undefined;
 											}}
 											on:save-to-cloud={() => {
 												saveLocalProfileToCloud(profile);
@@ -488,18 +508,24 @@
 												if (selectedCloudProfileIndex == index) {
 													return;
 												}
+												console.log('click');
+												// reset the selection on the local profiles
+												selectedLocalProfileIndex = undefined;
 												provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
 												selectedCloudProfileIndex = index;
 											}}
-											on:blur={() => {
-												selectedCloudProfileIndex = undefined;
+											on:blur={(e) => {
+												//selectedCloudProfileIndex = undefined;
 											}}
 											on:delete-cloud={() => {
-												deleteCloudProfile(profile);
+												deleteCloudProfile(data);
+											}}
+											on:create-link={() => {
+												createCloudProfileLink(data);
 											}}
 											on:description-change={(e) => {
 												const { newDescription } = e.detail;
-												textEditCloudProfile({ description: newDescription, profile });
+												textEditCloudProfile({ description: newDescription, profile: data });
 											}}
 											on:name-change={(e) => {
 												const { newName } = e.detail;
