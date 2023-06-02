@@ -193,7 +193,12 @@
 					value={data.description}
 				/>
 			</div>
-			<div class="dark:text-white text-black text-opacity-80 dark:text-opacity-70">
+			<div
+				class="pt-2 dark:text-white text-black text-opacity-80 {data.type ===
+				data.selectedModuleType
+					? 'dark:text-opacity-100'
+					: 'dark:text-opacity-70'}"
+			>
 				{data.type}
 			</div>
 		</div>

@@ -10,7 +10,11 @@
 
 	const dispatchEvent = createEventDispatcher();
 
-	export let data: Profile;
+	interface SelectedModuleType {
+		selectedModuleType: string;
+	}
+
+	export let data: Profile & SelectedModuleType;
 
 	const display = getContext('display');
 
@@ -25,7 +29,7 @@
 
 	function downloadProfile() {
 		const element = document.createElement('a');
-		var dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(data);
+		var dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(data));
 		element.href = dataStr;
 		element.download = `${data.name}.json`;
 		document.body.appendChild(element); // Required for this to work in FireFox
@@ -101,7 +105,7 @@
 	}}
 	class="{$$props.class} flex flex-col justify-between items-start text-left w-full bg-white rounded-lg border border-black/10 shadow dark:bg-black dark:bg-opacity-60"
 >
-	<div class="p-3 w-full">
+	<div class="px-3 pt-3 w-full">
 		<div class="w-full flex items-center justify-between">
 			<input
 				bind:this={nameInputField.element}
@@ -206,9 +210,15 @@
 	</div>
 
 	<div
-		class="w-full flex pb-3 px-3 md:p-3 justify-between items-center md:border-t-2 border-neutral-200 dark:border-neutral-700"
+		class="w-full flex py-1 px-3 justify-between items-center md:border-t-2 border-neutral-200 dark:border-neutral-700"
 	>
-		<div class="dark:text-white text-black text-opacity-80 dark:text-opacity-70">{data.type}</div>
+		<div
+			class="dark:text-white text-black text-opacity-80 {data.type === data.selectedModuleType
+				? 'dark:text-opacity-100'
+				: 'dark:text-opacity-70'}"
+		>
+			{data.type}
+		</div>
 		<div class="flex items-center gap-x-1">
 			<span class="text-black dark:text-opacity-70 dark:text-white">{data.owner || 'Unknown'}</span>
 			<div class="ml-1">

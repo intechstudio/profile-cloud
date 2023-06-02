@@ -41,6 +41,8 @@
 	let linkProfiles: any[] = [];
 	let linkFlag: string | undefined = undefined;
 
+	let selectedModuleType: string = '';
+
 	const userAccountSubscription = userAccountService.subscribe(async (userAccount) => {
 		if (userAccount.account) {
 			cloudProfiles = await getCloudProfiles();
@@ -60,6 +62,10 @@
 		if (event.data.messageType == 'profileLink') {
 			const linkedProfile = await getLinkedProfile(event.data.profileLinkId);
 			linkProfiles = [...linkProfiles, linkedProfile];
+		}
+
+		if (event.data.messageType == 'selectedModuleType') {
+			selectedModuleType = event.data.selectedModuleType;
 		}
 	}
 
@@ -511,7 +517,7 @@
 												: profile.linked == true
 												? 'border-purple-500'
 												: ' border-black/10'}
-											data={profile}
+											data={{ ...profile, selectedModuleType: selectedModuleType }}
 										/>
 									{/each}
 								</div>
@@ -597,7 +603,7 @@
 													textEditCloudProfile({ name: newName, profile });
 												}}
 												class={index === selectedCloudProfileIndex ? 'border-emerald-500' : ''}
-												{data}
+												data={{ ...data, selectedModuleType: selectedModuleType }}
 											>
 												<svelte:fragment slot="link-button">
 													<button
