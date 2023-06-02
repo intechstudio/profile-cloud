@@ -44,11 +44,7 @@
 	let selectedModuleType: string = '';
 
 	const userAccountSubscription = userAccountService.subscribe(async (userAccount) => {
-		if (userAccount.account) {
-			cloudProfiles = await getCloudProfiles();
-		} else {
-			cloudProfiles = [];
-		}
+		cloudProfiles = await getCloudProfiles();
 	});
 
 	async function editorMessageListener(event: MessageEvent) {
@@ -166,9 +162,9 @@
 		}
 	}
 
-	let importFlag = false;
+	let importFlag: string | undefined = undefined;
 	async function saveCloudProfileToLocalFolder(profile: Profile) {
-		importFlag = true;
+		importFlag = profile.id;
 		const result = await parentIframeCommunication({
 			windowPostMessageName: 'profileImportCommunication',
 			channelPostMessage: {
@@ -178,7 +174,7 @@
 		});
 		if (result.ok) {
 			localProfiles = await getListOfLocalProfiles();
-			importFlag = false;
+			importFlag = undefined;
 		}
 	}
 
@@ -528,7 +524,7 @@
 									{#if $userAccountService.account}
 										<div class="flex items-center justify-between">
 											<div class="flex items-center">
-												{#if $userAccountService.account?.photoURL}
+												{#if false}
 													<img
 														class="h-5 w-5 rounded-full"
 														src={$userAccountService?.account?.photoURL}
@@ -635,7 +631,7 @@
 														}}
 														class="flex items-center group relative"
 													>
-														{#if importFlag}
+														{#if importFlag == data.id}
 															loading...
 														{/if}
 														<SvgIcon class="w-4" iconPath="import" />

@@ -84,20 +84,16 @@
 	This is the global style for the scrollbar from the editor.
 	*/
 	:global(::-webkit-scrollbar) {
-		height: 6px;
-		width: 6px;
-		background: #1e2628;
-		@apply rounded-md;
+		height: 0.375rem;
+		width: 0.375rem;
+		@apply dark:rounded-md dark:bg-neutral-900 bg-neutral-100;
 	}
 
 	:global(::-webkit-scrollbar-thumb) {
-		background: #286787;
-		box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.75);
-		@apply rounded-md;
+		@apply dark:rounded-md dark:bg-neutral-700 bg-neutral-400 dark:shadow;
 	}
 
 	:global(::-webkit-scrollbar-corner) {
-		background: #1e2628;
-		@apply rounded-md;
+		@apply dark:rounded-md dark:bg-neutral-900;
 	}
 </style>

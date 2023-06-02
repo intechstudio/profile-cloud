@@ -174,7 +174,7 @@
 			<textarea
 				rows={2}
 				bind:this={descriptionTextarea.element}
-				class="w-full border bg-neutral-100 dark:bg-neutral-900 dark:hover:bg-neutral-800 focus:outline-none {descriptionTextarea.doubleClicked
+				class="overflow-none w-full border bg-neutral-100 dark:bg-neutral-900 dark:hover:bg-neutral-800 focus:outline-none {descriptionTextarea.doubleClicked
 					? 'border-emerald-500'
 					: 'border-transparent'}"
 				readonly={!descriptionTextarea.doubleClicked}
