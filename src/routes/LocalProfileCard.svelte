@@ -32,14 +32,16 @@
 	on:blur={() => {
 		dispatchEvent('blur');
 	}}
-	class="{$$props.class} flex flex-col justify-between items-start text-left w-full bg-white rounded-lg border border-black/10 shadow dark:bg-black dark:bg-opacity-60"
+	class="{$$props.class} flex flex-col justify-between items-start text-left w-full bg-white rounded-lg border shadow dark:bg-black dark:bg-opacity-60"
 >
 	<div class="flex w-full justify-between">
 		<div class="flex-grow p-3">
 			<div class="flex justify-between items-center">
 				<input
 					bind:this={nameInputField.element}
-					class="w-full mr-1 font-bold border bg-transparent hover:bg-neutral-800 focus:outline-none {nameInputField.doubleClicked
+					class="{data.linked
+						? 'pointer-events-none'
+						: ''} w-full mr-1 font-bold border bg-transparent hover:bg-neutral-800 focus:outline-none {nameInputField.doubleClicked
 						? 'border-emerald-500'
 						: 'border-transparent'}"
 					readonly={!nameInputField.doubleClicked}
@@ -67,11 +69,64 @@
 					value={data.name}
 				/>
 				<div class="flex gap-x-1 items-center">
-					<!-- <button class="flex" on:click={() => dispatchEvent('split-profile')}> split </button> -->
-					{#if deleteConfirmFlag == false}
+					{#if !data.linked}
+						<!-- <button class="flex" on:click={() => dispatchEvent('split-profile')}> split </button> -->
+						{#if deleteConfirmFlag == false}
+							<button
+								class="flex relative group"
+								on:click|stopPropagation={() => {
+									deleteConfirmFlag = true;
+								}}
+							>
+								<SvgIcon class="w-5" iconPath="delete" />
+								<div
+									class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+								>
+									Delete
+								</div>
+							</button>
+						{:else}
+							<button
+								use:applyFocus
+								on:blur={() => {
+									console.log('good bye');
+									deleteConfirmFlag = false;
+								}}
+								on:click|stopPropagation={() => {
+									dispatchEvent('delete-local');
+									deleteConfirmFlag = false;
+								}}
+								class="bg-red-600 rounded px-1 py-0.5 text-xs">confirm</button
+							>
+						{/if}
 						<button
 							class="flex relative group"
-							on:click={() => {
+							on:click|stopPropagation={() => {
+								dispatchEvent('save-to-cloud');
+							}}
+						>
+							<SvgIcon class="w-5" iconPath="move_to_cloud_02" />
+							<div
+								class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+							>
+								Upload
+							</div>
+						</button>
+						<button
+							class="flex relative group"
+							on:click|stopPropagation={() => dispatchEvent('overwrite-profile')}
+						>
+							<SvgIcon class="w-5" iconPath="overwrite_profile" />
+							<div
+								class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+							>
+								Overwrite
+							</div>
+						</button>
+					{:else if deleteConfirmFlag == false}
+						<button
+							class="flex relative group"
+							on:click|stopPropagation={() => {
 								deleteConfirmFlag = true;
 							}}
 						>
@@ -86,44 +141,24 @@
 						<button
 							use:applyFocus
 							on:blur={() => {
-								console.log('good bye');
 								deleteConfirmFlag = false;
 							}}
-							on:click={() => {
-								dispatchEvent('delete-local');
+							on:click|stopPropagation={() => {
+								dispatchEvent('delete-linked');
 								deleteConfirmFlag = false;
 							}}
-							class="bg-red-600 rounded px-1 py-0.5 text-xs">confirm</button
+							class="mt-1 bg-red-600 rounded px-1 py-0.5 text-xs">confirm</button
 						>
 					{/if}
-					<button
-						class="flex relative group"
-						on:click={() => {
-							dispatchEvent('save-to-cloud');
-						}}
-					>
-						<SvgIcon class="w-5" iconPath="move_to_cloud_02" />
-						<div
-							class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-						>
-							Upload
-						</div>
-					</button>
-					<button class="flex relative group" on:click={() => dispatchEvent('overwrite-profile')}>
-						<SvgIcon class="w-5" iconPath="overwrite_profile" />
-						<div
-							class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-						>
-							Overwrite
-						</div>
-					</button>
 				</div>
 			</div>
 			<div class="dark:text-white pt-2 text-black text-opacity-80 dark:text-opacity-70">
 				<textarea
 					rows={2}
 					bind:this={descriptionTextarea.element}
-					class="w-full border bg-neutral-950 hover:bg-neutral-800 focus:outline-none {descriptionTextarea.doubleClicked
+					class="{data.linked
+						? 'pointer-events-none'
+						: ''} w-full border bg-neutral-950 hover:bg-neutral-800 focus:outline-none {descriptionTextarea.doubleClicked
 						? 'border-emerald-500'
 						: 'border-transparent'}"
 					readonly={!descriptionTextarea.doubleClicked}
@@ -156,7 +191,7 @@
 					value={data.description}
 				/>
 			</div>
-			<div class="pt-1 dark:text-white text-black text-opacity-80 dark:text-opacity-70">
+			<div class="dark:text-white text-black text-opacity-80 dark:text-opacity-70">
 				{data.type}
 			</div>
 		</div>

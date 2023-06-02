@@ -8,6 +8,7 @@
 	import type { EditorReturnType } from '$lib/types';
 	import CloudProfileCard from './CloudProfileCard.svelte';
 	import {
+		Query,
 		and,
 		deleteDoc,
 		doc,
@@ -17,28 +18,34 @@
 		query,
 		setDoc,
 		updateDoc,
-		where
+		where,
+		type DocumentData
 	} from 'firebase/firestore';
 	import { profileLinksCollection, profilesCollection } from '$lib/collections';
 	import LocalProfileCard from './LocalProfileCard.svelte';
 	import SvgIcon from '$lib/icons/SvgIcon.svelte';
 	import { get } from 'svelte/store';
 	import { ProfileSchema, type Profile, type ProfileLink, ProfileLinkSchema } from '$lib/schemas';
+	import { fade, slide } from 'svelte/transition';
 
 	const display = getContext('display');
 
 	let selectedLocalProfileIndex: number | undefined = undefined;
 	let selectedCloudProfileIndex: number | undefined = undefined;
 
-	let publicProfiles: any[] = [];
-	let myProfiles: any[] = [];
+	//let publicProfiles: any[] = [];
+	//let myProfiles: any[] = [];
+	let cloudProfiles: any[] = [];
 	let localProfiles: any[] = [];
+
+	let linkProfiles: any[] = [];
+	let linkFlag: string | undefined = undefined;
 
 	const userAccountSubscription = userAccountService.subscribe(async (userAccount) => {
 		if (userAccount.account) {
-			myProfiles = await getListMyPrivateProfiles();
+			cloudProfiles = await getCloudProfiles();
 		} else {
-			myProfiles = [];
+			cloudProfiles = [];
 		}
 	});
 
@@ -52,7 +59,7 @@
 
 		if (event.data.messageType == 'profileLink') {
 			const linkedProfile = await getLinkedProfile(event.data.profileLinkId);
-			localProfiles = [...localProfiles, linkedProfile];
+			linkProfiles = [...linkProfiles, linkedProfile];
 		}
 	}
 
@@ -61,7 +68,6 @@
 		const profileLink = await getDoc(docRef)
 			.then((res) => res.data())
 			.catch((err) => console.log(err));
-		console.log(profileLink);
 		return profileLink;
 	}
 
@@ -109,8 +115,11 @@
 	}
 
 	async function provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
-		profile: typeof Object
+		profile?: Profile | {}
 	) {
+		if (!profile) {
+			profile = {};
+		}
 		const result = await parentIframeCommunication({
 			windowPostMessageName: 'provideSelectedProfileForOptionalUploadingToOneOreMoreModules',
 			channelPostMessage: {
@@ -132,9 +141,7 @@
 		}).catch((err) => {
 			return { ok: false, data: {} };
 		});
-
 		if (result.ok) {
-			console.log('delete success', result.data);
 			localProfiles = await getListOfLocalProfiles();
 		}
 	}
@@ -149,7 +156,6 @@
 			dataForParent: {}
 		});
 		if (result.ok) {
-			console.log('create success', result.data);
 			localProfiles = await getListOfLocalProfiles();
 		}
 	}
@@ -165,7 +171,6 @@
 			dataForParent: profile
 		});
 		if (result.ok) {
-			console.log('save success', result.data);
 			localProfiles = await getListOfLocalProfiles();
 			importFlag = false;
 		}
@@ -180,7 +185,6 @@
 			dataForParent: { profileToSplit: profile }
 		});
 		if (result.ok) {
-			console.log('split success', result.data);
 		}
 	}
 
@@ -201,7 +205,6 @@
 			dataForParent: { name, description, profile }
 		});
 		if (result.ok) {
-			console.log('update success', result.data);
 			localProfiles = await getListOfLocalProfiles();
 		}
 	}
@@ -228,8 +231,20 @@
 			...details
 		})
 			.then(async () => {
-				console.log('profile updated');
-				myProfiles = await getListMyPrivateProfiles();
+				cloudProfiles = await getCloudProfiles();
+			})
+			.catch((error) => {
+				console.log('error updating profile', error);
+			});
+	}
+
+	// visibiltiy = public true / false
+	async function changeCloudProfileVisibility(profile: Profile, visibility: boolean) {
+		await updateDoc(doc(profilesCollection, profile.id), {
+			public: visibility
+		})
+			.then(async () => {
+				cloudProfiles = await getCloudProfiles();
 			})
 			.catch((error) => {
 				console.log('error updating profile', error);
@@ -268,9 +283,7 @@
 		const isObjectValid = ProfileSchema.safeParse(profileToSave);
 
 		if (isObjectValid.success) {
-			console.log('profile object is valid');
 		} else {
-			console.log('profile is not valid');
 			console.log(isObjectValid.error);
 			return;
 		}
@@ -285,46 +298,36 @@
 			});
 
 		await deleteLocalProfile(profile);
-		myProfiles = await getListMyPrivateProfiles();
+		cloudProfiles = await getCloudProfiles();
 	}
 
 	async function deleteCloudProfile(profile: Profile) {
 		const profileRef = doc(profilesCollection, profile.id!);
 		await deleteDoc(profileRef)
 			.then(async (res) => {
-				console.log('Profile successfully deleted', res);
-				myProfiles = await getListMyPrivateProfiles();
+				cloudProfiles = await getCloudProfiles();
 			})
 			.catch((err) => {
 				console.log('Error deleting profile', err);
 			});
 	}
 
-	async function getListPublicProfiles() {
-		// there is a firestore security rule to only list public profiles
-		const q = query(
-			profilesCollection,
-			where('public', '==', true) // having a read rule restriction in firestore rules is not enough! We must explicitly define the query here
-		);
+	async function getCloudProfiles() {
+		let q: Query | undefined = undefined;
+		if (get(userAccountService)?.account?.uid) {
+			q = query(
+				profilesCollection,
+				or(
+					where('public', '==', true),
+					where('access', 'array-contains', get(userAccountService)?.account?.uid || '')
+				)
+			);
+		} else {
+			q = query(profilesCollection, where('public', '==', true));
+		}
+
 		// assign the returned documents to a variable, so it's easy to pass it to Grid Editor
 		const profiles = await getDocs(q).then((res) => res.docs);
-		return profiles;
-	}
-
-	async function getListMyPrivateProfiles() {
-		const q = query(
-			profilesCollection,
-			and(
-				where('public', '==', false),
-				where('access', 'array-contains', get(userAccountService)?.account?.uid || '')
-			)
-		);
-		const profiles = await getDocs(q)
-			.then((res) => res.docs)
-			.catch((err) => {
-				console.log('user not logged in');
-				return [];
-			});
 		return profiles;
 	}
 
@@ -376,10 +379,8 @@
 		}
 
 		await setDoc(newProfileLinkRef, profileLink)
-			.then(async (res) => {
-				getDoc(newProfileLinkRef).then((snap) => {
-					console.log('Here is the document you wrote to', snap.data());
-				});
+			.then((res) => {
+				// profile is successfully saved to cloud
 			})
 			.catch(() => {
 				// profile is not saved to cloud
@@ -395,7 +396,10 @@
 			},
 			dataForParent: { profileLinkUrl }
 		}).then((res) => {
-			console.log('createCloudProfileLink', res);
+			linkFlag = profile.id;
+			setTimeout(() => {
+				linkFlag = undefined;
+			}, 1750);
 		});
 	}
 
@@ -404,9 +408,7 @@
 
 		localProfiles = await getListOfLocalProfiles();
 
-		publicProfiles = await getListPublicProfiles();
-
-		myProfiles = await getListMyPrivateProfiles();
+		cloudProfiles = await getCloudProfiles();
 	});
 
 	onDestroy(() => {
@@ -453,6 +455,7 @@
 										<button
 											on:click={() => {
 												createNewLocalProfileWithTheSelectedModulesConfigurationFromEditor();
+												provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
 											}}
 											class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
 											>save local profile</button
@@ -462,7 +465,7 @@
 								<div
 									class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
 								>
-									{#each localProfiles.filter((p) => p.folder == 'local') as profile, index}
+									{#each [...linkProfiles, ...localProfiles.filter((p) => p.folder == 'local')] as profile, index}
 										<LocalProfileCard
 											on:click={() => {
 												if (selectedLocalProfileIndex == index) {
@@ -474,13 +477,19 @@
 												selectedLocalProfileIndex = index;
 											}}
 											on:blur={(e) => {
-												//selectedLocalProfileIndex = undefined;
+												selectedLocalProfileIndex = undefined;
 											}}
 											on:save-to-cloud={() => {
 												saveLocalProfileToCloud(profile);
+												provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
 											}}
-											on:delete-local={() => {
+											on:delete-local={async () => {
 												deleteLocalProfile(profile);
+												provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
+											}}
+											on:delete-linked={() => {
+												linkProfiles.splice(index, 1);
+												linkProfiles = [...linkProfiles];
 											}}
 											on:split-profile={() => {
 												splitLocalProfile(profile);
@@ -495,10 +504,13 @@
 											}}
 											on:overwrite-profile={() => {
 												overwriteLocalProfile(profile);
+												provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
 											}}
 											class={index == selectedLocalProfileIndex
 												? 'border-emerald-500'
-												: 'border-transparent'}
+												: profile.linked == true
+												? 'border-purple-500'
+												: ' border-black/10'}
 											data={profile}
 										/>
 									{/each}
@@ -555,70 +567,111 @@
 								<div
 									class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
 								>
-									{#each [...myProfiles, ...publicProfiles] as profile, index}
+									{#each cloudProfiles as profile, index (profile.id)}
 										{@const data = profile.data()}
-										<CloudProfileCard
-											on:click={() => {
-												if (selectedCloudProfileIndex == index) {
-													return;
-												}
-												console.log('click');
-												// reset the selection on the local profiles
-												selectedLocalProfileIndex = undefined;
-												provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
-												selectedCloudProfileIndex = index;
-											}}
-											on:blur={(e) => {
-												//selectedCloudProfileIndex = undefined;
-											}}
-											on:delete-cloud={() => {
-												deleteCloudProfile(data);
-											}}
-											on:description-change={(e) => {
-												const { newDescription } = e.detail;
-												textEditCloudProfile({ description: newDescription, profile: data });
-											}}
-											on:name-change={(e) => {
-												const { newName } = e.detail;
-												textEditCloudProfile({ name: newName, profile });
-											}}
-											class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
-											{data}
-										>
-											<svelte:fragment>
-												<button
-													class="relative group flex"
-													on:click={() => {
-														createCloudProfileLink(data);
-													}}
-												>
-													<SvgIcon class="w-5" iconPath="link" />
-													<div
-														class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+										<div in:slide>
+											<CloudProfileCard
+												on:click={() => {
+													if (selectedCloudProfileIndex == index) {
+														return;
+													}
+													// reset the selection on the local profiles
+													selectedLocalProfileIndex = undefined;
+													provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
+													selectedCloudProfileIndex = index;
+												}}
+												on:focusout={(e) => {
+													selectedCloudProfileIndex = undefined;
+												}}
+												on:delete-cloud={() => {
+													deleteCloudProfile(data);
+													provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
+												}}
+												on:description-change={(e) => {
+													const { newDescription } = e.detail;
+													textEditCloudProfile({ description: newDescription, profile: data });
+												}}
+												on:name-change={(e) => {
+													const { newName } = e.detail;
+													textEditCloudProfile({ name: newName, profile });
+												}}
+												class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
+												{data}
+											>
+												<svelte:fragment slot="link-button">
+													<button
+														class="relative group flex"
+														on:click={() => {
+															createCloudProfileLink(data);
+														}}
 													>
-														Link
-													</div>
-												</button>
-											</svelte:fragment>
-											<svelte:fragment slot="import-button">
-												<button
-													on:click|stopPropagation={() => {
-														saveCloudProfileToLocalFolder(data);
-													}}
-													class="flex items-center group relative"
-												>
-													{#if importFlag}
-														loading...
-													{/if}
-													<SvgIcon class="w-4" iconPath="import" />
-													<div
-														class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+														<SvgIcon class="w-4" iconPath="link" />
+														<div
+															class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+														>
+															Link
+														</div>
+														{#if linkFlag == data.id}
+															<div
+																transition:fade={{ duration: 100 }}
+																class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
+															>
+																Copied to clipboard!
+															</div>
+														{/if}
+													</button>
+												</svelte:fragment>
+												<svelte:fragment slot="import-button">
+													<button
+														on:click|stopPropagation={() => {
+															saveCloudProfileToLocalFolder(data);
+															provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
+														}}
+														class="flex items-center group relative"
 													>
-														Import
-													</div>
-												</button>
-											</svelte:fragment>
-										</CloudProfileCard>
+														{#if importFlag}
+															loading...
+														{/if}
+														<SvgIcon class="w-4" iconPath="import" />
+														<div
+															class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+														>
+															Import
+														</div>
+													</button>
+												</svelte:fragment>
+												<svelte:fragment slot="make-private-button">
+													<button
+														class="relative group"
+														on:click={() => {
+															changeCloudProfileVisibility(data, false);
+														}}
+													>
+														<SvgIcon iconPath={'public'} />
+														<div
+															class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+														>
+															Public
+														</div>
+													</button>
+												</svelte:fragment>
+												<svelte:fragment slot="make-public-button">
+													<button
+														class="relative group"
+														on:click={() => {
+															changeCloudProfileVisibility(data, true);
+														}}
+													>
+														<SvgIcon iconPath={'private'} />
+														<div
+															class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+														>
+															Private
+														</div>
+													</button>
+												</svelte:fragment>
+											</CloudProfileCard>
+										</div>
 									{/each}
 								</div>
 							</div>

@@ -94,8 +94,10 @@
 	on:click={() => {
 		dispatchEvent('click', {});
 	}}
-	on:blur={() => {
-		dispatchEvent('blur', {});
+	on:focusout={(e) => {
+		if (e.relatedTarget == null) {
+			dispatchEvent('focusout', {});
+		}
 	}}
 	class="{$$props.class} flex flex-col justify-between items-start text-left w-full bg-white rounded-lg border border-black/10 shadow dark:bg-black dark:bg-opacity-60"
 >
@@ -123,7 +125,7 @@
 						dispatchEvent('name-change', { newName: nameInputField.element?.value });
 					}
 				}}
-				on:dblclick={() => {
+				on:dblclick|preventDefault={() => {
 					nameInputField.doubleClicked = true;
 					nameInputField.element?.setSelectionRange(0, nameInputField.element.value.length);
 					nameInputField.currentSelection = nameInputField.element?.value || '';
@@ -190,7 +192,7 @@
 						});
 					}
 				}}
-				on:dblclick={() => {
+				on:dblclick|preventDefault={() => {
 					descriptionTextarea.doubleClicked = true;
 					descriptionTextarea.element?.setSelectionRange(
 						0,
@@ -206,29 +208,16 @@
 	<div
 		class="w-full flex pb-3 px-3 md:p-3 justify-between items-center md:border-t-2 border-neutral-200 dark:border-neutral-700"
 	>
+		<div class="dark:text-white text-black text-opacity-80 dark:text-opacity-70">{data.type}</div>
 		<div class="flex items-center gap-x-1">
-			<div class="mr-1">
+			<span class="text-black dark:text-opacity-70 dark:text-white">{data.owner || 'Unknown'}</span>
+			<div class="ml-1">
 				{#if data.public}
-					<div class="relative group">
-						<SvgIcon display={true} iconPath={'public'} />
-						<div
-							class="group-hover:block font-medium hidden absolute mt-1 left-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-						>
-							Public
-						</div>
-					</div>
+					<slot name="make-private-button" />
 				{:else}
-					<div class="relative group">
-						<SvgIcon display={true} iconPath={'private_simpler'} />
-						<div
-							class="group-hover:block font-medium hidden absolute mt-1 left-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-						>
-							Private
-						</div>
-					</div>
+					<slot name="make-public-button" />
 				{/if}
 			</div>
-			<span class="text-black text-opacity-70 dark:text-white mr-4">{data.owner || 'Unknown'}</span>
 		</div>
 	</div>
 </button>
