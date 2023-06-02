@@ -11,6 +11,7 @@
 	const display = getContext('display');
 
 	let deleteConfirmFlag = false;
+	let overwriteApplyFlag = false;
 
 	let nameInputField = {
 		element: null as HTMLInputElement | null,
@@ -114,17 +115,33 @@
 								Upload
 							</div>
 						</button>
-						<button
-							class="flex relative group"
-							on:click|stopPropagation={() => dispatchEvent('overwrite-profile')}
-						>
-							<SvgIcon class="w-5" iconPath="overwrite_profile" />
-							<div
-								class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+						{#if overwriteApplyFlag == false}
+							<button
+								class="flex relative group"
+								on:click|stopPropagation={() => {
+									overwriteApplyFlag = true;
+								}}
 							>
-								Overwrite
-							</div>
-						</button>
+								<SvgIcon class="w-5" iconPath="overwrite_profile" />
+								<div
+									class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+								>
+									Overwrite
+								</div>
+							</button>
+						{:else}
+							<button
+								use:applyFocus
+								on:blur={() => {
+									overwriteApplyFlag = false;
+								}}
+								on:click|stopPropagation={() => {
+									dispatchEvent('overwrite-profile');
+									overwriteApplyFlag = false;
+								}}
+								class="bg-emerald-600 rounded px-1 py-0.5 text-xs">apply</button
+							>
+						{/if}
 					{:else if deleteConfirmFlag == false}
 						<button
 							class="flex relative group"

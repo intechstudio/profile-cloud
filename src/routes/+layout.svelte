@@ -3,6 +3,7 @@
 	import DisplayOnWeb from '$lib/components/DisplayOnWeb.svelte';
 	import { getContext, onMount, setContext } from 'svelte';
 	import '../app.css';
+	import SvgIcon from '$lib/icons/SvgIcon.svelte';
 
 	function isThisAnIframe() {
 		try {
@@ -39,7 +40,7 @@
 
 <main style={'font-size: ' + fontSize} class={darkMode ? 'dark' : ''}>
 	<div
-		class="dark:bg-neutral-900 flex flex-col justify-between dark:text-white text-black transition duration-200 min-h-screen"
+		class="dark:bg-neutral-900 flex flex-col justify-between dark:text-white bg-white text-black transition duration-200 min-h-screen"
 	>
 		<DisplayOnWeb>
 			<div class="dark:bg-neutral-700">
@@ -53,7 +54,14 @@
 							class="h-8 p-1 "
 						/>
 					</a>
-					<ToggleSwitch on:toggle={toggleDarkMode} />
+					<ToggleSwitch on:toggle={toggleDarkMode}>
+						<svelte:fragment slot="on">
+							<img src="/moon_icon.svg" alt="dark mode" class="w-6 h-6" />
+						</svelte:fragment>
+						<svelte:fragment slot="off">
+							<img src="/sun_icon.svg" alt="light mode" class="w-6 h-6 p-1" />
+						</svelte:fragment>
+					</ToggleSwitch>
 				</nav>
 			</div>
 		</DisplayOnWeb>

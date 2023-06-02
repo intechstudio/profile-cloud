@@ -27,6 +27,7 @@
 	import { get } from 'svelte/store';
 	import { ProfileSchema, type Profile, type ProfileLink, ProfileLinkSchema } from '$lib/schemas';
 	import { fade, slide } from 'svelte/transition';
+	import ToggleSwitch from '$lib/components/atomic/ToggleSwitch.svelte';
 
 	const display = getContext('display');
 
@@ -642,8 +643,37 @@
 														</div>
 													</button>
 												</svelte:fragment>
-												<svelte:fragment slot="make-private-button">
-													<button
+												<span slot="toggle-accessibility">
+													<ToggleSwitch
+														checkbox={data.public}
+														on:toggle={(e) => {
+															console.log(e.detail);
+															changeCloudProfileVisibility(data, e.detail);
+														}}
+													>
+														<div class="relative group" slot="on">
+															<SvgIcon display={true} iconPath={'public'} class="mr-1" />
+															<div
+																class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+															>
+																Public
+															</div>
+														</div>
+														<div class="relative group" slot="off">
+															<SvgIcon
+																display={true}
+																iconPath={'private'}
+																class="mr-1 text-opacity-70"
+															/>
+															<div
+																class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+															>
+																Private
+															</div>
+														</div>
+													</ToggleSwitch>
+
+													<!-- <button
 														class="relative group"
 														on:click|stopPropagation={async () => {
 															changeCloudProfileVisibility(data, false);
@@ -655,9 +685,9 @@
 														>
 															Public
 														</div>
-													</button>
-												</svelte:fragment>
-												<svelte:fragment slot="make-public-button">
+													</button> -->
+												</span>
+												<!-- <svelte:fragment slot="make-public-button">
 													<button
 														class="relative group"
 														on:click|stopPropagation={async () => {
@@ -671,7 +701,7 @@
 															Private
 														</div>
 													</button>
-												</svelte:fragment>
+												</svelte:fragment> -->
 											</CloudProfileCard>
 										</div>
 									{/each}

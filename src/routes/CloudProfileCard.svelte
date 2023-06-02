@@ -66,7 +66,7 @@
 
 	let deleteConfirmFlag = false;
 
-	function userCanDelete(access: string[]) {
+	function userCanModify(access: string[]) {
 		const uid = get(userAccountService)?.account?.uid;
 		if (uid) {
 			return access.includes(uid);
@@ -137,7 +137,7 @@
 				value={data.name}
 			/>
 			<div class="relative flex items-center gap-x-1">
-				{#if userCanDelete(data.access)}
+				{#if userCanModify(data.access)}
 					{#if deleteConfirmFlag == false}
 						<button
 							class="flex group relative"
@@ -223,10 +223,26 @@
 			<span class="text-black dark:text-opacity-70 dark:text-white">{data.owner || 'Unknown'}</span>
 			{#if display == 'editor'}
 				<div class="ml-1">
-					{#if data.public}
-						<slot name="make-private-button" />
+					{#if userCanModify(data.access)}
+						<slot name="toggle-accessibility" />
+					{:else if data.public}
+						<div class="relative group">
+							<SvgIcon display={true} iconPath={'public'} />
+							<div
+								class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+							>
+								Public
+							</div>
+						</div>
 					{:else}
-						<slot name="make-public-button" />
+						<div class="relative group">
+							<SvgIcon display={true} iconPath={'private'} />
+							<div
+								class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+							>
+								Private
+							</div>
+						</div>
 					{/if}
 				</div>
 			{/if}
