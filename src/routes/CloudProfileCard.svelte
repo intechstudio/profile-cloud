@@ -125,7 +125,7 @@
 						dispatchEvent('name-change', { newName: nameInputField.element?.value });
 					}
 				}}
-				on:dblclick|preventDefault={() => {
+				on:dblclick|stopPropagation|preventDefault={() => {
 					nameInputField.doubleClicked = true;
 					nameInputField.element?.setSelectionRange(0, nameInputField.element.value.length);
 					nameInputField.currentSelection = nameInputField.element?.value || '';
@@ -137,7 +137,7 @@
 					{#if deleteConfirmFlag == false}
 						<button
 							class="flex group relative"
-							on:click={() => {
+							on:click|stopPropagation={() => {
 								deleteConfirmFlag = true;
 							}}
 						>
@@ -151,10 +151,10 @@
 					{:else}
 						<button
 							use:applyFocus
-							on:blur={() => {
+							on:blur|stopPropagation={() => {
 								deleteConfirmFlag = false;
 							}}
-							on:click={() => {
+							on:click|stopPropagation={() => {
 								dispatchEvent('delete-cloud');
 								deleteConfirmFlag = false;
 							}}
@@ -192,7 +192,7 @@
 						});
 					}
 				}}
-				on:dblclick|preventDefault={() => {
+				on:dblclick|stopPropagation|preventDefault={() => {
 					descriptionTextarea.doubleClicked = true;
 					descriptionTextarea.element?.setSelectionRange(
 						0,

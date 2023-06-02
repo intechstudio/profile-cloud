@@ -29,8 +29,10 @@
 	on:click={() => {
 		dispatchEvent('click', {});
 	}}
-	on:blur={() => {
-		dispatchEvent('blur');
+	on:focusout={(e) => {
+		if (e.relatedTarget == null) {
+			dispatchEvent('focusout', {});
+		}
 	}}
 	class="{$$props.class} flex flex-col justify-between items-start text-left w-full bg-white rounded-lg border shadow dark:bg-black dark:bg-opacity-60"
 >
@@ -61,7 +63,7 @@
 							dispatchEvent('name-change', { newName: nameInputField.element?.value });
 						}
 					}}
-					on:dblclick={() => {
+					on:dblclick|preventDefault|stopPropagation={() => {
 						nameInputField.doubleClicked = true;
 						nameInputField.element?.setSelectionRange(0, nameInputField.element.value.length);
 						nameInputField.currentSelection = nameInputField.element?.value || '';
@@ -180,7 +182,7 @@
 							});
 						}
 					}}
-					on:dblclick={() => {
+					on:dblclick|preventDefault|stopPropagation={() => {
 						descriptionTextarea.doubleClicked = true;
 						descriptionTextarea.element?.setSelectionRange(
 							0,

@@ -476,7 +476,7 @@
 												provideSelectedProfileForOptionalUploadingToOneOreMoreModules(profile);
 												selectedLocalProfileIndex = index;
 											}}
-											on:blur={(e) => {
+											on:focusout={(e) => {
 												selectedLocalProfileIndex = undefined;
 											}}
 											on:save-to-cloud={() => {
@@ -583,9 +583,10 @@
 												on:focusout={(e) => {
 													selectedCloudProfileIndex = undefined;
 												}}
-												on:delete-cloud={() => {
+												on:delete-cloud={async () => {
+													selectedCloudProfileIndex = undefined;
 													deleteCloudProfile(data);
-													provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
+													provideSelectedProfileForOptionalUploadingToOneOreMoreModules();
 												}}
 												on:description-change={(e) => {
 													const { newDescription } = e.detail;
@@ -595,14 +596,15 @@
 													const { newName } = e.detail;
 													textEditCloudProfile({ name: newName, profile });
 												}}
-												class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
+												class={index === selectedCloudProfileIndex ? 'border-emerald-500' : ''}
 												{data}
 											>
 												<svelte:fragment slot="link-button">
 													<button
 														class="relative group flex"
-														on:click={() => {
+														on:click|stopPropagation={() => {
 															createCloudProfileLink(data);
+															provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
 														}}
 													>
 														<SvgIcon class="w-4" iconPath="link" />
@@ -623,7 +625,7 @@
 												</svelte:fragment>
 												<svelte:fragment slot="import-button">
 													<button
-														on:click|stopPropagation={() => {
+														on:click|stopPropagation={async () => {
 															saveCloudProfileToLocalFolder(data);
 															provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
 														}}
@@ -643,7 +645,7 @@
 												<svelte:fragment slot="make-private-button">
 													<button
 														class="relative group"
-														on:click={() => {
+														on:click|stopPropagation={async () => {
 															changeCloudProfileVisibility(data, false);
 														}}
 													>
@@ -658,7 +660,7 @@
 												<svelte:fragment slot="make-public-button">
 													<button
 														class="relative group"
-														on:click={() => {
+														on:click|stopPropagation={async () => {
 															changeCloudProfileVisibility(data, true);
 														}}
 													>
