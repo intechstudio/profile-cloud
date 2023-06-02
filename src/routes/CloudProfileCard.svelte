@@ -109,7 +109,7 @@
 		<div class="w-full flex items-center justify-between">
 			<input
 				bind:this={nameInputField.element}
-				class="w-full mr-1 font-bold border bg-transparent hover:bg-neutral-800 focus:outline-none {nameInputField.doubleClicked
+				class="w-full mr-1 font-bold border bg-white dark:bg-transparent dark:hover:bg-neutral-800 focus:outline-none {nameInputField.doubleClicked
 					? 'border-emerald-500'
 					: 'border-transparent'}"
 				readonly={!nameInputField.doubleClicked}
@@ -174,7 +174,7 @@
 			<textarea
 				rows={2}
 				bind:this={descriptionTextarea.element}
-				class="w-full border bg-neutral-900 hover:bg-neutral-800 focus:outline-none {descriptionTextarea.doubleClicked
+				class="w-full border bg-neutral-100 dark:bg-neutral-900 dark:hover:bg-neutral-800 focus:outline-none {descriptionTextarea.doubleClicked
 					? 'border-emerald-500'
 					: 'border-transparent'}"
 				readonly={!descriptionTextarea.doubleClicked}
@@ -219,15 +219,17 @@
 		>
 			{data.type}
 		</div>
-		<div class="flex items-center gap-x-1">
+		<div class="flex items-center {display === 'editor' ? 'gap-x-1' : ''}">
 			<span class="text-black dark:text-opacity-70 dark:text-white">{data.owner || 'Unknown'}</span>
-			<div class="ml-1">
-				{#if data.public}
-					<slot name="make-private-button" />
-				{:else}
-					<slot name="make-public-button" />
-				{/if}
-			</div>
+			{#if display == 'editor'}
+				<div class="ml-1">
+					{#if data.public}
+						<slot name="make-private-button" />
+					{:else}
+						<slot name="make-public-button" />
+					{/if}
+				</div>
+			{/if}
 		</div>
 	</div>
 </button>

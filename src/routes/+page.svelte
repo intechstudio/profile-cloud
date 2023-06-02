@@ -439,13 +439,11 @@
 					class="flex flex-col justify-between pt-8 text-opacity-80 text-black dark:text-opacity-80 dark:text-white"
 				>
 					<h1 class="text-3xl font-bold pb-2">profile list</h1>
-					<h2 class="py-2 ">
-						This is a preview of Profile Cloud. Official release date is <span
-							class="font-bold text-blue-500 dark:text-emerald-500">2023-06-02</span
-						>.
-					</h2>
+					<h2 class="py-2 ">Profile Cloud is coming with Grid Editor version 1.2.35.</h2>
 					<p class="text-opacity-60 text-black dark:text-white dark:text-opacity-60">
-						Grid users will finally be able to browse, create and share profiles.
+						<a href="https://links.intech.studio/discord" class="hover:underline text-blue-500"
+							>Join the discord channel</a
+						> to get support and early access.
 					</p>
 				</div>
 			</DisplayOnWeb>
@@ -689,9 +687,9 @@
 			{:else}
 				<div class="flex py-4 h-full ">
 					<div
-						class="overflow-y-auto h-full p-2 lg:py-8  grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 xl:grid-cols-4 gap-4"
+						class="overflow-y-auto w-full h-full p-2 lg:py-8 grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 gap-4"
 					>
-						{#each publicProfiles as profile, index}
+						{#each cloudProfiles as profile, index}
 							{@const data = profile.data()}
 							<CloudProfileCard
 								on:click={() => {
@@ -701,21 +699,7 @@
 								}}
 								class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
 								{data}
-							>
-								<span slot="import-button">
-									<button
-										on:click|stopPropagation={() => {
-											saveCloudProfileToLocalFolder(data);
-										}}
-										class=""
-									>
-										{#if importFlag}
-											loading...
-										{/if}
-										<SvgIcon class="w-4" iconPath="import" />
-									</button>
-								</span>
-							</CloudProfileCard>
+							/>
 						{/each}
 					</div>
 				</div>
