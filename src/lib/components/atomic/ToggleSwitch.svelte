@@ -31,7 +31,7 @@
 			class="sr-only"
 		/>
 		<!-- line -->
-		<div class="block bg-neutral-300 dark:bg-neutral-700 w-7 h-4 rounded-full mr-1" />
+		<div class="block bg-neutral-300 dark:bg-neutral-800 w-7 h-4 rounded-full mr-1" />
 		<!-- dot -->
 		<div class="dot absolute left-0.5 top-0.5 bg-neutral-500 w-3 h-3 rounded-full transition" />
 	</div>
