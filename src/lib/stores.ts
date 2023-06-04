@@ -1,4 +1,4 @@
-import { EmailAuthProvider, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signOut, type User } from "firebase/auth";
+import { EmailAuthProvider, GoogleAuthProvider, OAuthProvider, onAuthStateChanged, signInWithCredential, signOut, type User } from "firebase/auth";
 import { writable } from "svelte/store";
 import { firebaseAuth } from "./firebase";
 
@@ -13,7 +13,7 @@ function createUserAccountService() {
             }
         });
 
-    async function authenticateUser(credential: { event?: string, providerId?: string, idToken?: string, email?: string, password?: string }) {
+    async function authenticateUser(credential: { event?: string, providerId?: string, idToken?: string, email?: string, password?: string, credential?: any }) {
         let cred;
 
         console.log('Authentication stuff from editor', credential)
@@ -26,19 +26,26 @@ function createUserAccountService() {
 
         if (credential.providerId == 'google.com') {
             cred = GoogleAuthProvider.credential(credential.idToken);
-        } else if (credential.providerId == 'password') {
+        } else if (credential.providerId == 'oidc') {
+            const provider = new OAuthProvider('oidc.is-auth');
+            cred = provider.credential({
+                idToken: credential.idToken,
+            });
+        }
+        else if (credential.providerId == 'password') {
             cred = EmailAuthProvider.credential(credential.email!, credential.password!);
         }
 
-
         if (!cred) return;
+
+        console.log(cred)
 
         return await signInWithCredential(firebaseAuth, cred)
             .then((user) => {
                 console.log('authenticated in profile cloud', user);
             })
             .catch((error) => {
-                console.log(error);
+                console.log('what is error', error);
             });
     }
 

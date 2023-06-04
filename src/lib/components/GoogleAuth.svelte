@@ -2,7 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 
 	const GOOGLE_CLIENT_ID =
-		'420254436941-1ppbje3ii3gvj9ria545nccmvfjlnn1n.apps.googleusercontent.com';
+		'610580654354-j8lr11nb3n0etnmh0k1tuoupsrjbvlmd.apps.googleusercontent.com';
 
 	const dispatch = createEventDispatcher();
 

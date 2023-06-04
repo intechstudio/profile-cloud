@@ -19,8 +19,19 @@ const firebaseConfig = {
     measurementId: "G-2CZKVLCGJJ"
 };
 
+const centralAuthConfig = {
+    apiKey: "AIzaSyDla2zilILl5X0sQ4fbhAO61uFCqCoVhZc",
+    authDomain: "is-auth-dev.firebaseapp.com",
+    projectId: "is-auth-dev",
+    storageBucket: "is-auth-dev.appspot.com",
+    messagingSenderId: "610580654354",
+    appId: "1:610580654354:web:d7dc9982f52ece959c2bcb"
+};
+
 // Initialize Firebase
-export const firebaseApp = initializeApp(firebaseConfig);
+const centralAuthApp = initializeApp(centralAuthConfig, 'central-auth');
+export const centralAuth = getAuth(centralAuthApp);
+export const firebaseApp = initializeApp(firebaseConfig, 'profile-cloud');
 export const firebaseAnalytics = getAnalytics(firebaseApp);
 export const firestore = getFirestore(firebaseApp);
 export const firebaseAuth = getAuth(firebaseApp);
