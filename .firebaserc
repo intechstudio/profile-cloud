@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "profile-cloud"
-  }
+    "default": "profile-cloud",
+    "dev": "profile-cloud-dev"
+  },
+  "targets": {},
+  "etags": {}
 }

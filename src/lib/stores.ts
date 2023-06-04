@@ -2,6 +2,8 @@ import { EmailAuthProvider, GoogleAuthProvider, OAuthProvider, onAuthStateChange
 import { writable } from "svelte/store";
 import { firebaseAuth } from "./firebase";
 
+import { PUBLIC_APP_ENV } from '$env/static/public';
+
 function createUserAccountService() {
 
     const { subscribe, set, update } = writable<{ account: User | null, credential?: null }>(
@@ -27,7 +29,7 @@ function createUserAccountService() {
         if (credential.providerId == 'google.com') {
             cred = GoogleAuthProvider.credential(credential.idToken);
         } else if (credential.providerId == 'oidc') {
-            const provider = new OAuthProvider('oidc.is-auth');
+            const provider = new OAuthProvider(PUBLIC_APP_ENV === 'production' ? 'oidc.is-auth' : 'oidc.is-auth-dev');
             cred = provider.credential({
                 idToken: credential.idToken,
             });
