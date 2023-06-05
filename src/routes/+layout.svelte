@@ -4,6 +4,7 @@
 	import { getContext, onMount, setContext } from 'svelte';
 	import '../app.css';
 	import SvgIcon from '$lib/icons/SvgIcon.svelte';
+	import { PUBLIC_APP_ENV } from '$env/static/public';
 
 	function isThisAnIframe() {
 		try {
@@ -78,7 +79,7 @@
 							rel="noopener noreferrer"
 							class="text-neutral-500 hover:text-neutral-600 dark:text-white dark:text-opacity-80 dark:hover:text-opacity-60"
 						>
-							&copy; {new Date().getFullYear()} Intech Studio
+							&copy; {new Date().getFullYear()} Intech Studio - {PUBLIC_APP_ENV}
 						</a>
 					</p>
 				</div>
