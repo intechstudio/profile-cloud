@@ -28,6 +28,7 @@
 	import { ProfileSchema, type Profile, type ProfileLink, ProfileLinkSchema } from '$lib/schemas';
 	import { fade, slide } from 'svelte/transition';
 	import ToggleSwitch from '$lib/components/atomic/ToggleSwitch.svelte';
+	import { PUBLIC_APP_ENV } from '$env/static/public';
 
 	const display = getContext('display');
 
@@ -390,7 +391,9 @@
 				console.error('Profile link save to cloud was unsuccessful');
 			});
 
-		const profileLinkUrl = 'grid-editor-dev://?profile-link=' + newProfileLinkRef.id;
+		const protocol = PUBLIC_APP_ENV === 'production' ? 'grid-editor://' : 'grid-editor-dev://';
+
+		const profileLinkUrl = protocol + '?profile-link=' + newProfileLinkRef.id;
 
 		await parentIframeCommunication({
 			windowPostMessageName: 'createCloudProfileLink',
@@ -420,7 +423,7 @@
 	});
 </script>
 
-<section class="w-full h-full flex-grow bg-neutral-100 dark:bg-neutral-950">
+<section class="w-full h-full flex-grow bg-neutral-100 dark:bg-primary">
 	{#if false}
 		<DisplayOnWeb>
 			<div class="p-4 w-full md:w-1/2 lg:md:w-1/3">
@@ -429,7 +432,7 @@
 		</DisplayOnWeb>
 	{/if}
 
-	<div class="w-full h-full bg-neutral-100 dark:bg-neutral-950">
+	<div class="w-full h-full bg-neutral-100 dark:bg-primary/100">
 		<div class="px-4 container mx-auto flex flex-col max-w-screen-xl h-full">
 			<DisplayOnWeb>
 				<div
@@ -511,7 +514,7 @@
 												? 'border-emerald-500'
 												: profile.linked == true
 												? 'border-purple-500'
-												: ' border-black/10'}
+												: 'border-white/10'}
 											data={{ ...profile, selectedModuleType: selectedModuleType }}
 										/>
 									{/each}
@@ -550,7 +553,7 @@
 											</button>
 										</div>
 									{:else}
-										<div class="rounded-md border border-amber-500 p-4 bg-neutral-900">
+										<div class="rounded-md border border-amber-500 p-4 bg-secondary/90">
 											<div class="pb-1 text-white">login to save and browse your profiles</div>
 											<div class="pt-1">
 												<button
@@ -597,7 +600,9 @@
 													const { newName } = e.detail;
 													textEditCloudProfile({ name: newName, profile });
 												}}
-												class={index === selectedCloudProfileIndex ? 'border-emerald-500' : ''}
+												class={index === selectedCloudProfileIndex
+													? 'border-emerald-500'
+													: 'border-white/10'}
 												data={{ ...data, selectedModuleType: selectedModuleType }}
 											>
 												<svelte:fragment slot="link-button">

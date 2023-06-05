@@ -32,7 +32,7 @@
 	let showCloseBrowserNotification = false;
 
 	function buildProtocolUrl(credential: string) {
-		let url = PUBLIC_APP_ENV === 'development' ? 'grid-editor-dev://' : 'grid-editor://';
+		let url = PUBLIC_APP_ENV === 'production' ? 'grid-editor://' : 'grid-editor-dev://';
 		return url + '?credential=' + credential;
 	}
 

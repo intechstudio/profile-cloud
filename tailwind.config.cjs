@@ -9,6 +9,12 @@ module.exports = {
       colors: {
         neutral: {
           '950': '#121212'
+        },
+        primary: {
+          'DEFAULT': "#1e2628",
+        },
+        secondary: {
+          'DEFAULT': "#2a3439",
         }
       },
       fontFamily: {

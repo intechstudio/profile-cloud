@@ -25,7 +25,7 @@
 	function toggleDarkMode() {
 		darkMode = !darkMode;
 		// set class on body, so on overscrolling the background will match the app color
-		document.body.classList.toggle('bg-neutral-950');
+		document.body.classList.toggle('bg-primary');
 	}
 
 	let fontSize = getContext('display') === 'editor' ? '12px' : '16px';
@@ -41,7 +41,7 @@
 
 <main style={'font-size: ' + fontSize} class={darkMode ? 'dark' : ''}>
 	<div
-		class="dark:bg-neutral-900 flex flex-col justify-between dark:text-white bg-white text-black transition duration-200 min-h-screen"
+		class="dark:bg-primary flex flex-col justify-between dark:text-white bg-white text-black transition duration-200 min-h-screen"
 	>
 		<DisplayOnWeb>
 			<div class="dark:bg-neutral-700">
@@ -95,14 +95,14 @@
 	:global(::-webkit-scrollbar) {
 		height: 0.375rem;
 		width: 0.375rem;
-		@apply dark:rounded-md dark:bg-neutral-900 bg-neutral-100;
+		@apply dark:rounded-md dark:bg-secondary bg-neutral-100;
 	}
 
 	:global(::-webkit-scrollbar-thumb) {
-		@apply dark:rounded-md dark:bg-neutral-700 bg-neutral-400 dark:shadow;
+		@apply dark:rounded-md dark:bg-neutral-600 bg-neutral-400 dark:shadow;
 	}
 
 	:global(::-webkit-scrollbar-corner) {
-		@apply dark:rounded-md dark:bg-neutral-900;
+		@apply dark:rounded-md dark:bg-secondary;
 	}
 </style>

@@ -4,7 +4,7 @@
 	import AtomicButton from '$lib/components/atomic/AtomicButton.svelte';
 	import SvgIcon from '$lib/icons/SvgIcon.svelte';
 	import type { Profile } from '$lib/schemas';
-	import { applyFocus } from '$lib/dom-utils';
+	import { applyFocus } from '$lib/utils';
 	import { userAccountService } from '$lib/stores';
 	import { get } from 'svelte/store';
 
@@ -103,9 +103,9 @@
 			dispatchEvent('focusout', {});
 		}
 	}}
-	class="{$$props.class} flex flex-col justify-between items-start text-left w-full bg-white rounded-lg border border-black/10 shadow dark:bg-black dark:bg-opacity-60"
+	class="{$$props.class} flex flex-col justify-between items-start text-left w-full bg-white rounded border shadow dark:bg-secondary "
 >
-	<div class="px-3 pt-3 w-full">
+	<div class="px-3 pt-3 w-full ">
 		<div class="w-full flex items-center justify-between">
 			<input
 				bind:this={nameInputField.element}
@@ -174,7 +174,7 @@
 			<textarea
 				rows={2}
 				bind:this={descriptionTextarea.element}
-				class="overflow-none w-full border bg-neutral-100 dark:bg-neutral-900 dark:hover:bg-neutral-800 focus:outline-none {descriptionTextarea.doubleClicked
+				class="overflow-none w-full border bg-neutral-100 dark:bg-primary dark:hover:bg-neutral-800 focus:outline-none {descriptionTextarea.doubleClicked
 					? 'border-emerald-500'
 					: 'border-transparent'}"
 				readonly={!descriptionTextarea.doubleClicked}
@@ -210,7 +210,7 @@
 	</div>
 
 	<div
-		class="w-full flex py-1 px-3 justify-between items-center md:border-t-2 border-neutral-200 dark:border-neutral-700"
+		class=" w-full flex py-1 px-3 justify-between items-center md:border-t-2 border-neutral-200 dark:border-neutral-700"
 	>
 		<div
 			class="dark:text-white text-black text-opacity-80 {data.type === data.selectedModuleType

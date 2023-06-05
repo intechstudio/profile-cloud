@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { applyFocus } from '$lib/dom-utils';
+	import { applyFocus } from '$lib/utils';
 	import SvgIcon from '$lib/icons/SvgIcon.svelte';
-	import type { Profile } from '$lib/types';
 	import { createEventDispatcher, getContext } from 'svelte';
+	import type { Profile } from '$lib/schemas';
 
 	const dispatchEvent = createEventDispatcher();
 
@@ -35,7 +35,7 @@
 			dispatchEvent('focusout', {});
 		}
 	}}
-	class="{$$props.class} flex flex-col justify-between items-start text-left w-full bg-white rounded-lg border shadow dark:bg-black dark:bg-opacity-60"
+	class="{$$props.class} flex flex-col justify-between items-start text-left w-full bg-white rounded border shadow dark:bg-secondary"
 >
 	<div class="flex w-full justify-between">
 		<div class="flex-grow p-3">
@@ -177,7 +177,7 @@
 					bind:this={descriptionTextarea.element}
 					class="{data.linked
 						? 'pointer-events-none'
-						: ''} w-full border bg-neutral-950 hover:bg-neutral-800 focus:outline-none {descriptionTextarea.doubleClicked
+						: ''} w-full border bg-primary hover:bg-neutral-800 focus:outline-none {descriptionTextarea.doubleClicked
 						? 'border-emerald-500'
 						: 'border-transparent'}"
 					readonly={!descriptionTextarea.doubleClicked}
