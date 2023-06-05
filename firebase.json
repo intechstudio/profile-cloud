@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "target": "profile-cloud",
     "public": "public",
     "ignore": [
       "firebase.json",

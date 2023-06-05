@@ -1,8 +1,23 @@
 {
   "projects": {
-    "default": "profile-cloud",
-    "dev": "profile-cloud-dev"
+    "prod": "profile-cloud",
+    "dev": "profile-cloud-dev",
+    "default": "profile-cloud-dev"
   },
-  "targets": {},
-  "etags": {}
+  "targets": {
+    "profile-cloud": {
+      "hosting": {
+        "profile-cloud": [
+          "profile-cloud"
+        ]
+      }
+    },
+    "profile-cloud-dev": {
+      "hosting": {
+        "profile-cloud": [
+          "profile-cloud-dev"
+        ]
+      }
+    }
+  }
 }
