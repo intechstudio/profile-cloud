@@ -5,7 +5,6 @@
 	import DisplayOnWeb from '$lib/components/DisplayOnWeb.svelte';
 	import { userAccountService } from '$lib/stores';
 	import UserAccount from '$lib/components/UserAccount.svelte';
-	import type { EditorReturnType } from '$lib/types';
 	import CloudProfileCard from './CloudProfileCard.svelte';
 	import {
 		Query,
@@ -36,6 +35,7 @@
 	import ToggleSwitch from '$lib/components/atomic/ToggleSwitch.svelte';
 	import { PUBLIC_APP_ENV } from '$env/static/public';
 	import { firestore } from '$lib/firebase';
+	import { parentIframeCommunication } from '$lib/utils';
 
 	const display = getContext('display');
 
@@ -59,6 +59,17 @@
 
 	let selectedModuleType: string = '';
 
+	async function submitAnalytics({ eventName, payload }: { eventName: string; payload: any }) {
+		await parentIframeCommunication({
+			windowPostMessageName: 'submitAnalytics',
+			channelPostMessage: { channelMessageType: 'SUBMIT_ANALYTICS' },
+			dataForParent: {
+				eventName,
+				payload
+			}
+		});
+	}
+
 	const userAccountSubscription = userAccountService.subscribe(async (userAccount) => {
 		cloudProfiles = await getCloudProfiles();
 		if (userAccount.account?.uid) {
@@ -69,6 +80,21 @@
 			} else {
 				usernameInput.exists = false;
 			}
+
+			submitAnalytics({
+				eventName: 'Authentication',
+				payload: {
+					task: 'Login',
+					username: username || userAccount.account.displayName
+				}
+			});
+		} else {
+			submitAnalytics({
+				eventName: 'Authentication',
+				payload: {
+					task: 'Logout'
+				}
+			});
 		}
 	});
 
@@ -133,6 +159,15 @@
 
 		if (event.data.messageType == 'profileLink') {
 			const linkedProfile = await getLinkedProfile(event.data.profileLinkId);
+			submitAnalytics({
+				eventName: 'Profile Link',
+				payload: {
+					task: 'Import',
+					owner: linkedProfile?.owner,
+					profileName: linkedProfile?.name,
+					profileType: linkedProfile?.type
+				}
+			});
 			saveCloudProfileToLocalFolder(linkedProfile!);
 		}
 
@@ -147,34 +182,6 @@
 			.then((res) => res.data())
 			.catch((err) => console.log(err));
 		return profileLink;
-	}
-
-	async function parentIframeCommunication({
-		windowPostMessageName,
-		channelPostMessage,
-		dataForParent
-	}: {
-		windowPostMessageName: string;
-		channelPostMessage: any;
-		dataForParent: any;
-	}): Promise<EditorReturnType> {
-		return new Promise((resolve, reject) => {
-			// create a message channel to communicate with the editor in this scope
-			const messageChannel = new MessageChannel();
-			// let editor know that it should listen for messages on this channel
-			window.parent.postMessage(windowPostMessageName, '*', [messageChannel.port2]);
-			// we listen for messages on this channel
-			messageChannel.port1.onmessage = ({ data }) => {
-				messageChannel.port1.close();
-				if (data.ok) {
-					resolve(data);
-				} else {
-					reject(data);
-				}
-			};
-			// send the data to the editor
-			messageChannel.port1.postMessage({ ...channelPostMessage, ...dataForParent });
-		});
 	}
 
 	async function getListOfLocalProfiles() {
@@ -543,6 +550,12 @@
 											on:click={() => {
 												createNewLocalProfileWithTheSelectedModulesConfigurationFromEditor();
 												provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
+												submitAnalytics({
+													eventName: 'Local Profile',
+													payload: {
+														task: 'Save local profile'
+													}
+												});
 											}}
 											class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
 											>save local profile</button
@@ -569,25 +582,62 @@
 											on:save-to-cloud={() => {
 												saveLocalProfileToCloud(profile);
 												provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
+												submitAnalytics({
+													eventName: 'Local Profile',
+													payload: {
+														task: 'Save to cloud',
+														...profile
+													}
+												});
 											}}
 											on:delete-local={async () => {
 												deleteLocalProfile(profile);
 												provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
+												submitAnalytics({
+													eventName: 'Local Profile',
+													payload: {
+														task: 'Delete',
+														...profile
+													}
+												});
 											}}
 											on:split-profile={() => {
-												splitLocalProfile(profile);
+												//splitLocalProfile(profile);
 											}}
 											on:name-change={(e) => {
 												const { newName } = e.detail;
 												textEditLocalProfile({ name: newName, profile });
+												submitAnalytics({
+													eventName: 'Local Profile',
+													payload: {
+														task: 'Edit name',
+														oldName: profile.name,
+														newName: newName
+													}
+												});
 											}}
 											on:description-change={(e) => {
 												const { newDescription } = e.detail;
 												textEditLocalProfile({ description: newDescription, profile });
+												submitAnalytics({
+													eventName: 'Local Profile',
+													payload: {
+														task: 'Edit description',
+														oldDescription: profile.description,
+														newDescription: newDescription
+													}
+												});
 											}}
 											on:overwrite-profile={() => {
 												overwriteLocalProfile(profile);
 												provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
+												submitAnalytics({
+													eventName: 'Local Profile',
+													payload: {
+														task: 'Overwrite',
+														...profile
+													}
+												});
 											}}
 											class={index == selectedLocalProfileIndex
 												? 'border-emerald-500'
@@ -632,6 +682,13 @@
 															if (event.key == 'Enter') {
 																usernameInput.active = false;
 																setUserName(usernameInput.element?.value);
+																submitAnalytics({
+																	eventName: 'Set Username',
+																	payload: {
+																		handler: 'Enter key',
+																		username: usernameInput.element?.value
+																	}
+																});
 															}
 														}}
 														readonly={usernameInput.exists}
@@ -646,6 +703,13 @@
 															on:click={() => {
 																usernameInput.active = false;
 																setUserName(usernameInput.element?.value);
+																submitAnalytics({
+																	eventName: 'Set Username',
+																	payload: {
+																		handler: 'Button',
+																		username: usernameInput.element?.value
+																	}
+																});
 															}}
 															class="mx-2 relative group"
 														>
@@ -668,6 +732,12 @@
 												<button
 													on:click={() => {
 														logoutFromProfileCloud();
+														submitAnalytics({
+															eventName: 'Authentication',
+															payload: {
+																task: 'Logout attempt'
+															}
+														});
 													}}
 													class="ml-1 relative group rounded px-1 text-xs border dark:border-white dark:border-opacity-10 dark:hover:bg-neutral-700 font-medium"
 												>
@@ -688,6 +758,12 @@
 													<button
 														on:click={() => {
 															loginToProfileCloud();
+															submitAnalytics({
+																eventName: 'Authentication',
+																payload: {
+																	task: 'Login attempt'
+																}
+															});
 														}}
 														class="rounded px-4 py-1 border dark:border-emerald-500 dark:hover:bg-emerald-700 font-medium"
 													>
@@ -721,14 +797,39 @@
 													selectedCloudProfileIndex = undefined;
 													deleteCloudProfile(data);
 													provideSelectedProfileForOptionalUploadingToOneOreMoreModules();
+													submitAnalytics({
+														eventName: 'Profile Cloud',
+														payload: {
+															task: 'Delete',
+															profileName: data.name,
+															public: data.public
+														}
+													});
 												}}
 												on:description-change={(e) => {
 													const { newDescription } = e.detail;
 													textEditCloudProfile({ description: newDescription, profile: data });
+													submitAnalytics({
+														eventName: 'Profile Cloud',
+														payload: {
+															task: 'Edit description',
+															oldDescription: data.description,
+															newDescription: newDescription
+														}
+													});
 												}}
 												on:name-change={(e) => {
 													const { newName } = e.detail;
+
 													textEditCloudProfile({ name: newName, profile });
+													submitAnalytics({
+														eventName: 'Profile Cloud',
+														payload: {
+															task: 'Edit name',
+															oldProfileName: data.name,
+															newProfileName: newName
+														}
+													});
 												}}
 												class={index === selectedCloudProfileIndex
 													? 'border-emerald-500'
@@ -741,6 +842,13 @@
 														on:click|stopPropagation={() => {
 															createCloudProfileLink(data);
 															provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
+															submitAnalytics({
+																eventName: 'Profile Link',
+																payload: {
+																	task: 'Create',
+																	profileName: data.name
+																}
+															});
 														}}
 													>
 														<SvgIcon class="w-4" iconPath="link" />
@@ -764,6 +872,13 @@
 														on:click|stopPropagation={async () => {
 															saveCloudProfileToLocalFolder(data);
 															provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
+															submitAnalytics({
+																eventName: 'Profile Cloud',
+																payload: {
+																	task: 'Import to local',
+																	profileName: data.name
+																}
+															});
 														}}
 														class="flex items-center group relative"
 													>
@@ -782,7 +897,14 @@
 													<ToggleSwitch
 														checkbox={data.public}
 														on:toggle={(e) => {
-															console.log(e.detail);
+															submitAnalytics({
+																eventName: 'Profile Cloud',
+																payload: {
+																	task: 'Set visibility',
+																	profileName: data.name,
+																	visibility: e.detail
+																}
+															});
 															changeCloudProfileVisibility(data, e.detail);
 														}}
 													>
@@ -807,36 +929,7 @@
 															</div>
 														</div>
 													</ToggleSwitch>
-
-													<!-- <button
-														class="relative group"
-														on:click|stopPropagation={async () => {
-															changeCloudProfileVisibility(data, false);
-														}}
-													>
-														<SvgIcon iconPath={'public'} />
-														<div
-															class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-														>
-															Public
-														</div>
-													</button> -->
 												</span>
-												<!-- <svelte:fragment slot="make-public-button">
-													<button
-														class="relative group"
-														on:click|stopPropagation={async () => {
-															changeCloudProfileVisibility(data, true);
-														}}
-													>
-														<SvgIcon iconPath={'private'} />
-														<div
-															class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-														>
-															Private
-														</div>
-													</button>
-												</svelte:fragment> -->
 											</CloudProfileCard>
 										</div>
 									{/each}

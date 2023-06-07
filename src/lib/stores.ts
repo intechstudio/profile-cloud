@@ -18,8 +18,6 @@ function createUserAccountService() {
     async function authenticateUser(credential: { event?: string, providerId?: string, idToken?: string, email?: string, password?: string, credential?: any }) {
         let cred;
 
-        console.log('Authentication stuff from editor', credential)
-
         if (!credential || credential?.event == 'logout') {
             console.log('signing out')
             signOut(firebaseAuth);
@@ -46,7 +44,7 @@ function createUserAccountService() {
             })
             .catch((error) => {
                 console.log('what is error', error);
-            });
+            })
     }
 
     function logout() {
@@ -59,12 +57,12 @@ function createUserAccountService() {
 
     // we must unsubscribe on store unsubscription from this as well!
     const authChangeUnsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
-        console.log('auth change trigger!!', user)
         if (user !== null || user !== undefined) {
             set({ account: user })
             // User is signed in, see docs for a list of available properties
         } else {
             set({ account: null })
+
         }
     })
 
