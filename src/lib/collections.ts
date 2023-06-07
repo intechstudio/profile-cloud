@@ -8,3 +8,5 @@ const createCollection = <T = DocumentData>(collectionName: string) => {
 
 export const profilesCollection = createCollection<Profile>("profiles")
 export const profileLinksCollection = createCollection<ProfileLink>("profileLinks")
+export const userCollection = createCollection("users")
+export const usernameCollection = createCollection("usernames")

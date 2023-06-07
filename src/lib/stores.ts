@@ -40,8 +40,6 @@ function createUserAccountService() {
 
         if (!cred) return;
 
-        console.log(cred)
-
         return await signInWithCredential(firebaseAuth, cred)
             .then((user) => {
                 console.log('authenticated in profile cloud', user);
@@ -61,6 +59,7 @@ function createUserAccountService() {
 
     // we must unsubscribe on store unsubscription from this as well!
     const authChangeUnsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
+        console.log(user)
         if (user !== null || user !== undefined) {
             set({ account: user })
             // User is signed in, see docs for a list of available properties

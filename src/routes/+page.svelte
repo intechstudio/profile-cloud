@@ -19,9 +19,15 @@
 		setDoc,
 		updateDoc,
 		where,
-		type DocumentData
+		type DocumentData,
+		writeBatch
 	} from 'firebase/firestore';
-	import { profileLinksCollection, profilesCollection } from '$lib/collections';
+	import {
+		profileLinksCollection,
+		profilesCollection,
+		userCollection,
+		usernameCollection
+	} from '$lib/collections';
 	import LocalProfileCard from './LocalProfileCard.svelte';
 	import SvgIcon from '$lib/icons/SvgIcon.svelte';
 	import { get } from 'svelte/store';
@@ -29,6 +35,7 @@
 	import { fade, slide } from 'svelte/transition';
 	import ToggleSwitch from '$lib/components/atomic/ToggleSwitch.svelte';
 	import { PUBLIC_APP_ENV } from '$env/static/public';
+	import { firestore } from '$lib/firebase';
 
 	const display = getContext('display');
 
@@ -43,23 +50,90 @@
 	let linkProfiles: any[] = [];
 	let linkFlag: string | undefined = undefined;
 
+	let userNameInput = {
+		element: null as HTMLInputElement | null,
+		exists: false,
+		valid: false,
+		active: false
+	};
+
 	let selectedModuleType: string = '';
 
 	const userAccountSubscription = userAccountService.subscribe(async (userAccount) => {
 		cloudProfiles = await getCloudProfiles();
+		if (userAccount.account?.uid) {
+			const username = await getUserNameByUid(userAccount.account.uid);
+			if (username) {
+				userNameInput.exists = true;
+				userNameInput.element!.value = '@' + username;
+			} else {
+				userNameInput.exists = false;
+			}
+		}
 	});
+
+	async function checkIfUsernameAvailable(username: string) {
+		if (username.length >= 3 && username.length <= 15) {
+			const usernameRef = doc(usernameCollection, username);
+			const res = await getDoc(usernameRef).then((d) => d.data());
+			userNameInput.valid = res == undefined ? true : false;
+		} else {
+			userNameInput.valid = false;
+		}
+	}
+
+	async function getUserNameByUid(uid: string) {
+		const userRef = doc(userCollection, uid);
+		const user: string = await getDoc(userRef).then((res) => res.data()?.username);
+		return user;
+	}
+
+	function usernameSelectionFeedback(obj: any) {
+		let str = '';
+		if (obj.element?.value != undefined && obj.element?.value.length > 0) {
+			if (obj.element?.value.length > 0) {
+				str += '@';
+			}
+			str += obj.element?.value;
+			if (obj.valid == true && obj.element?.value.length > 0) {
+				str += ' is available';
+			} else if (obj.valid == false) {
+				str += ' is not available';
+			}
+		}
+		return str;
+	}
+
+	async function setUserName(username?: string) {
+		const uid = get(userAccountService).account?.uid;
+		// Create refs for both documents
+		const userDoc = doc(userCollection, uid);
+		const usernameDoc = doc(usernameCollection, username);
+
+		// Commit both docs together as a batch write.
+		const batch = writeBatch(firestore);
+
+		batch.set(userDoc, { username });
+		batch.set(usernameDoc, { uid });
+
+		await batch.commit().then(() => {
+			userNameInput.exists = true;
+			userNameInput.element!.value = '@' + username;
+		});
+	}
 
 	async function editorMessageListener(event: MessageEvent) {
 		if (event.data.messageType == 'editorDataSaved') {
 			// to do?
 		}
+
 		if (event.data.messageType == 'userAuthentication') {
 			userAccountService.authenticateUser(event.data.authEvent);
 		}
 
 		if (event.data.messageType == 'profileLink') {
 			const linkedProfile = await getLinkedProfile(event.data.profileLinkId);
-			linkProfiles = [...linkProfiles, linkedProfile];
+			saveCloudProfileToLocalFolder(linkedProfile!);
 		}
 
 		if (event.data.messageType == 'selectedModuleType') {
@@ -279,7 +353,7 @@
 		// reassign, else profile to delete id is overwritten!
 		const profileToSave = { ...profile };
 
-		profileToSave.owner = userData.displayName || userData.email;
+		profileToSave.owner = userData.uid;
 		profileToSave.access = [userData.uid];
 		profileToSave.public = false;
 		profileToSave.id = newProfileRef.id;
@@ -368,7 +442,7 @@
 			linked: true
 		};
 
-		profileLink.owner = userData.displayName || userData.email;
+		profileLink.owner = userData.uid;
 		profileLink.access = [userData.uid];
 		profileLink.public = true;
 		profileLink.id = newProfileLinkRef.id;
@@ -454,7 +528,12 @@
 						<Pane size={31} minSize={20}>
 							<div class="flex flex-col pb-4 h-full ">
 								<div class="py-4 px-2 flex items-center justify-between">
-									<div class="">Local profiles</div>
+									<div class="flex flex-col">
+										<div class="">Local profiles</div>
+										<div class="text-xs dark:text-white dark:text-opacity-60">
+											Only you can see these profiles.
+										</div>
+									</div>
 									<div>
 										<button
 											on:click={() => {
@@ -491,10 +570,6 @@
 												deleteLocalProfile(profile);
 												provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
 											}}
-											on:delete-linked={() => {
-												linkProfiles.splice(index, 1);
-												linkProfiles = [...linkProfiles];
-											}}
 											on:split-profile={() => {
 												splitLocalProfile(profile);
 											}}
@@ -512,8 +587,6 @@
 											}}
 											class={index == selectedLocalProfileIndex
 												? 'border-emerald-500'
-												: profile.linked == true
-												? 'border-purple-500'
 												: 'border-white/10'}
 											data={{ ...profile, selectedModuleType: selectedModuleType }}
 										/>
@@ -527,29 +600,68 @@
 								<div class="pb-4 ">
 									{#if $userAccountService.account}
 										<div class="flex items-center justify-between">
-											<div class="flex items-center">
-												{#if false}
-													<img
-														class="h-5 w-5 rounded-full"
-														src={$userAccountService?.account?.photoURL}
-														alt="user profile"
-													/>
+											<button on:click={() => {}} class="w-full flex flex-col text-left ">
+												{#if userNameInput.exists == false}
+													<div>
+														Before using the cloud, enter a username which will be displayed with
+														your public profiles.
+													</div>
 												{:else}
-													<div class="w-5 h-5 bg-neutral-700 rounded-full" />
+													<div>Profile Cloud - {userNameInput.element?.value}</div>
+													<div class="text-white text-opacity-60	">
+														Public profiles from others and save yours as private or public here.
+													</div>
 												{/if}
 
-												<div class="ml-2">
-													{$userAccountService.account?.displayName ||
-														$userAccountService.account?.email}
+												<div class="flex items-center py-2">
+													<input
+														id="display-name"
+														bind:this={userNameInput.element}
+														on:input={(event) => {
+															checkIfUsernameAvailable(event.target?.value);
+														}}
+														readonly={userNameInput.exists}
+														placeholder="Username"
+														class="{!userNameInput.exists
+															? 'border-amber-500 focus:border-emerald-500 animate-pulse dark:bg-secondary focus:animate-none'
+															: 'border-transparent bg-transparent text-white text-opacity-80 hidden'}  w-full border focus:outline-none "
+														value={userNameInput.element?.value || ''}
+													/>
+													{#if userNameInput.exists == false}
+														<button
+															on:click={() => {
+																userNameInput.active = false;
+																setUserName(userNameInput.element?.value);
+															}}
+															class="ml-1 relative group"
+														>
+															<SvgIcon iconPath={'save_as_02'} class="w-6" />
+															<div
+																class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+															>
+																Save
+															</div>
+														</button>
+													{/if}
 												</div>
-											</div>
+												{#if userNameInput.exists == false}
+													<div class={userNameInput.valid ? 'text-emerald-500' : 'text-amber-500'}>
+														{usernameSelectionFeedback(userNameInput)}
+													</div>
+												{/if}
+											</button>
 											<button
 												on:click={() => {
 													logoutFromProfileCloud();
 												}}
-												class="rounded px-4 py-1 text-xs border dark:border-white dark:border-opacity-10 dark:hover:bg-neutral-700 font-medium"
+												class="relative group rounded px-1 text-xs border dark:border-white dark:border-opacity-10 dark:hover:bg-neutral-700 font-medium"
 											>
-												logout
+												<SvgIcon iconPath={'log_out'} class="w-5" />
+												<div
+													class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+												>
+													Logout
+												</div>
 											</button>
 										</div>
 									{:else}

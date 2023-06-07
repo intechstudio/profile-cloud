@@ -109,7 +109,9 @@
 		<div class="w-full flex items-center justify-between">
 			<input
 				bind:this={nameInputField.element}
-				class="w-full mr-1 font-bold border bg-white dark:bg-transparent dark:hover:bg-neutral-800 focus:outline-none {nameInputField.doubleClicked
+				class="{!userCanModify(data.access)
+					? 'pointer-events-none'
+					: ''} w-full mr-1 font-bold border bg-white dark:bg-transparent dark:hover:bg-neutral-800 focus:outline-none {nameInputField.doubleClicked
 					? 'border-emerald-500'
 					: 'border-transparent'}"
 				readonly={!nameInputField.doubleClicked}
@@ -174,7 +176,9 @@
 			<textarea
 				rows={2}
 				bind:this={descriptionTextarea.element}
-				class="overflow-none w-full border bg-neutral-100 dark:bg-primary dark:hover:bg-neutral-800 focus:outline-none {descriptionTextarea.doubleClicked
+				class="{!userCanModify(data.access)
+					? 'pointer-events-none'
+					: ''} overflow-none w-full border bg-neutral-100 dark:bg-primary dark:hover:bg-neutral-800 focus:outline-none {descriptionTextarea.doubleClicked
 					? 'border-emerald-500'
 					: 'border-transparent'}"
 				readonly={!descriptionTextarea.doubleClicked}
