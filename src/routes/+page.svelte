@@ -50,7 +50,7 @@
 	let linkProfiles: any[] = [];
 	let linkFlag: string | undefined = undefined;
 
-	let userNameInput = {
+	let usernameInput = {
 		element: null as HTMLInputElement | null,
 		exists: false,
 		valid: false,
@@ -64,10 +64,10 @@
 		if (userAccount.account?.uid) {
 			const username = await getUserNameByUid(userAccount.account.uid);
 			if (username) {
-				userNameInput.exists = true;
-				userNameInput.element!.value = '@' + username;
+				usernameInput.exists = true;
+				usernameInput.element!.value = '@' + username;
 			} else {
-				userNameInput.exists = false;
+				usernameInput.exists = false;
 			}
 		}
 	});
@@ -76,9 +76,9 @@
 		if (username.length >= 3 && username.length <= 15) {
 			const usernameRef = doc(usernameCollection, username);
 			const res = await getDoc(usernameRef).then((d) => d.data());
-			userNameInput.valid = res == undefined ? true : false;
+			usernameInput.valid = res == undefined ? true : false;
 		} else {
-			userNameInput.valid = false;
+			usernameInput.valid = false;
 		}
 	}
 
@@ -117,8 +117,8 @@
 		batch.set(usernameDoc, { uid });
 
 		await batch.commit().then(() => {
-			userNameInput.exists = true;
-			userNameInput.element!.value = '@' + username;
+			usernameInput.exists = true;
+			usernameInput.element!.value = '@' + username;
 		});
 	}
 
@@ -350,6 +350,10 @@
 			return;
 		}
 
+		if (!usernameInput.exists) {
+			return;
+		}
+
 		// reassign, else profile to delete id is overwritten!
 		const profileToSave = { ...profile };
 
@@ -358,15 +362,15 @@
 		profileToSave.public = false;
 		profileToSave.id = newProfileRef.id;
 
-		const isObjectValid = ProfileSchema.safeParse(profileToSave);
+		const parsedProfile = ProfileSchema.safeParse(profileToSave);
 
-		if (isObjectValid.success) {
+		if (parsedProfile.success) {
 		} else {
-			console.log(isObjectValid.error);
+			console.log(parsedProfile.error);
 			return;
 		}
 
-		await setDoc(newProfileRef, profileToSave)
+		await setDoc(newProfileRef, parsedProfile.data)
 			.then(async () => {
 				// profile is successfully saved to cloud
 			})
@@ -447,16 +451,16 @@
 		profileLink.public = true;
 		profileLink.id = newProfileLinkRef.id;
 
-		const isObjectValid = ProfileLinkSchema.safeParse(profileLink);
+		const parsedProfileLink = ProfileLinkSchema.safeParse(profileLink);
 
-		if (isObjectValid.success) {
+		if (parsedProfileLink.success) {
 			// do nothing, continue
 		} else {
-			console.log(isObjectValid.error);
+			console.log(parsedProfileLink.error);
 			return;
 		}
 
-		await setDoc(newProfileLinkRef, profileLink)
+		await setDoc(newProfileLinkRef, parsedProfileLink.data)
 			.then((res) => {
 				// profile is successfully saved to cloud
 			})
@@ -527,7 +531,7 @@
 					<Splitpanes horizontal={true} theme="modern-theme">
 						<Pane size={31} minSize={20}>
 							<div class="flex flex-col pb-4 h-full ">
-								<div class="py-4 px-2 flex items-center justify-between">
+								<div class="py-4 flex items-center justify-between">
 									<div class="flex flex-col">
 										<div class="">Local profiles</div>
 										<div class="text-xs dark:text-white dark:text-opacity-60">
@@ -596,46 +600,56 @@
 						</Pane>
 
 						<Pane minSize={28}>
-							<div class="flex flex-col py-4 h-full ">
-								<div class="pb-4 ">
+							<div class="flex flex-col h-full pb-4">
+								<div class="">
 									{#if $userAccountService.account}
-										<div class="flex items-center justify-between">
-											<button on:click={() => {}} class="w-full flex flex-col text-left ">
-												{#if userNameInput.exists == false}
-													<div>
+										<div
+											class="{!usernameInput.exists
+												? 'pb-2'
+												: ''} flex items-center justify-between"
+										>
+											<div class="w-full flex flex-col  text-left py-4">
+												{#if usernameInput.exists == false}
+													<div class="pb-2">
 														Before using the cloud, enter a username which will be displayed with
 														your public profiles.
 													</div>
 												{:else}
-													<div>Profile Cloud - {userNameInput.element?.value}</div>
+													<div>Profile Cloud - {usernameInput.element?.value}</div>
 													<div class="text-white text-opacity-60	">
 														Public profiles from others and save yours as private or public here.
 													</div>
 												{/if}
 
-												<div class="flex items-center py-2">
+												<div class="flex items-center ">
 													<input
 														id="display-name"
-														bind:this={userNameInput.element}
+														bind:this={usernameInput.element}
 														on:input={(event) => {
 															checkIfUsernameAvailable(event.target?.value);
 														}}
-														readonly={userNameInput.exists}
+														on:keydown={(event) => {
+															if (event.key == 'Enter') {
+																usernameInput.active = false;
+																setUserName(usernameInput.element?.value);
+															}
+														}}
+														readonly={usernameInput.exists}
 														placeholder="Username"
-														class="{!userNameInput.exists
+														class="{!usernameInput.exists
 															? 'border-amber-500 focus:border-emerald-500 animate-pulse dark:bg-secondary focus:animate-none'
 															: 'border-transparent bg-transparent text-white text-opacity-80 hidden'}  w-full border focus:outline-none "
-														value={userNameInput.element?.value || ''}
+														value={usernameInput.element?.value || ''}
 													/>
-													{#if userNameInput.exists == false}
+													{#if usernameInput.exists == false}
 														<button
 															on:click={() => {
-																userNameInput.active = false;
-																setUserName(userNameInput.element?.value);
+																usernameInput.active = false;
+																setUserName(usernameInput.element?.value);
 															}}
-															class="ml-1 relative group"
+															class="mx-2 relative group"
 														>
-															<SvgIcon iconPath={'save_as_02'} class="w-6" />
+															<SvgIcon iconPath={'save_as_02'} class="w-5" />
 															<div
 																class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
 															>
@@ -644,38 +658,42 @@
 														</button>
 													{/if}
 												</div>
-												{#if userNameInput.exists == false}
-													<div class={userNameInput.valid ? 'text-emerald-500' : 'text-amber-500'}>
-														{usernameSelectionFeedback(userNameInput)}
+												{#if usernameInput.exists == false}
+													<div class={usernameInput.valid ? 'text-emerald-500' : 'text-amber-500'}>
+														{usernameSelectionFeedback(usernameInput)}
 													</div>
 												{/if}
-											</button>
-											<button
-												on:click={() => {
-													logoutFromProfileCloud();
-												}}
-												class="relative group rounded px-1 text-xs border dark:border-white dark:border-opacity-10 dark:hover:bg-neutral-700 font-medium"
-											>
-												<SvgIcon iconPath={'log_out'} class="w-5" />
-												<div
-													class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-												>
-													Logout
-												</div>
-											</button>
-										</div>
-									{:else}
-										<div class="rounded-md border border-amber-500 p-4 bg-secondary/90">
-											<div class="pb-1 text-white">login to save and browse your profiles</div>
-											<div class="pt-1">
+											</div>
+											{#if usernameInput.exists == true}
 												<button
 													on:click={() => {
-														loginToProfileCloud();
+														logoutFromProfileCloud();
 													}}
-													class="rounded px-4 py-1 border dark:border-emerald-500 dark:hover:bg-emerald-700 font-medium"
+													class="ml-1 relative group rounded px-1 text-xs border dark:border-white dark:border-opacity-10 dark:hover:bg-neutral-700 font-medium"
 												>
-													login
+													<SvgIcon iconPath={'log_out'} class="w-5" />
+													<div
+														class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+													>
+														Logout
+													</div>
 												</button>
+											{/if}
+										</div>
+									{:else}
+										<div class="py-4">
+											<div class="rounded-md border border-amber-500 p-4 bg-secondary/90">
+												<div class="pb-1 text-white">login to save and browse your profiles</div>
+												<div class="pt-1">
+													<button
+														on:click={() => {
+															loginToProfileCloud();
+														}}
+														class="rounded px-4 py-1 border dark:border-emerald-500 dark:hover:bg-emerald-700 font-medium"
+													>
+														login
+													</button>
+												</div>
 											</div>
 										</div>
 									{/if}

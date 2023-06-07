@@ -7,6 +7,8 @@
 	import { applyFocus } from '$lib/utils';
 	import { userAccountService } from '$lib/stores';
 	import { get } from 'svelte/store';
+	import { doc, getDoc } from 'firebase/firestore';
+	import { userCollection } from '$lib/collections';
 
 	const dispatchEvent = createEventDispatcher();
 
@@ -75,7 +77,18 @@
 		}
 	}
 
+	let profileOwner: string = '';
 	onMount(() => {
+		if (data.owner) {
+			const userRef = doc(userCollection, data.owner);
+			getDoc(userRef)
+				.then((res) => res.data()?.username)
+				.then((username) => {
+					if (username) {
+						profileOwner = '@' + username;
+					}
+				});
+		}
 		// we assume editor is listening for this message
 	});
 
@@ -224,7 +237,7 @@
 			{data.type}
 		</div>
 		<div class="flex items-center {display === 'editor' ? 'gap-x-1' : ''}">
-			<span class="text-black dark:text-opacity-70 dark:text-white">{data.owner || 'Unknown'}</span>
+			<span class="text-black dark:text-opacity-70 dark:text-white">{profileOwner}</span>
 			{#if display == 'editor'}
 				<div class="ml-1">
 					{#if userCanModify(data.access)}

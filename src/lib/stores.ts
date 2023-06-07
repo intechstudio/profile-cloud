@@ -59,7 +59,7 @@ function createUserAccountService() {
 
     // we must unsubscribe on store unsubscription from this as well!
     const authChangeUnsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
-        console.log(user)
+        console.log('auth change trigger!!', user)
         if (user !== null || user !== undefined) {
             set({ account: user })
             // User is signed in, see docs for a list of available properties
