@@ -494,8 +494,20 @@
 		});
 	}
 
+	function profileCloudMounted() {
+		parentIframeCommunication({
+			windowPostMessageName: 'profileCloudMounted',
+			channelPostMessage: {
+				channelMessageType: 'PROFILE_CLOUD_MOUNTED'
+			},
+			dataForParent: {}
+		});
+	}
+
 	onMount(async () => {
 		window.addEventListener('message', editorMessageListener);
+
+		profileCloudMounted();
 
 		localProfiles = await getListOfLocalProfiles();
 
