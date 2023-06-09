@@ -18,8 +18,6 @@ function createUserAccountService() {
     async function authenticateUser(credential: { event?: string, providerId?: string, idToken?: string, email?: string, password?: string, credential?: any }) {
         let cred;
 
-        console.log('Authentication stuff from editor', credential)
-
         if (!credential || credential?.event == 'logout') {
             console.log('signing out')
             signOut(firebaseAuth);
@@ -40,15 +38,13 @@ function createUserAccountService() {
 
         if (!cred) return;
 
-        console.log(cred)
-
         return await signInWithCredential(firebaseAuth, cred)
             .then((user) => {
                 console.log('authenticated in profile cloud', user);
             })
             .catch((error) => {
                 console.log('what is error', error);
-            });
+            })
     }
 
     function logout() {
@@ -66,6 +62,7 @@ function createUserAccountService() {
             // User is signed in, see docs for a list of available properties
         } else {
             set({ account: null })
+
         }
     })
 

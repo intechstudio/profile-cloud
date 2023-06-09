@@ -4,6 +4,7 @@
 	import { getContext, onMount, setContext } from 'svelte';
 	import '../app.css';
 	import SvgIcon from '$lib/icons/SvgIcon.svelte';
+	import { PUBLIC_APP_ENV } from '$env/static/public';
 
 	function isThisAnIframe() {
 		try {
@@ -24,7 +25,7 @@
 	function toggleDarkMode() {
 		darkMode = !darkMode;
 		// set class on body, so on overscrolling the background will match the app color
-		document.body.classList.toggle('bg-neutral-950');
+		document.body.classList.toggle('bg-primary');
 	}
 
 	let fontSize = getContext('display') === 'editor' ? '12px' : '16px';
@@ -40,7 +41,7 @@
 
 <main style={'font-size: ' + fontSize} class={darkMode ? 'dark' : ''}>
 	<div
-		class="dark:bg-neutral-900 flex flex-col justify-between dark:text-white bg-white text-black transition duration-200 min-h-screen"
+		class="dark:bg-primary flex flex-col justify-between dark:text-white bg-white text-black transition duration-200 min-h-screen"
 	>
 		<DisplayOnWeb>
 			<div class="dark:bg-neutral-700">
@@ -78,7 +79,7 @@
 							rel="noopener noreferrer"
 							class="text-neutral-500 hover:text-neutral-600 dark:text-white dark:text-opacity-80 dark:hover:text-opacity-60"
 						>
-							&copy; {new Date().getFullYear()} Intech Studio
+							&copy; {new Date().getFullYear()} Intech Studio - {PUBLIC_APP_ENV}
 						</a>
 					</p>
 				</div>
@@ -94,14 +95,14 @@
 	:global(::-webkit-scrollbar) {
 		height: 0.375rem;
 		width: 0.375rem;
-		@apply dark:rounded-md dark:bg-neutral-900 bg-neutral-100;
+		@apply dark:rounded-md dark:bg-secondary bg-neutral-100;
 	}
 
 	:global(::-webkit-scrollbar-thumb) {
-		@apply dark:rounded-md dark:bg-neutral-700 bg-neutral-400 dark:shadow;
+		@apply dark:rounded-md dark:bg-neutral-600 bg-neutral-400 dark:shadow;
 	}
 
 	:global(::-webkit-scrollbar-corner) {
-		@apply dark:rounded-md dark:bg-neutral-900;
+		@apply dark:rounded-md dark:bg-secondary;
 	}
 </style>

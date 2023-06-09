@@ -1,16 +1,55 @@
+// rules_version = '2';
+// service cloud.firestore {
+//   match /databases/{database}/documents {
+//    
+//   }
+// }
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /profiles/{document=**} {
-      // the uid access is not 100% okay: https://stackoverflow.com/questions/54522477/restrict-firestore-access-to-authenticated-users
-      allow read: if resource.data.public == true || (request.auth != null && request.auth.uid in resource.data.access);
-      allow create, update: if request.auth.uid != null;
-      allow delete: if request.auth != null && request.auth.uid in resource.data.access;
+        // the uid access is not 100% okay: https://stackoverflow.com/questions/54522477/restrict-firestore-access-to-authenticated-users
+        allow read: if resource.data.public == true || (request.auth != null && request.auth.uid in resource.data.access);
+        allow create, update: if request.auth.uid != null;
+        allow delete: if request.auth != null && request.auth.uid in resource.data.access;
+      }
+      match /profileLinks/{document=**} {
+        // the uid access is not 100% okay: https://stackoverflow.com/questions/54522477/restrict-firestore-access-to-authenticated-users
+        allow read;
+        allow create, update: if request.auth.uid != null;
+      }
+      
+    match /{document=**} {
+      
+
+      match /users/{userId} {
+      	allow read;
+        allow create: if isValidUser(userId);
+      }
+      
+      function isValidUser(userId) {
+        let isOwner = request.auth.uid == userId;
+      	let username = request.resource.data.username;
+        let createdValidUsername = existsAfter(/databases/$(database)/documents/usernames/$(username));
+        
+        return isOwner && createdValidUsername;
+      }
+      
+      match /usernames/{username} {
+      	allow read;
+        allow create: if isValidUsername(username);
+      }
+      
+      function isValidUsername(username) {
+        let isOwner = request.auth.uid == request.resource.data.uid;
+        let isValidLength = username.size() >= 3 && username.size() <= 15;
+        let isValidUserDoc = getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.username == username;
+        
+        return isOwner && isValidLength && isValidUserDoc;     
+      }
+      
     }
-     match /profileLinks/{document=**} {
-      // the uid access is not 100% okay: https://stackoverflow.com/questions/54522477/restrict-firestore-access-to-authenticated-users
-      allow read;
-      allow create, update: if request.auth.uid != null;
-    }
+    
   }
 }
