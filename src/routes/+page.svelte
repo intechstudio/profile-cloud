@@ -476,9 +476,7 @@
 				console.error('Profile link save to cloud was unsuccessful');
 			});
 
-		const protocol = PUBLIC_APP_ENV === 'production' ? 'grid-editor://' : 'grid-editor-dev://';
-
-		const profileLinkUrl = protocol + '?profile-link=' + newProfileLinkRef.id;
+		const profileLinkUrl = 'grid-editor://?profile-link=' + newProfileLinkRef.id;
 
 		await parentIframeCommunication({
 			windowPostMessageName: 'createCloudProfileLink',
