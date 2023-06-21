@@ -13,6 +13,7 @@ jobs:
         run: |
           touch .env
           echo PUBLIC_APP_ENV=development >> .env
+          echo PUBLIC_GOOGLE_CLIENT_ID=610580654354-j8lr11nb3n0etnmh0k1tuoupsrjbvlmd.apps.googleusercontent.com >> .env
       - run: npm ci && npm run build
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:

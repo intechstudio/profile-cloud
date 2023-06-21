@@ -555,22 +555,20 @@
 											Only you can see these profiles.
 										</div>
 									</div>
-									<div>
-										<button
-											on:click={() => {
-												createNewLocalProfileWithTheSelectedModulesConfigurationFromEditor();
-												provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
-												submitAnalytics({
-													eventName: 'Local Profile',
-													payload: {
-														task: 'Save local profile'
-													}
-												});
-											}}
-											class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
-											>save local profile</button
-										>
-									</div>
+									<button
+										on:click={() => {
+											createNewLocalProfileWithTheSelectedModulesConfigurationFromEditor();
+											provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
+											submitAnalytics({
+												eventName: 'Local Profile',
+												payload: {
+													task: 'Save local profile'
+												}
+											});
+										}}
+										class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
+										>save local profile</button
+									>
 								</div>
 								<div
 									class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
