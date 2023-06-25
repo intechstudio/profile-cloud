@@ -2,24 +2,24 @@
 # https://github.com/firebase/firebase-tools
 
 name: Deploy to Firebase Hosting on merge
-'on':
-  push:
-    branches:
-      - prod
+"on":
+    push:
+        branches:
+            - prod
 jobs:
-  build_and_deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Create public env file
-        run: |
-          touch .env
-          echo PUBLIC_APP_ENV=production >> .env  
-          echo PUBLIC_GOOGLE_CLIENT_ID=611038678816-e7o49s5adhohuqj4sjfnk5kq82g8g5lm.apps.googleusercontent.com >> .env
-      - run: npm ci && npm run build
-      - uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROFILE_CLOUD }}'
-          channelId: live
-          projectId: profile-cloud
+    build_and_deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - name: Create public env file
+              run: |
+                  touch .env
+                  echo PUBLIC_APP_ENV=production >> .env  
+                  echo PUBLIC_GOOGLE_CLIENT_ID=611038678816-e7o49s5adhohuqj4sjfnk5kq82g8g5lm.apps.googleusercontent.com >> .env
+            - run: npm ci && npm run build
+            - uses: FirebaseExtended/action-hosting-deploy@v0
+              with:
+                  repoToken: "${{ secrets.GITHUB_TOKEN }}"
+                  firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROFILE_CLOUD }}"
+                  channelId: live
+                  projectId: profile-cloud

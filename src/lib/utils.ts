@@ -1,5 +1,4 @@
-import type { EditorReturnType } from '$lib/types';
-
+import type { EditorReturnType } from "$lib/types";
 
 export function applyFocus(el: HTMLElement) {
     el.focus();
@@ -18,7 +17,7 @@ export async function parentIframeCommunication({
         // create a message channel to communicate with the editor in this scope
         const messageChannel = new MessageChannel();
         // let editor know that it should listen for messages on this channel
-        window.parent.postMessage(windowPostMessageName, '*', [messageChannel.port2]);
+        window.parent.postMessage(windowPostMessageName, "*", [messageChannel.port2]);
         // we listen for messages on this channel
         messageChannel.port1.onmessage = ({ data }) => {
             messageChannel.port1.close();
@@ -32,4 +31,3 @@ export async function parentIframeCommunication({
         messageChannel.port1.postMessage({ ...channelPostMessage, ...dataForParent });
     });
 }
-

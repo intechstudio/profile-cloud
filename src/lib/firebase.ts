@@ -4,8 +4,7 @@ import { getAuth } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
 import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
 
-import { PUBLIC_APP_ENV } from '$env/static/public';
-
+import { PUBLIC_APP_ENV } from "$env/static/public";
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -32,11 +31,11 @@ const prodProfileCloudConfig = {
     measurementId: "G-2CZKVLCGJJ"
 };
 
-const profileCloudConfig = PUBLIC_APP_ENV === 'production' ? prodProfileCloudConfig : devProfileCloudConfig;
+const profileCloudConfig =
+    PUBLIC_APP_ENV === "production" ? prodProfileCloudConfig : devProfileCloudConfig;
 
-export const firebaseApp = initializeApp(profileCloudConfig, 'profile-cloud');
+export const firebaseApp = initializeApp(profileCloudConfig, "profile-cloud");
 export const firebaseAnalytics = getAnalytics(firebaseApp);
 export const firestore = getFirestore(firebaseApp);
 export const firebaseAuth = getAuth(firebaseApp);
 //connectFirestoreEmulator(db, 'localhost', 8080);
-

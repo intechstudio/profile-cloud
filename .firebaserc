@@ -2,7 +2,7 @@
   "projects": {
     "prod": "profile-cloud",
     "dev": "profile-cloud-dev",
-    "default": "profile-cloud-dev"
+    "default": "profile-cloud"
   },
   "targets": {
     "profile-cloud": {
