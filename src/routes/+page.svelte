@@ -492,8 +492,8 @@
 		});
 	}
 
-	function profileCloudMounted() {
-		parentIframeCommunication({
+	async function profileCloudMounted() {
+		return await parentIframeCommunication({
 			windowPostMessageName: 'profileCloudMounted',
 			channelPostMessage: {
 				channelMessageType: 'PROFILE_CLOUD_MOUNTED'
@@ -505,7 +505,9 @@
 	onMount(async () => {
 		window.addEventListener('message', editorMessageListener);
 
-		profileCloudMounted();
+		await profileCloudMounted();
+
+		console.log('onmount');
 
 		localProfiles = await getListOfLocalProfiles();
 
