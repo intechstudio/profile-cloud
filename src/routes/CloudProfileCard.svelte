@@ -232,7 +232,11 @@
 		<div
 			class="dark:text-white text-black text-opacity-80 {data.type === data.selectedModuleType
 				? 'dark:text-opacity-100'
-				: 'dark:text-opacity-70'}"
+				: 'dark:text-opacity-70'}
+				dark:border py-0.5 px-2 {data.type ===
+					data.selectedModuleType
+						? 'dark:border-white dark:border-opacity-10 dark:bg-white dark:bg-opacity-10'
+						: 'dark:border-transparent'}"
 		>
 			{data.type}
 		</div>
