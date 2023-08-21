@@ -5,8 +5,12 @@
 	import type { Profile } from '$lib/schemas';
 
 	const dispatchEvent = createEventDispatcher();
-
-	export let data: Profile;
+	
+	interface SelectedModuleType {
+		selectedModuleType: string;
+	}
+	
+	export let data: Profile & SelectedModuleType;
 
 	const display = getContext('display');
 
@@ -182,9 +186,11 @@
 				class="flex justify-between pt-2 dark:text-white text-black text-opacity-80 {data.type ===
 				data.selectedModuleType
 					? 'dark:text-opacity-100'
-					: 'dark:text-opacity-70'}"
-			>
-				<div>{data.type}</div>
+					: 'dark:text-opacity-70'}">
+				<div class="dark:border py-0.5 px-2 {data.type ===
+					data.selectedModuleType
+						? 'dark:border-white dark:border-opacity-10 dark:bg-white dark:bg-opacity-10'
+						: 'dark:border-transparent'}">{data.type}</div>
 				{#if data.linked}
 					<div>Imported from link.</div>
 				{/if}
