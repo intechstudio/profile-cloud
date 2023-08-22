@@ -15,7 +15,7 @@ jobs:
               run: |
                   touch .env
                   echo PUBLIC_APP_ENV=production >> .env  
-                  echo PUBLIC_GOOGLE_CLIENT_ID=611038678816-e7o49s5adhohuqj4sjfnk5kq82g8g5lm.apps.googleusercontent.com >> .env
+                  echo PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.PUBLIC_GOOGLE_CLIENT_ID_PROD }} >> .env
             - run: npm ci && npm run build
             - uses: FirebaseExtended/action-hosting-deploy@v0
               with:
