@@ -39,6 +39,24 @@
 
 	const display = getContext('display');
 
+	let searchSuggestions = [
+    {
+      value: "BU16",
+    },
+    {
+      value: "EF44",
+    },
+    {
+      value: "EN16",
+    },
+    {
+      value: "PBF4",
+    },
+    {
+      value: "PO16",
+    },
+  ];
+
 	let selectedLocalProfileIndex: number | undefined = undefined;
 	let selectedCloudProfileIndex: number | undefined = undefined;
 
@@ -46,6 +64,7 @@
 	//let myProfiles: any[] = [];
 	let cloudProfiles: any[] = [];
 	let localProfiles: any[] = [];
+	let filteredCloud: any[] = [];
 
 	let linkProfiles: any[] = [];
 	let linkFlag: string | undefined = undefined;
@@ -58,6 +77,110 @@
 	};
 
 	let selectedModuleType: string = '';
+
+	let isSearchSortingShows = false;
+	let searchbarValue = "";
+	let animateFade;
+
+	let sortAsc = true;
+  let sortField = "name";
+
+  let compareNameAscending = (a: any, b: any) => {
+    return a.data().name
+      .toLowerCase()
+      .localeCompare(b.data().name.toLowerCase(), undefined, { numeric: true });
+  };
+
+  let compareNameDescending = (a: any, b: any) => {
+    return b.data().name
+      .toLowerCase()
+      .localeCompare(a.data().name.toLowerCase(), undefined, { numeric: true });
+  };
+
+  function compareDateAscending(a: any, b: any) {
+    return a.data().fsModifiedAt - b.data().fsModifiedAt;
+  }
+
+  function compareDateDescending(a: any, b: any) {
+    return b.data().fsModifiedAt - a.data().fsModifiedAt;
+  }
+
+  function compareModuleAscending(a: any, b: any) {
+    return a.data().type.localeCompare(b.data().type, undefined, {
+      numeric: true,
+    });
+  }
+
+  function compareModuleDescending(a: any, b: any) {
+    return b.data().type.localeCompare(a.data().type, undefined, {
+      numeric: true,
+    });
+  }
+
+  $: cloudProfiles, updateSearchFilter(searchbarValue);
+
+
+	function updateSearchFilter(input : string) {
+    animateFade = false;
+
+	filteredCloud = [];
+    const arrayOfSearchTerms = input.trim().toLowerCase().split(" ");
+    cloudProfiles.forEach((profile) => {
+	  const data = profile.data();
+      const currentProfileSearchable =
+        data.name.toLowerCase() +
+        " " +
+        data.type.toLowerCase();
+      let filterMatch = true;
+
+      arrayOfSearchTerms.forEach((searchTerm) => {
+        if (currentProfileSearchable.indexOf(searchTerm) === -1) {
+          filterMatch = false;
+        }
+      });
+
+      if (filterMatch) {
+        filteredCloud = [...filteredCloud, profile];
+      }
+    });
+
+    sortProfileCloud(sortField, sortAsc);
+  }
+
+  function sortProfileCloud(field : string, asc : boolean) {
+    if (field == "name") {
+      if (asc == true) {
+        filteredCloud = filteredCloud.sort(compareNameAscending);
+      }
+
+      if (asc == false) {
+        filteredCloud = filteredCloud.sort(compareNameDescending);
+      }
+    }
+
+    if (field == "date") {
+      if (asc == true) {
+        filteredCloud = filteredCloud.sort(compareDateAscending);
+      }
+
+      if (asc == false) {
+        filteredCloud = filteredCloud.sort(compareDateDescending);
+      }
+    }
+
+    if (field == "module") {
+      if (asc == true) {
+        filteredCloud = filteredCloud.sort(
+          compareModuleAscending
+        );
+      }
+      if (asc == false) {
+        filteredCloud = filteredCloud.sort(
+          compareModuleDescending
+        );
+      }
+    }
+  }
 
 	async function submitAnalytics({ eventName, payload }: { eventName: string; payload: any }) {
 		await parentIframeCommunication({
@@ -502,6 +625,15 @@
 		});
 	}
 
+	function filterShowHide() {
+		isSearchSortingShows = !isSearchSortingShows;
+		animateFade = true;
+  	}
+
+	function useSearchSuggestion(suggestionText : string) {
+    	updateSearchFilter((searchbarValue = suggestionText));
+	}
+
 	onMount(async () => {
 		window.addEventListener('message', editorMessageListener);
 
@@ -658,7 +790,7 @@
 								</div>
 							</div>
 						</Pane>
-						{#if cloudProfiles && cloudProfiles.length > 0}
+						{#if filteredCloud && filteredCloud.length > 0}
 							<Pane minSize={28}>
 								<div class="flex flex-col h-full pb-4">
 									<div class="py-4">
@@ -670,7 +802,7 @@
 									<div
 										class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
 									>
-										{#each cloudProfiles as profile, index (profile.id)}
+										{#each filteredCloud as profile, index (profile.id)}
 											{@const data = profile.data()}
 											<div in:slide>
 												<CloudProfileCard
