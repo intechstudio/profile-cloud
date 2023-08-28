@@ -658,294 +658,298 @@
 								</div>
 							</div>
 						</Pane>
-
-						<Pane minSize={28}>
-							<div class="flex flex-col h-full pb-4">
-								<div class="">
-									{#if $userAccountService.account}
-										<div
-											class="{!usernameInput.exists
-												? 'pb-2'
-												: ''} flex items-center justify-between"
-										>
-											<div class="w-full flex flex-col  text-left py-4">
-												{#if usernameInput.exists == false}
-													<div class="pb-2">
-														Before using the cloud, enter a username which will be displayed with
-														your public profiles.
-													</div>
-												{:else}
-													<div>Profile Cloud - {usernameInput.element?.value}</div>
-													<div class="text-white text-opacity-60	">
-														Public profiles from others and save yours as private or public here.
-													</div>
-												{/if}
-
-												<div class="flex items-center ">
-													<input
-														id="display-name"
-														bind:this={usernameInput.element}
-														on:input={(event) => {
-															checkIfUsernameAvailable(event.target?.value);
-														}}
-														on:keydown={(event) => {
-															if (event.key == 'Enter') {
-																usernameInput.active = false;
-																setUserName(usernameInput.element?.value);
-																submitAnalytics({
-																	eventName: 'Set Username',
-																	payload: {
-																		handler: 'Enter key',
-																		username: usernameInput.element?.value
-																	}
-																});
-															}
-														}}
-														readonly={usernameInput.exists}
-														placeholder="Username"
-														class="{!usernameInput.exists
-															? 'border-amber-500 focus:border-emerald-500 animate-pulse dark:bg-secondary focus:animate-none'
-															: 'border-transparent bg-transparent text-white text-opacity-80 hidden'}  w-full border focus:outline-none "
-														value={usernameInput.element?.value || ''}
-													/>
-													{#if usernameInput.exists == false}
-														<button
-															on:click={() => {
-																usernameInput.active = false;
-																setUserName(usernameInput.element?.value);
-																submitAnalytics({
-																	eventName: 'Set Username',
-																	payload: {
-																		handler: 'Button',
-																		username: usernameInput.element?.value
-																	}
-																});
-															}}
-															class="mx-2 relative group"
-														>
-															<SvgIcon iconPath={'save_as_02'} class="w-5" />
-															<div
-																class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-															>
-																Save
-															</div>
-														</button>
-													{/if}
-												</div>
-												{#if usernameInput.exists == false}
-													<div class={usernameInput.valid ? 'text-emerald-500' : 'text-amber-500'}>
-														{usernameSelectionFeedback(usernameInput)}
-													</div>
-												{/if}
-											</div>
-											{#if usernameInput.exists == true}
-												<button
+						{#if cloudProfiles && cloudProfiles.length > 0}
+							<Pane minSize={28}>
+								<div class="flex flex-col h-full pb-4">
+									<div class="py-4">
+										<div>Profile Cloud</div>
+										<div class="text-white text-opacity-60	">
+											Public profiles from others and save yours as private or public here.
+										</div>
+									</div>
+									<div
+										class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
+									>
+										{#each cloudProfiles as profile, index (profile.id)}
+											{@const data = profile.data()}
+											<div in:slide>
+												<CloudProfileCard
 													on:click={() => {
-														logoutFromProfileCloud();
+														if (selectedCloudProfileIndex == index) {
+															return;
+														}
+														// reset the selection on the local profiles
+														selectedLocalProfileIndex = undefined;
+														provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
+														selectedCloudProfileIndex = index;
+													}}
+													on:focusout={(e) => {
+														selectedCloudProfileIndex = undefined;
+													}}
+													on:delete-cloud={async () => {
+														selectedCloudProfileIndex = undefined;
+														deleteCloudProfile(data);
+														provideSelectedProfileForOptionalUploadingToOneOreMoreModules();
 														submitAnalytics({
-															eventName: 'Authentication',
+															eventName: 'Profile Cloud',
 															payload: {
-																task: 'Logout attempt'
+																task: 'Delete',
+																profileName: data.name,
+																public: data.public
 															}
 														});
 													}}
-													class="ml-1 relative group rounded px-1 text-xs border dark:border-white dark:border-opacity-10 dark:hover:bg-neutral-700 font-medium"
+													on:description-change={(e) => {
+														const { newDescription } = e.detail;
+														textEditCloudProfile({ description: newDescription, profile: data });
+														submitAnalytics({
+															eventName: 'Profile Cloud',
+															payload: {
+																task: 'Edit description',
+																oldDescription: data.description,
+																newDescription: newDescription
+															}
+														});
+													}}
+													on:name-change={(e) => {
+														const { newName } = e.detail;
+
+														textEditCloudProfile({ name: newName, profile });
+														submitAnalytics({
+															eventName: 'Profile Cloud',
+															payload: {
+																task: 'Edit name',
+																oldProfileName: data.name,
+																newProfileName: newName
+															}
+														});
+													}}
+													class={index === selectedCloudProfileIndex
+														? 'border-emerald-500'
+														: 'border-white/10'}
+													data={{ ...data, selectedModuleType: selectedModuleType }}
 												>
-													<SvgIcon iconPath={'log_out'} class="w-5" />
-													<div
-														class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-													>
-														Logout
+													<svelte:fragment slot="link-button">
+														<button
+															class="relative group flex"
+															on:click|stopPropagation={() => {
+																createCloudProfileLink(data);
+																provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
+																submitAnalytics({
+																	eventName: 'Profile Link',
+																	payload: {
+																		task: 'Create',
+																		profileName: data.name
+																	}
+																});
+															}}
+														>
+															<SvgIcon class="w-4" iconPath="link" />
+															<div
+																class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+															>
+																Link
+															</div>
+															{#if linkFlag == data.id}
+																<div
+																	transition:fade={{ duration: 100 }}
+																	class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
+																>
+																	Copied to clipboard!
+																</div>
+															{/if}
+														</button>
+													</svelte:fragment>
+													<svelte:fragment slot="import-button">
+														<button
+															on:click|stopPropagation={async () => {
+																saveCloudProfileToLocalFolder(data);
+																provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
+																submitAnalytics({
+																	eventName: 'Profile Cloud',
+																	payload: {
+																		task: 'Import to local',
+																		profileName: data.name
+																	}
+																});
+															}}
+															class="flex items-center group relative"
+														>
+															{#if importFlag == data.id}
+																loading...
+															{/if}
+															<SvgIcon class="w-4" iconPath="import" />
+															<div
+																class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+															>
+																Import
+															</div>
+														</button>
+													</svelte:fragment>
+													<span slot="toggle-accessibility">
+														<ToggleSwitch
+															checkbox={data.public}
+															on:toggle={(e) => {
+																submitAnalytics({
+																	eventName: 'Profile Cloud',
+																	payload: {
+																		task: 'Set visibility',
+																		profileName: data.name,
+																		visibility: e.detail
+																	}
+																});
+																changeCloudProfileVisibility(data, e.detail);
+															}}
+														>
+															<div class="relative group" slot="on">
+																<SvgIcon display={true} iconPath={'public'} class="mr-1" />
+																<div
+																	class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+																>
+																	Public
+																</div>
+															</div>
+															<div class="relative group" slot="off">
+																<SvgIcon
+																	display={true}
+																	iconPath={'private'}
+																	class="mr-1 text-opacity-70"
+																/>
+																<div
+																	class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+																>
+																	Private
+																</div>
+															</div>
+														</ToggleSwitch>
+													</span>
+												</CloudProfileCard>
+											</div>
+										{/each}
+									</div>
+									<div class="">
+										{#if $userAccountService.account}
+											<div
+												class="{!usernameInput.exists
+													? 'pb-2'
+													: ''} flex items-center justify-between"
+											>
+												<div class="w-full flex flex-col  text-left py-4">
+													{#if usernameInput.exists == false}
+														<div class="pb-2">
+															Before using the cloud, enter a username which will be displayed with
+															your public profiles.
+														</div>
+													{:else}
+														<div>Profile Cloud - {usernameInput.element?.value}</div>
+													{/if}
+
+													<div class="flex items-center ">
+														<input
+															id="display-name"
+															bind:this={usernameInput.element}
+															on:input={(event) => {
+																checkIfUsernameAvailable(event.target?.value);
+															}}
+															on:keydown={(event) => {
+																if (event.key == 'Enter') {
+																	usernameInput.active = false;
+																	setUserName(usernameInput.element?.value);
+																	submitAnalytics({
+																		eventName: 'Set Username',
+																		payload: {
+																			handler: 'Enter key',
+																			username: usernameInput.element?.value
+																		}
+																	});
+																}
+															}}
+															readonly={usernameInput.exists}
+															placeholder="Username"
+															class="{!usernameInput.exists
+																? 'border-amber-500 focus:border-emerald-500 animate-pulse dark:bg-secondary focus:animate-none'
+																: 'border-transparent bg-transparent text-white text-opacity-80 hidden'}  w-full border focus:outline-none "
+															value={usernameInput.element?.value || ''}
+														/>
+														{#if usernameInput.exists == false}
+															<button
+																on:click={() => {
+																	usernameInput.active = false;
+																	setUserName(usernameInput.element?.value);
+																	submitAnalytics({
+																		eventName: 'Set Username',
+																		payload: {
+																			handler: 'Button',
+																			username: usernameInput.element?.value
+																		}
+																	});
+																}}
+																class="mx-2 relative group"
+															>
+																<SvgIcon iconPath={'save_as_02'} class="w-5" />
+																<div
+																	class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+																>
+																	Save
+																</div>
+															</button>
+														{/if}
 													</div>
-												</button>
-											{/if}
-										</div>
-									{:else}
-										<div class="py-4">
-											<div class="rounded-md border border-amber-500 p-4 bg-secondary/90">
-												<div class="pb-1 text-white">login to save and browse your profiles</div>
-												<div class="pt-1">
+													{#if usernameInput.exists == false}
+														<div class={usernameInput.valid ? 'text-emerald-500' : 'text-amber-500'}>
+															{usernameSelectionFeedback(usernameInput)}
+														</div>
+													{/if}
+												</div>
+												{#if usernameInput.exists == true}
 													<button
 														on:click={() => {
-															loginToProfileCloud();
+															logoutFromProfileCloud();
 															submitAnalytics({
 																eventName: 'Authentication',
 																payload: {
-																	task: 'Login attempt'
+																	task: 'Logout attempt'
 																}
 															});
 														}}
-														class="rounded px-4 py-1 border dark:border-emerald-500 dark:hover:bg-emerald-700 font-medium"
+														class="ml-1 relative group rounded px-1 text-xs border dark:border-white dark:border-opacity-10 dark:hover:bg-neutral-700 font-medium"
 													>
-														login
-													</button>
-												</div>
-											</div>
-										</div>
-									{/if}
-								</div>
-								<div
-									class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
-								>
-									{#each cloudProfiles as profile, index (profile.id)}
-										{@const data = profile.data()}
-										<div in:slide>
-											<CloudProfileCard
-												on:click={() => {
-													if (selectedCloudProfileIndex == index) {
-														return;
-													}
-													// reset the selection on the local profiles
-													selectedLocalProfileIndex = undefined;
-													provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
-													selectedCloudProfileIndex = index;
-												}}
-												on:focusout={(e) => {
-													selectedCloudProfileIndex = undefined;
-												}}
-												on:delete-cloud={async () => {
-													selectedCloudProfileIndex = undefined;
-													deleteCloudProfile(data);
-													provideSelectedProfileForOptionalUploadingToOneOreMoreModules();
-													submitAnalytics({
-														eventName: 'Profile Cloud',
-														payload: {
-															task: 'Delete',
-															profileName: data.name,
-															public: data.public
-														}
-													});
-												}}
-												on:description-change={(e) => {
-													const { newDescription } = e.detail;
-													textEditCloudProfile({ description: newDescription, profile: data });
-													submitAnalytics({
-														eventName: 'Profile Cloud',
-														payload: {
-															task: 'Edit description',
-															oldDescription: data.description,
-															newDescription: newDescription
-														}
-													});
-												}}
-												on:name-change={(e) => {
-													const { newName } = e.detail;
-
-													textEditCloudProfile({ name: newName, profile });
-													submitAnalytics({
-														eventName: 'Profile Cloud',
-														payload: {
-															task: 'Edit name',
-															oldProfileName: data.name,
-															newProfileName: newName
-														}
-													});
-												}}
-												class={index === selectedCloudProfileIndex
-													? 'border-emerald-500'
-													: 'border-white/10'}
-												data={{ ...data, selectedModuleType: selectedModuleType }}
-											>
-												<svelte:fragment slot="link-button">
-													<button
-														class="relative group flex"
-														on:click|stopPropagation={() => {
-															createCloudProfileLink(data);
-															provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
-															submitAnalytics({
-																eventName: 'Profile Link',
-																payload: {
-																	task: 'Create',
-																	profileName: data.name
-																}
-															});
-														}}
-													>
-														<SvgIcon class="w-4" iconPath="link" />
+														<SvgIcon iconPath={'log_out'} class="w-5" />
 														<div
 															class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
 														>
-															Link
+															Logout
 														</div>
-														{#if linkFlag == data.id}
-															<div
-																transition:fade={{ duration: 100 }}
-																class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
-															>
-																Copied to clipboard!
-															</div>
-														{/if}
 													</button>
-												</svelte:fragment>
-												<svelte:fragment slot="import-button">
-													<button
-														on:click|stopPropagation={async () => {
-															saveCloudProfileToLocalFolder(data);
-															provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
-															submitAnalytics({
-																eventName: 'Profile Cloud',
-																payload: {
-																	task: 'Import to local',
-																	profileName: data.name
-																}
-															});
-														}}
-														class="flex items-center group relative"
-													>
-														{#if importFlag == data.id}
-															loading...
-														{/if}
-														<SvgIcon class="w-4" iconPath="import" />
-														<div
-															class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+												{/if}
+											</div>
+										{:else}
+											<div class="pt-4">
+												<div class="rounded-md border border-amber-500 p-4 bg-secondary/90">
+													<div class="pb-1 text-white">login to save and browse your profiles</div>
+													<div class="pt-1">
+														<button
+															on:click={() => {
+																loginToProfileCloud();
+																submitAnalytics({
+																	eventName: 'Authentication',
+																	payload: {
+																		task: 'Login attempt'
+																	}
+																});
+															}}
+															class="rounded px-4 py-1 border dark:border-emerald-500 dark:hover:bg-emerald-700 font-medium"
 														>
-															Import
-														</div>
-													</button>
-												</svelte:fragment>
-												<span slot="toggle-accessibility">
-													<ToggleSwitch
-														checkbox={data.public}
-														on:toggle={(e) => {
-															submitAnalytics({
-																eventName: 'Profile Cloud',
-																payload: {
-																	task: 'Set visibility',
-																	profileName: data.name,
-																	visibility: e.detail
-																}
-															});
-															changeCloudProfileVisibility(data, e.detail);
-														}}
-													>
-														<div class="relative group" slot="on">
-															<SvgIcon display={true} iconPath={'public'} class="mr-1" />
-															<div
-																class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-															>
-																Public
-															</div>
-														</div>
-														<div class="relative group" slot="off">
-															<SvgIcon
-																display={true}
-																iconPath={'private'}
-																class="mr-1 text-opacity-70"
-															/>
-															<div
-																class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-															>
-																Private
-															</div>
-														</div>
-													</ToggleSwitch>
-												</span>
-											</CloudProfileCard>
-										</div>
-									{/each}
+															login
+														</button>
+													</div>
+												</div>
+											</div>
+										{/if}
+									</div>
 								</div>
-							</div>
-						</Pane>
+							</Pane>
+							{/if}
 					</Splitpanes>
 				</div>
 			{:else}
