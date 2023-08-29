@@ -13,6 +13,7 @@ jobs:
             - uses: actions/checkout@v2
             - name: Create public env file
               run: |
+                  echo $(git log -5)
                   touch .env
                   echo PUBLIC_APP_ENV=development >> .env
                   echo PUBLIC_GOOGLE_CLIENT_ID=${{ PUBLIC_GOOGLE_CLIENT_ID_DEV }} >> .env
