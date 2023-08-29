@@ -5,6 +5,7 @@
 	import '../app.css';
 	import SvgIcon from '$lib/icons/SvgIcon.svelte';
 	import { PUBLIC_APP_ENV } from '$env/static/public';
+	import { PUBLIC_VERSION_STRING } from '$env/static/public';
 
 	function isThisAnIframe() {
 		try {
@@ -69,22 +70,30 @@
 
 		<slot />
 
-		<DisplayOnWeb>
-			<footer class=" bg-emerald-300 dark:bg-emerald-800">
-				<div class="container mx-auto flex w-full justify-center p-4 text-center">
-					<p class="text-sm">
-						<a
-							href="https://intech.studio"
-							target="_blank"
-							rel="noopener noreferrer"
-							class="text-neutral-500 hover:text-neutral-600 dark:text-white dark:text-opacity-80 dark:hover:text-opacity-60"
-						>
-							&copy; {new Date().getFullYear()} Intech Studio - {PUBLIC_APP_ENV}
-						</a>
-					</p>
-				</div>
-			</footer>
-		</DisplayOnWeb>
+		{#if getContext('display') === 'web'}
+		<footer class=" bg-emerald-300 dark:bg-emerald-800">
+			<div class="container mx-auto flex w-full justify-center p-4 text-center">
+				<p class="text-sm">
+					<a
+						href="https://intech.studio"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="text-neutral-500 hover:text-neutral-600 dark:text-white dark:text-opacity-80 dark:hover:text-opacity-60"
+					>
+						&copy; {new Date().getFullYear()} Intech Studio - {PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING}
+					</a>
+				</p>
+			</div>
+		</footer>
+		{:else}
+		<footer class="bg-transparent">
+			<div class="container mx-auto flex w-full justify-center p-4 text-center">
+				<p class="text-sm">
+					{PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING}
+				</p>
+			</div>
+		</footer>
+		{/if}
 	</div>
 </main>
 
