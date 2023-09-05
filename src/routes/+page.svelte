@@ -1463,7 +1463,7 @@
 					<div
 						class="overflow-y-auto w-full h-full p-2 lg:py-8 grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 gap-4"
 					>
-						{#each cloudProfiles as profile, index}
+						{#each filteredCloud as profile, index}
 							{@const data = profile.data()}
 							<CloudProfileCard
 								on:click={() => {
