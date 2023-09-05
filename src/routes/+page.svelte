@@ -34,6 +34,7 @@
 	import { fade, slide } from 'svelte/transition';
 	import ToggleSwitch from '$lib/components/atomic/ToggleSwitch.svelte';
 	import { PUBLIC_APP_ENV } from '$env/static/public';
+	import { PUBLIC_VERSION_STRING } from '$env/static/public';
 	import { firestore } from '$lib/firebase';
 	import { parentIframeCommunication } from '$lib/utils';
 
@@ -1154,7 +1155,7 @@
 													? 'pb-2'
 													: ''} flex items-center justify-between"
 											>
-												<div class="w-full flex flex-col  text-left py-4">
+												<div class="group w-full flex flex-col  text-left py-4">
 													{#if usernameInput.exists == false}
 														<div class="pb-2">
 															Before using the cloud, enter a username which will be displayed with
@@ -1163,7 +1164,10 @@
 													{:else}
 														<div>Profile Cloud - {usernameInput.element?.value}</div>
 													{/if}
-
+													<div
+														class="group-hover:block font-medium hidden absolute mt-7 bottom-2 left-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5">
+														{PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING}
+													</div>
 													<div class="flex items-center ">
 														<input
 															id="display-name"
