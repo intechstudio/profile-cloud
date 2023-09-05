@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const ProfileSchema = z.object({
+export const ConfigSchema = z.object({
     id: z.string().optional(),
     owner: z.string().nullable(),
     access: z.array(z.string()),
@@ -16,13 +16,13 @@ export const ProfileSchema = z.object({
             patch: z.string()
         })
         .optional(),
-    isGridProfile: z.boolean(),
+    configType: z.enum(["profile", "preset"]),
     configs: z.any()
 });
 
-export const ProfileLinkSchema = ProfileSchema.extend({
+export const ConfigLinkSchema = ConfigSchema.extend({
     linked: z.boolean().default(true)
 });
 
-export type Profile = z.infer<typeof ProfileSchema>;
-export type ProfileLink = z.infer<typeof ProfileLinkSchema>;
+export type Config = z.infer<typeof ConfigSchema>;
+export type ConfigLink = z.infer<typeof ConfigLinkSchema>;

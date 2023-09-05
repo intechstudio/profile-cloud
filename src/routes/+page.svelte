@@ -22,15 +22,15 @@
 		writeBatch
 	} from 'firebase/firestore';
 	import {
-		profileLinksCollection,
-		profilesCollection,
+		configLinksCollection,
+		configsCollection,
 		userCollection,
 		usernameCollection
 	} from '$lib/collections';
 	import LocalProfileCard from './LocalProfileCard.svelte';
 	import SvgIcon from '$lib/icons/SvgIcon.svelte';
 	import { get } from 'svelte/store';
-	import { ProfileSchema, type Profile, type ProfileLink, ProfileLinkSchema } from '$lib/schemas';
+	import { ConfigSchema, type Config, type ConfigLink, ConfigLinkSchema } from '$lib/schemas';
 	import { fade, slide } from 'svelte/transition';
 	import ToggleSwitch from '$lib/components/atomic/ToggleSwitch.svelte';
 	import { PUBLIC_APP_ENV } from '$env/static/public';
@@ -58,16 +58,16 @@
     },
   ];
 
-	let selectedLocalProfileIndex: number | undefined = undefined;
-	let selectedCloudProfileIndex: number | undefined = undefined;
+	let selectedLocalConfigIndex: number | undefined = undefined;
+	let selectedCloudConfigIndex: number | undefined = undefined;
 
 	//let publicProfiles: any[] = [];
 	//let myProfiles: any[] = [];
-	let cloudProfiles: any[] = [];
-	let localProfiles: any[] = [];
-	let filteredCloud: any[] = [];
+	let cloudConfigs: any[] = [];
+	let localConfigs: any[] = [];
+	let filteredConfigs: any[] = [];
 
-	let linkProfiles: any[] = [];
+	let linkConfigs: any[] = [];
 	let linkFlag: string | undefined = undefined;
 
 	let usernameInput = {
@@ -118,16 +118,16 @@
     });
   }
 
-  $: cloudProfiles, updateSearchFilter(searchbarValue);
+  $: cloudConfigs, updateSearchFilter(searchbarValue);
 
 
 	function updateSearchFilter(input : string) {
     animateFade = false;
 
-	filteredCloud = [];
+	filteredConfigs = [];
     const arrayOfSearchTerms = input.trim().toLowerCase().split(" ");
-    cloudProfiles.forEach((profile) => {
-	  const data = profile.data();
+    cloudConfigs.forEach((config) => {
+	  const data = config.data();
       const currentProfileSearchable =
         data.name.toLowerCase() +
         " " +
@@ -141,7 +141,7 @@
       });
 
       if (filterMatch) {
-        filteredCloud = [...filteredCloud, profile];
+        filteredConfigs = [...filteredConfigs, config];
       }
     });
 
@@ -151,32 +151,32 @@
   function sortProfileCloud(field : string, asc : boolean) {
     if (field == "name") {
       if (asc == true) {
-        filteredCloud = filteredCloud.sort(compareNameAscending);
+        filteredConfigs = filteredConfigs.sort(compareNameAscending);
       }
 
       if (asc == false) {
-        filteredCloud = filteredCloud.sort(compareNameDescending);
+        filteredConfigs = filteredConfigs.sort(compareNameDescending);
       }
     }
 
     if (field == "date") {
       if (asc == true) {
-        filteredCloud = filteredCloud.sort(compareDateAscending);
+        filteredConfigs = filteredConfigs.sort(compareDateAscending);
       }
 
       if (asc == false) {
-        filteredCloud = filteredCloud.sort(compareDateDescending);
+        filteredConfigs = filteredConfigs.sort(compareDateDescending);
       }
     }
 
     if (field == "module") {
       if (asc == true) {
-        filteredCloud = filteredCloud.sort(
+        filteredConfigs = filteredConfigs.sort(
           compareModuleAscending
         );
       }
       if (asc == false) {
-        filteredCloud = filteredCloud.sort(
+        filteredConfigs = filteredConfigs.sort(
           compareModuleDescending
         );
       }
@@ -195,7 +195,7 @@
 	}
 
 	const userAccountSubscription = userAccountService.subscribe(async (userAccount) => {
-		cloudProfiles = await getCloudProfiles();
+		cloudConfigs = await getCloudConfigs();
 		if (userAccount.account?.uid) {
 			const username = await getUserNameByUid(userAccount.account.uid);
 			if (username) {
@@ -281,18 +281,18 @@
 			userAccountService.authenticateUser(event.data.authEvent);
 		}
 
-		if (event.data.messageType == 'profileLink') {
-			const linkedProfile = await getLinkedProfile(event.data.profileLinkId);
+		if (event.data.messageType == 'configLink') {
+			const linkedConfig = await getLinkedConfig(event.data.configLinkId);
 			submitAnalytics({
-				eventName: 'Profile Link',
+				eventName: 'Config Link',
 				payload: {
 					task: 'Import',
-					owner: linkedProfile?.owner,
-					profileName: linkedProfile?.name,
-					profileType: linkedProfile?.type
+					owner: linkedConfig?.owner,
+					profileName: linkedConfig?.name,
+					profileType: linkedConfig?.type
 				}
 			});
-			saveCloudProfileToLocalFolder(linkedProfile!);
+			saveCloudConfigToLocalFolder(linkedConfig!);
 		}
 
 		if (event.data.messageType == 'selectedModuleType') {
@@ -300,22 +300,22 @@
 		}
 	}
 
-	async function getLinkedProfile(id: string) {
-		const docRef = doc(profileLinksCollection, id);
-		const profileLink = await getDoc(docRef)
+	async function getLinkedConfig(id: string) {
+		const docRef = doc(configLinksCollection, id);
+		const configLink = await getDoc(docRef)
 			.then((res) => res.data())
 			.catch((err) => console.log(err));
-		return profileLink;
+		return configLink;
 	}
 
-	async function getListOfLocalProfiles() {
+	async function getListOfLocalConfigs() {
 		if (display == 'web') {
 			return [];
 		}
 
 		const result = await parentIframeCommunication({
-			windowPostMessageName: 'getListOfLocalProfiles',
-			channelPostMessage: { channelMessageType: 'GET_LIST_OF_LOCAL_PROFILES' },
+			windowPostMessageName: 'getListOfLocalConfigs',
+			channelPostMessage: { channelMessageType: 'GET_LIST_OF_LOCAL_CONFIGS' },
 			dataForParent: {}
 		});
 		if (result.ok) {
@@ -323,124 +323,124 @@
 		}
 	}
 
-	async function provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
-		profile?: Profile | {}
+	async function provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+		config?: Config | {}
 	) {
-		if (!profile) {
-			profile = {};
+		if (!config) {
+			config = {};
 		}
 		const result = await parentIframeCommunication({
-			windowPostMessageName: 'provideSelectedProfileForOptionalUploadingToOneOreMoreModules',
+			windowPostMessageName: 'provideSelectedConfigForOptionalUploadingToOneOreMoreModules',
 			channelPostMessage: {
-				channelMessageType: 'PROVIDE_SELECTED_PROFILE_FOR_OPTIONAL_UPLOADING_TO_ONE_OR_MORE_MODULES'
+				channelMessageType: 'PROVIDE_SELECTED_CONFIG_FOR_OPTIONAL_UPLOADING_TO_ONE_OR_MORE_MODULES'
 			},
-			dataForParent: { profile }
+			dataForParent: { config }
 		});
 		if (result.ok) {
 		}
 	}
 
-	async function deleteLocalProfile(profile: Profile) {
+	async function deleteLocalConfig(profile: Config) {
 		const result = await parentIframeCommunication({
-			windowPostMessageName: 'deleteLocalProfile',
+			windowPostMessageName: 'deleteLocalConfig',
 			channelPostMessage: {
-				channelMessageType: 'DELETE_LOCAL_PROFILE'
+				channelMessageType: 'DELETE_LOCAL_CONFIG'
 			},
 			dataForParent: { profile }
 		}).catch((err) => {
 			return { ok: false, data: {} };
 		});
 		if (result.ok) {
-			localProfiles = await getListOfLocalProfiles();
+			localConfigs = await getListOfLocalConfigs();
 		}
 	}
 
-	async function createNewLocalProfileWithTheSelectedModulesConfigurationFromEditor() {
+	async function createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor() {
 		const result = await parentIframeCommunication({
-			windowPostMessageName: 'createNewLocalProfileWithTheSelectedModulesConfigurationFromEditor',
+			windowPostMessageName: 'createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor',
 			channelPostMessage: {
 				channelMessageType:
-					'CREATE_NEW_LOCAL_PROFILE_WITH_THE_SELECTED_MODULES_CONFIGURATION_FROM_EDITOR'
+					'CREATE_NEW_LOCAL_CONFIG_WITH_THE_SELECTED_MODULES_CONFIGURATION_FROM_EDITOR'
 			},
 			dataForParent: {}
 		});
 		if (result.ok) {
-			localProfiles = await getListOfLocalProfiles();
+			localConfigs = await getListOfLocalConfigs();
 		}
 	}
 
 	let importFlag: string | undefined = undefined;
-	async function saveCloudProfileToLocalFolder(profile: Profile) {
-		importFlag = profile.id;
+	async function saveCloudConfigToLocalFolder(config: Config) {
+		importFlag = config.id;
 		const result = await parentIframeCommunication({
-			windowPostMessageName: 'profileImportCommunication',
+			windowPostMessageName: 'configImportCommunication',
 			channelPostMessage: {
-				channelMessageType: 'IMPORT_PROFILE'
+				channelMessageType: 'IMPORT_CONFIG'
 			},
-			dataForParent: profile
+			dataForParent: config
 		});
 		if (result.ok) {
-			localProfiles = await getListOfLocalProfiles();
+			localConfigs = await getListOfLocalConfigs();
 			importFlag = undefined;
 		}
 	}
 
-	async function splitLocalProfile(profile: Profile) {
+	async function splitLocalConfig(config: Config) {
 		const result = await parentIframeCommunication({
-			windowPostMessageName: 'splitLocalProfile',
+			windowPostMessageName: 'splitLocalConfig',
 			channelPostMessage: {
-				channelMessageType: 'SPLIT_LOCAL_PROFILE'
+				channelMessageType: 'SPLIT_LOCAL_CONFIG'
 			},
-			dataForParent: { profileToSplit: profile }
+			dataForParent: { configToSplit: config }
 		});
 		if (result.ok) {
 		}
 	}
 
-	async function textEditLocalProfile({
+	async function textEditLocalConfig({
 		name,
 		description,
-		profile
+		config
 	}: {
 		name?: string;
 		description?: string;
-		profile: Profile;
+		config: Config;
 	}) {
 		const result = await parentIframeCommunication({
-			windowPostMessageName: 'textEditLocalProfile',
+			windowPostMessageName: 'textEditLocalConfig',
 			channelPostMessage: {
-				channelMessageType: 'TEXT_EDIT_LOCAL_PROFILE'
+				channelMessageType: 'TEXT_EDIT_LOCAL_CONFIG'
 			},
-			dataForParent: { name, description, profile }
+			dataForParent: { name, description, config }
 		});
 		if (result.ok) {
-			localProfiles = await getListOfLocalProfiles();
+			localConfigs = await getListOfLocalConfigs();
 		}
 	}
 
-	async function textEditCloudProfile({
+	async function textEditCloudConfig({
 		name,
 		description,
-		profile
+		config
 	}: {
 		name?: string;
 		description?: string;
-		profile: Profile;
+		config: Config;
 	}) {
-		interface ProfileTextDetails {
+		interface ConfigTextDetails {
 			name?: string;
 			description?: string;
 		}
 
-		let details: ProfileTextDetails = {};
+		let details: ConfigTextDetails = {};
 		if (name) details['name'] = name;
 		if (description) details['description'] = description;
 
-		await updateDoc(doc(profilesCollection, profile.id), {
+		await updateDoc(doc(configsCollection, config.id), {
 			...details
 		})
 			.then(async () => {
-				cloudProfiles = await getCloudProfiles();
+				cloudConfigs = await getCloudConfigs();
 			})
 			.catch((error) => {
 				console.log('error updating profile', error);
@@ -448,33 +448,33 @@
 	}
 
 	// visibiltiy = public true / false
-	async function changeCloudProfileVisibility(profile: Profile, visibility: boolean) {
-		await updateDoc(doc(profilesCollection, profile.id), {
+	async function changeCloudConfigVisibility(config: Config, visibility: boolean) {
+		await updateDoc(doc(configsCollection, config.id), {
 			public: visibility
 		})
 			.then(async () => {
-				cloudProfiles = await getCloudProfiles();
+				cloudConfigs = await getCloudConfigs();
 			})
 			.catch((error) => {
-				console.log('error updating profile', error);
+				console.log('error updating config', error);
 			});
 	}
 
-	async function overwriteLocalProfile(profile: Profile) {
+	async function overwriteLocalConfig(config: Config) {
 		const result = await parentIframeCommunication({
-			windowPostMessageName: 'overwriteLocalProfile',
+			windowPostMessageName: 'overwriteLocalConfig',
 			channelPostMessage: {
-				channelMessageType: 'OVERWRITE_LOCAL_PROFILE'
+				channelMessageType: 'OVERWRITE_LOCAL_CONFIG'
 			},
-			dataForParent: { profileToOverwrite: profile }
+			dataForParent: { configToOverwrite: config }
 		});
 		if (result.ok) {
-			localProfiles = await getListOfLocalProfiles();
+			localConfigs = await getListOfLocalConfigs();
 		}
 	}
 
-	async function saveLocalProfileToCloud(profile: Profile) {
-		const newProfileRef = doc(profilesCollection);
+	async function saveLocalConfigToCloud(config: Config) {
+		const newConfigRef = doc(configsCollection);
 		const userData = get(userAccountService)?.account;
 		if (!userData) {
 			loginToProfileCloud();
@@ -485,63 +485,61 @@
 			return;
 		}
 
-		// reassign, else profile to delete id is overwritten!
-		const profileToSave = { ...profile };
+		// reassign, else config to delete id is overwritten!
+		const configToSave = { ...config };
 
-		profileToSave.owner = userData.uid;
-		profileToSave.access = [userData.uid];
-		profileToSave.public = false;
-		profileToSave.id = newProfileRef.id;
+		configToSave.owner = userData.uid;
+		configToSave.access = [userData.uid];
+		configToSave.public = false;
+		configToSave.id = newConfigRef.id;
 
-		const parsedProfile = ProfileSchema.safeParse(profileToSave);
+		const parsedConfig = ConfigSchema.safeParse(configToSave);
 
-		if (parsedProfile.success) {
+		if (parsedConfig.success) {
 		} else {
-			console.log(parsedProfile.error);
+			console.log(parsedConfig.error);
 			return;
 		}
 
-		await setDoc(newProfileRef, parsedProfile.data)
+		await setDoc(newConfigRef, parsedConfig.data)
 			.then(async () => {
-				// profile is successfully saved to cloud
+				await deleteLocalConfig(config);
+				cloudConfigs = await getCloudConfigs();
 			})
 			.catch((error) => {
 				// profile is not saved to cloud
-				console.error('Profile save to cloud was unsuccessful', error);
+				console.error('Config save to cloud was unsuccessful', error);
 			});
-
-		await deleteLocalProfile(profile);
-		cloudProfiles = await getCloudProfiles();
 	}
 
-	async function deleteCloudProfile(profile: Profile) {
-		const profileRef = doc(profilesCollection, profile.id!);
-		await deleteDoc(profileRef)
+	async function deleteCloudConfig(config: Config) {
+		const configRef = doc(configsCollection, config.id!);
+		await deleteDoc(configRef)
 			.then(async (res) => {
-				cloudProfiles = await getCloudProfiles();
+				cloudConfigs = await getCloudConfigs();
 			})
 			.catch((err) => {
-				console.log('Error deleting profile', err);
+				console.log('Error deleting config', err);
 			});
 	}
 
-	async function getCloudProfiles() {
+	async function getCloudConfigs() {
 		let q: Query | undefined = undefined;
 		if (get(userAccountService)?.account?.uid) {
 			q = query(
-				profilesCollection,
+				configsCollection,
 				or(
 					where('public', '==', true),
 					where('access', 'array-contains', get(userAccountService)?.account?.uid || '')
 				)
 			);
 		} else {
-			q = query(profilesCollection, where('public', '==', true));
+			q = query(configsCollection, where('public', '==', true));
 		}
 
 		// assign the returned documents to a variable, so it's easy to pass it to Grid Editor
-		const profiles = await getDocs(q).then((res) => res.docs);
-		return profiles;
+		const configs = await getDocs(q).then((res) => res.docs);
+		return configs;
 	}
 
 	async function loginToProfileCloud() {
@@ -564,56 +562,54 @@
 		});
 	}
 
-	async function createCloudProfileLink(profile: Profile) {
-		const newProfileLinkRef = doc(profileLinksCollection);
+	async function createCloudConfigLink(config: Config) {
+		const newConfigLinkRef = doc(configLinksCollection);
 		const userData = get(userAccountService)?.account;
 		if (!userData) {
 			loginToProfileCloud();
 			return;
 		}
 
-		const profileLink: ProfileLink = {
-			...profile,
+		const configLink: ConfigLink = {
+			...config,
 			linked: true
 		};
 
-		profileLink.owner = userData.uid;
-		profileLink.access = [userData.uid];
-		profileLink.public = true;
-		profileLink.id = newProfileLinkRef.id;
+		configLink.owner = userData.uid;
+		configLink.access = [userData.uid];
+		configLink.public = true;
+		configLink.id = newConfigLinkRef.id;
 
-		const parsedProfileLink = ProfileLinkSchema.safeParse(profileLink);
+		const parsedConfigLink = ConfigLinkSchema.safeParse(configLink);
 
-		if (parsedProfileLink.success) {
-			// do nothing, continue
-		} else {
-			console.log(parsedProfileLink.error);
+		if (!parsedConfigLink.success) {
+			console.log(parsedConfigLink.error);
 			return;
 		}
 
-		await setDoc(newProfileLinkRef, parsedProfileLink.data)
-			.then((res) => {
-				// profile is successfully saved to cloud
+		await setDoc(newConfigLinkRef, parsedConfigLink.data)
+			.then(async (res) => {
+				const profileLinkUrl = 'grid-editor://?profile-link=' + newConfigLinkRef.id;
+
+				await parentIframeCommunication({
+					windowPostMessageName: 'createCloudConfigLink',
+					channelPostMessage: {
+						channelMessageType: 'CREATE_CLOUD_CONFIG_LINK'
+					},
+					dataForParent: { parsedConfigLink }
+				}).then((res) => {
+					linkFlag = config.id;
+					setTimeout(() => {
+						linkFlag = undefined;
+					}, 1750);
+				});
 			})
 			.catch(() => {
-				// profile is not saved to cloud
-				console.error('Profile link save to cloud was unsuccessful');
+				// config is not saved to cloud
+				console.error('Config link save to cloud was unsuccessful');
 			});
 
-		const profileLinkUrl = 'grid-editor://?profile-link=' + newProfileLinkRef.id;
-
-		await parentIframeCommunication({
-			windowPostMessageName: 'createCloudProfileLink',
-			channelPostMessage: {
-				channelMessageType: 'CREATE_CLOUD_PROFILE_LINK'
-			},
-			dataForParent: { profileLinkUrl }
-		}).then((res) => {
-			linkFlag = profile.id;
-			setTimeout(() => {
-				linkFlag = undefined;
-			}, 1750);
-		});
+		
 	}
 
 	async function profileCloudMounted() {
@@ -642,9 +638,9 @@
 
 		console.log('onmount');
 
-		localProfiles = await getListOfLocalProfiles();
+		localConfigs = await getListOfLocalConfigs();
 
-		cloudProfiles = await getCloudProfiles();
+		cloudConfigs = await getCloudConfigs();
 	});
 
 	onDestroy(() => {
@@ -692,8 +688,8 @@
 									</div>
 									<button
 										on:click={() => {
-											createNewLocalProfileWithTheSelectedModulesConfigurationFromEditor();
-											provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
+											createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor();
+											provideSelectedConfigForOptionalUploadingToOneOreMoreModules({});
 											submitAnalytics({
 												eventName: 'Local Profile',
 												payload: {
@@ -708,39 +704,39 @@
 								<div
 									class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
 								>
-									{#each [...linkProfiles, ...localProfiles.filter((p) => p.folder == 'local')] as profile, index}
+									{#each [...linkConfigs, ...localConfigs.filter((p) => p.folder == 'local')] as config, index}
 										<LocalProfileCard
 											on:click={() => {
-												if (selectedLocalProfileIndex == index) {
+												if (selectedLocalConfigIndex == index) {
 													return;
 												}
-												// reset the selected cloud profile index
-												selectedCloudProfileIndex = undefined;
-												provideSelectedProfileForOptionalUploadingToOneOreMoreModules(profile);
-												selectedLocalProfileIndex = index;
+												// reset the selected cloud config index
+												selectedCloudConfigIndex = undefined;
+												provideSelectedConfigForOptionalUploadingToOneOreMoreModules(config);
+												selectedLocalConfigIndex = index;
 											}}
 											on:focusout={(e) => {
-												selectedLocalProfileIndex = undefined;
+												selectedLocalConfigIndex = undefined;
 											}}
 											on:save-to-cloud={() => {
-												saveLocalProfileToCloud(profile);
-												provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
+												saveLocalConfigToCloud(config);
+												provideSelectedConfigForOptionalUploadingToOneOreMoreModules({});
 												submitAnalytics({
 													eventName: 'Local Profile',
 													payload: {
 														task: 'Save to cloud',
-														...profile
+														...config
 													}
 												});
 											}}
 											on:delete-local={async () => {
-												deleteLocalProfile(profile);
-												provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
+												deleteLocalConfig(config);
+												provideSelectedConfigForOptionalUploadingToOneOreMoreModules({});
 												submitAnalytics({
 													eventName: 'Local Profile',
 													payload: {
 														task: 'Delete',
-														...profile
+														...config
 													}
 												});
 											}}
@@ -749,49 +745,49 @@
 											}}
 											on:name-change={(e) => {
 												const { newName } = e.detail;
-												textEditLocalProfile({ name: newName, profile });
+												textEditLocalConfig({ name: newName, config });
 												submitAnalytics({
-													eventName: 'Local Profile',
+													eventName: 'Local Config',
 													payload: {
 														task: 'Edit name',
-														oldName: profile.name,
+														oldName: config.name,
 														newName: newName
 													}
 												});
 											}}
 											on:description-change={(e) => {
 												const { newDescription } = e.detail;
-												textEditLocalProfile({ description: newDescription, profile });
+												textEditLocalConfig({ description: newDescription, config });
 												submitAnalytics({
 													eventName: 'Local Profile',
 													payload: {
 														task: 'Edit description',
-														oldDescription: profile.description,
+														oldDescription: config.description,
 														newDescription: newDescription
 													}
 												});
 											}}
 											on:overwrite-profile={() => {
-												overwriteLocalProfile(profile);
-												provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
+												overwriteLocalConfig(config);
+												provideSelectedConfigForOptionalUploadingToOneOreMoreModules({});
 												submitAnalytics({
 													eventName: 'Local Profile',
 													payload: {
 														task: 'Overwrite',
-														...profile
+														...config
 													}
 												});
 											}}
-											class={index == selectedLocalProfileIndex
+											class={index == selectedLocalConfigIndex
 												? 'border-emerald-500'
 												: 'border-white/10'}
-											data={{ ...profile, selectedModuleType: selectedModuleType }}
+											data={{ ...config, selectedModuleType: selectedModuleType }}
 										/>
 									{/each}
 								</div>
 							</div>
 						</Pane>
-						{#if cloudProfiles && cloudProfiles.length > 0}
+						{#if cloudConfigs && cloudConfigs.length > 0}
 							<Pane minSize={28}>
 								<div class="flex flex-col h-full pb-4">
 									<div class="py-4">
@@ -991,26 +987,26 @@
 									<div
 										class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
 									>
-										{#each filteredCloud as profile, index (profile.id)}
-											{@const data = profile.data()}
+										{#each filteredConfigs as config, index (config.id)}
+											{@const data = config.data()}
 											<div in:slide>
 												<CloudProfileCard
 													on:click={() => {
-														if (selectedCloudProfileIndex == index) {
+														if (selectedCloudConfigIndex == index) {
 															return;
 														}
 														// reset the selection on the local profiles
-														selectedLocalProfileIndex = undefined;
-														provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
-														selectedCloudProfileIndex = index;
+														selectedLocalConfigIndex = undefined;
+														provideSelectedConfigForOptionalUploadingToOneOreMoreModules(data);
+														selectedCloudConfigIndex = index;
 													}}
 													on:focusout={(e) => {
-														selectedCloudProfileIndex = undefined;
+														selectedCloudConfigIndex = undefined;
 													}}
 													on:delete-cloud={async () => {
-														selectedCloudProfileIndex = undefined;
-														deleteCloudProfile(data);
-														provideSelectedProfileForOptionalUploadingToOneOreMoreModules();
+														selectedCloudConfigIndex = undefined;
+														deleteCloudConfig(data);
+														provideSelectedConfigForOptionalUploadingToOneOreMoreModules();
 														submitAnalytics({
 															eventName: 'Profile Cloud',
 															payload: {
@@ -1022,7 +1018,7 @@
 													}}
 													on:description-change={(e) => {
 														const { newDescription } = e.detail;
-														textEditCloudProfile({ description: newDescription, profile: data });
+														textEditCloudConfig({ description: newDescription, config: data });
 														submitAnalytics({
 															eventName: 'Profile Cloud',
 															payload: {
@@ -1035,7 +1031,7 @@
 													on:name-change={(e) => {
 														const { newName } = e.detail;
 
-														textEditCloudProfile({ name: newName, profile });
+														textEditCloudConfig({ name: newName, config });
 														submitAnalytics({
 															eventName: 'Profile Cloud',
 															payload: {
@@ -1045,7 +1041,7 @@
 															}
 														});
 													}}
-													class={index === selectedCloudProfileIndex
+													class={index === selectedCloudConfigIndex
 														? 'border-emerald-500'
 														: 'border-white/10'}
 													data={{ ...data, selectedModuleType: selectedModuleType }}
@@ -1054,8 +1050,8 @@
 														<button
 															class="relative group flex"
 															on:click|stopPropagation={() => {
-																createCloudProfileLink(data);
-																provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
+																createCloudConfigLink(data);
+																provideSelectedConfigForOptionalUploadingToOneOreMoreModules({});
 																submitAnalytics({
 																	eventName: 'Profile Link',
 																	payload: {
@@ -1084,8 +1080,8 @@
 													<svelte:fragment slot="import-button">
 														<button
 															on:click|stopPropagation={async () => {
-																saveCloudProfileToLocalFolder(data);
-																provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
+																saveCloudConfigToLocalFolder(data);
+																provideSelectedConfigForOptionalUploadingToOneOreMoreModules({});
 																submitAnalytics({
 																	eventName: 'Profile Cloud',
 																	payload: {
@@ -1119,7 +1115,7 @@
 																		visibility: e.detail
 																	}
 																});
-																changeCloudProfileVisibility(data, e.detail);
+																changeCloudConfigVisibility(data, e.detail);
 															}}
 														>
 															<div class="relative group" slot="on">
@@ -1467,15 +1463,15 @@
 					<div
 						class="overflow-y-auto w-full h-full p-2 lg:py-8 grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 gap-4"
 					>
-						{#each filteredCloud as profile, index}
-							{@const data = profile.data()}
+						{#each filteredConfigs as config, index}
+							{@const data = config.data()}
 							<CloudProfileCard
 								on:click={() => {
-									provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
-									selectedCloudProfileIndex = index;
-									selectedLocalProfileIndex = undefined;
+									provideSelectedConfigForOptionalUploadingToOneOreMoreModules(data);
+									selectedCloudConfigIndex = index;
+									selectedLocalConfigIndex = undefined;
 								}}
-								class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
+								class={index == selectedCloudConfigIndex ? 'border-emerald-500' : ''}
 								{data}
 							/>
 						{/each}
