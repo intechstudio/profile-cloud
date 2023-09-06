@@ -24,6 +24,8 @@
 	import {
 		configLinksCollection,
 		configsCollection,
+		profileLinksCollection,
+		profilesCollection,
 		userCollection,
 		usernameCollection
 	} from '$lib/collections';
@@ -31,6 +33,7 @@
 	import SvgIcon from '$lib/icons/SvgIcon.svelte';
 	import { get } from 'svelte/store';
 	import { ConfigSchema, type Config, type ConfigLink, ConfigLinkSchema } from '$lib/schemas';
+	import { ProfileSchema, type Profile, type ProfileLink, ProfileLinkSchema } from '$lib/schemas';
 	import { fade, slide } from 'svelte/transition';
 	import ToggleSwitch from '$lib/components/atomic/ToggleSwitch.svelte';
 	import { PUBLIC_APP_ENV } from '$env/static/public';
@@ -302,9 +305,19 @@
 
 	async function getLinkedConfig(id: string) {
 		const docRef = doc(configLinksCollection, id);
-		const configLink = await getDoc(docRef)
+		let configLink = await getDoc(docRef)
 			.then((res) => res.data())
 			.catch((err) => console.log(err));
+		if (!configLink){
+			let profileLink = await getDoc(doc(profileLinksCollection, id))
+				.then((res) => res.data())
+				.catch((err) => console.log(err));
+			if (!profileLink){
+				return configLink;
+			}
+			profileLink.configType = "profile";
+			configLink = profileLink;
+		}
 		return configLink;
 	}
 
@@ -525,6 +538,7 @@
 
 	async function getCloudConfigs() {
 		let q: Query | undefined = undefined;
+		let qOldProfile: Query | undefined = undefined;
 		if (get(userAccountService)?.account?.uid) {
 			q = query(
 				configsCollection,
@@ -533,13 +547,22 @@
 					where('access', 'array-contains', get(userAccountService)?.account?.uid || '')
 				)
 			);
+			qOldProfile = query(
+				profilesCollection,
+				or(
+					where('public', '==', true),
+					where('access', 'array-contains', get(userAccountService)?.account?.uid || '')
+				)
+			);
 		} else {
 			q = query(configsCollection, where('public', '==', true));
+			qOldProfile = query(profilesCollection, where('public', '==', true));
 		}
 
 		// assign the returned documents to a variable, so it's easy to pass it to Grid Editor
 		const configs = await getDocs(q).then((res) => res.docs);
-		return configs;
+		const profiles = await getDocs(qOldProfile).then((res) => res.docs);
+		return [...configs, ...profiles];
 	}
 
 	async function loginToProfileCloud() {
