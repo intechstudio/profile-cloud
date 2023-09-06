@@ -87,11 +87,8 @@
     let sortField = "name";
 
     $: {
-        if (cloudProfiles || localProfiles) {
-            getAllProfiles().then((profiles) => {
-                allProfiles = profiles;
-                console.log(allProfiles);
-            });
+        if (localProfiles.length > 0 || cloudProfiles.length > 0) {
+            mergeProfiles(localProfiles, cloudProfiles);
         }
     }
 
@@ -303,10 +300,9 @@
         }
     }
 
-    async function getAllProfiles() {
+    async function mergeProfiles(local: any[], cloud: any[]) {
         //LOCAL
-        let local: any[] = await getListOfLocalProfiles();
-        local = local.map((p: any) => {
+        const arr1 = local.map((p: any) => {
             return {
                 data: p,
                 location: "local"
@@ -314,18 +310,17 @@
         });
 
         //CLOUD
-        let cloud: any[] = await getCloudProfiles();
-
-        cloud = cloud.map((p) => {
+        const arr2 = cloud.map((p) => {
             return {
                 data: p.data(),
                 location: "cloud"
             };
         });
 
+        //let profiles: any[] = [];
         //MERGED
-        let profiles = [...local, ...cloud];
-        return profiles;
+        let profiles = [...arr1, ...arr2];
+        allProfiles = profiles;
     }
 
     async function getLinkedProfile(id: string) {
