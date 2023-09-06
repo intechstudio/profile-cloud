@@ -87,8 +87,8 @@
     let sortField = "name";
 
     $: {
-        if (localProfiles.length > 0 || cloudProfiles.length > 0) {
-            mergeProfiles(localProfiles, cloudProfiles);
+        if (localProfiles.length > 0 || cloudProfiles.length > 0 || linkProfiles.length > 0) {
+            mergeProfiles(localProfiles, cloudProfiles, linkProfiles);
         }
     }
 
@@ -124,7 +124,7 @@
         });
     }
 
-    $: cloudProfiles, updateSearchFilter(searchbarValue);
+    $: cloudProfiles, localProfiles, updateSearchFilter(searchbarValue);
 
     function updateSearchFilter(input: string) {
         animateFade = false;
@@ -180,6 +180,15 @@
                 filteredProfiles = filteredProfiles.sort(compareModuleDescending);
             }
         }
+
+        //After the sorting, separate locale and cloud profiles, keeping the initial sort order
+        filteredProfiles = filteredProfiles.sort((a, b) => {
+            if (a.location === b.location) {
+                return 0; // Maintain relative order for the same type
+            } else {
+                return a.location === "local" ? -1 : 1; // 'local' comes before 'cloud'
+            }
+        });
     }
 
     async function submitAnalytics({ eventName, payload }: { eventName: string; payload: any }) {
@@ -300,14 +309,16 @@
         }
     }
 
-    async function mergeProfiles(local: any[], cloud: any[]) {
+    async function mergeProfiles(local: any[], cloud: any[], link: any[]) {
         //LOCAL
-        const arr1 = local.map((p: any) => {
-            return {
-                data: p,
-                location: "local"
-            };
-        });
+        const arr1 = local
+            .filter((p) => p.folder == "local")
+            .map((p: any) => {
+                return {
+                    data: p,
+                    location: "local"
+                };
+            });
 
         //CLOUD
         const arr2 = cloud.map((p) => {
@@ -317,7 +328,14 @@
             };
         });
 
-        //let profiles: any[] = [];
+        //LINK
+        const arr3 = link.map((p: any) => {
+            return {
+                data: p,
+                location: "local"
+            };
+        });
+
         //MERGED
         let profiles = [...arr1, ...arr2];
         allProfiles = profiles;
@@ -1103,103 +1121,102 @@
                                         </CloudProfileCard>
                                     {/if}
                                     {#if profile.location === "local"}
-                                        {#each [...linkProfiles, ...localProfiles.filter((p) => p.folder == "local")] as profile, index}
-                                            <LocalProfileCard
-                                                on:click={() => {
-                                                    if (selectedLocalProfileIndex == index) {
-                                                        return;
+                                        {@const data = profile.data}
+                                        <LocalProfileCard
+                                            on:click={() => {
+                                                if (selectedLocalProfileIndex == index) {
+                                                    return;
+                                                }
+                                                // reset the selected cloud profile index
+                                                selectedCloudProfileIndex = undefined;
+                                                provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                                    profile
+                                                );
+                                                selectedLocalProfileIndex = index;
+                                            }}
+                                            on:focusout={(e) => {
+                                                selectedLocalProfileIndex = undefined;
+                                            }}
+                                            on:save-to-cloud={() => {
+                                                saveLocalProfileToCloud(profile);
+                                                provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                                    {}
+                                                );
+                                                submitAnalytics({
+                                                    eventName: "Local Profile",
+                                                    payload: {
+                                                        task: "Save to cloud",
+                                                        ...profile
                                                     }
-                                                    // reset the selected cloud profile index
-                                                    selectedCloudProfileIndex = undefined;
-                                                    provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
-                                                        profile
-                                                    );
-                                                    selectedLocalProfileIndex = index;
-                                                }}
-                                                on:focusout={(e) => {
-                                                    selectedLocalProfileIndex = undefined;
-                                                }}
-                                                on:save-to-cloud={() => {
-                                                    saveLocalProfileToCloud(profile);
-                                                    provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
-                                                        {}
-                                                    );
-                                                    submitAnalytics({
-                                                        eventName: "Local Profile",
-                                                        payload: {
-                                                            task: "Save to cloud",
-                                                            ...profile
-                                                        }
-                                                    });
-                                                }}
-                                                on:delete-local={async () => {
-                                                    deleteLocalProfile(profile);
-                                                    provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
-                                                        {}
-                                                    );
-                                                    submitAnalytics({
-                                                        eventName: "Local Profile",
-                                                        payload: {
-                                                            task: "Delete",
-                                                            ...profile
-                                                        }
-                                                    });
-                                                }}
-                                                on:split-profile={() => {
-                                                    //splitLocalProfile(profile);
-                                                }}
-                                                on:name-change={(e) => {
-                                                    const { newName } = e.detail;
-                                                    textEditLocalProfile({
-                                                        name: newName,
-                                                        profile
-                                                    });
-                                                    submitAnalytics({
-                                                        eventName: "Local Profile",
-                                                        payload: {
-                                                            task: "Edit name",
-                                                            oldName: profile.name,
-                                                            newName: newName
-                                                        }
-                                                    });
-                                                }}
-                                                on:description-change={(e) => {
-                                                    const { newDescription } = e.detail;
-                                                    textEditLocalProfile({
-                                                        description: newDescription,
-                                                        profile
-                                                    });
-                                                    submitAnalytics({
-                                                        eventName: "Local Profile",
-                                                        payload: {
-                                                            task: "Edit description",
-                                                            oldDescription: profile.description,
-                                                            newDescription: newDescription
-                                                        }
-                                                    });
-                                                }}
-                                                on:overwrite-profile={() => {
-                                                    overwriteLocalProfile(profile);
-                                                    provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
-                                                        {}
-                                                    );
-                                                    submitAnalytics({
-                                                        eventName: "Local Profile",
-                                                        payload: {
-                                                            task: "Overwrite",
-                                                            ...profile
-                                                        }
-                                                    });
-                                                }}
-                                                class={index == selectedLocalProfileIndex
-                                                    ? "border-emerald-500"
-                                                    : "border-white/10"}
-                                                data={{
-                                                    ...profile,
-                                                    selectedModuleType: selectedModuleType
-                                                }}
-                                            />
-                                        {/each}
+                                                });
+                                            }}
+                                            on:delete-local={async () => {
+                                                deleteLocalProfile(profile);
+                                                provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                                    {}
+                                                );
+                                                submitAnalytics({
+                                                    eventName: "Local Profile",
+                                                    payload: {
+                                                        task: "Delete",
+                                                        ...profile
+                                                    }
+                                                });
+                                            }}
+                                            on:split-profile={() => {
+                                                //splitLocalProfile(profile);
+                                            }}
+                                            on:name-change={(e) => {
+                                                const { newName } = e.detail;
+                                                textEditLocalProfile({
+                                                    name: newName,
+                                                    profile
+                                                });
+                                                submitAnalytics({
+                                                    eventName: "Local Profile",
+                                                    payload: {
+                                                        task: "Edit name",
+                                                        oldName: profile.name,
+                                                        newName: newName
+                                                    }
+                                                });
+                                            }}
+                                            on:description-change={(e) => {
+                                                const { newDescription } = e.detail;
+                                                textEditLocalProfile({
+                                                    description: newDescription,
+                                                    profile
+                                                });
+                                                submitAnalytics({
+                                                    eventName: "Local Profile",
+                                                    payload: {
+                                                        task: "Edit description",
+                                                        oldDescription: profile.description,
+                                                        newDescription: newDescription
+                                                    }
+                                                });
+                                            }}
+                                            on:overwrite-profile={() => {
+                                                overwriteLocalProfile(profile);
+                                                provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                                    {}
+                                                );
+                                                submitAnalytics({
+                                                    eventName: "Local Profile",
+                                                    payload: {
+                                                        task: "Overwrite",
+                                                        ...profile
+                                                    }
+                                                });
+                                            }}
+                                            class={index == selectedLocalProfileIndex
+                                                ? "border-emerald-500"
+                                                : "border-white/10"}
+                                            data={{
+                                                ...data,
+                                                selectedModuleType: selectedModuleType
+                                            }}
+                                        />
                                     {/if}
                                 </div>
                             {/each}
