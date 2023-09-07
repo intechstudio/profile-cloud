@@ -2,15 +2,15 @@
 	import { applyFocus } from '$lib/utils';
 	import SvgIcon from '$lib/icons/SvgIcon.svelte';
 	import { createEventDispatcher, getContext } from 'svelte';
-	import type { Profile } from '$lib/schemas';
+	import type { Config } from '$lib/schemas';
 
 	const dispatchEvent = createEventDispatcher();
 	
-	interface SelectedModuleType {
-		selectedModuleType: string;
+	interface SelectedComponentTypes {
+		selectedComponentTypes: string[];
 	}
 	
-	export let data: Profile & SelectedModuleType;
+	export let data: Config & SelectedComponentTypes;
 
 	const display = getContext('display');
 
@@ -183,12 +183,11 @@
 				/>
 			</div>
 			<div
-				class="flex justify-between pt-2 dark:text-white text-black text-opacity-80 {data.type ===
-				data.selectedModuleType
+				class="flex justify-between pt-2 dark:text-white text-black text-opacity-80 {
+				data.selectedComponentTypes.includes(data.type)
 					? 'dark:text-opacity-100'
 					: 'dark:text-opacity-70'}">
-				<div class="dark:border py-0.5 px-2 {data.type ===
-					data.selectedModuleType
+				<div class="dark:border py-0.5 px-2 {data.selectedComponentTypes.includes(data.type)
 						? 'dark:border-white dark:border-opacity-10 dark:bg-white dark:bg-opacity-10'
 						: 'dark:border-transparent'}">{data.type}</div>
 				{#if data.linked}

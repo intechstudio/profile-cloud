@@ -3,7 +3,7 @@
 	import { createEventDispatcher, getContext, onDestroy, onMount } from 'svelte';
 	import AtomicButton from '$lib/components/atomic/AtomicButton.svelte';
 	import SvgIcon from '$lib/icons/SvgIcon.svelte';
-	import type { Profile } from '$lib/schemas';
+	import type { Config } from '$lib/schemas';
 	import { applyFocus } from '$lib/utils';
 	import { userAccountService } from '$lib/stores';
 	import { get } from 'svelte/store';
@@ -12,11 +12,11 @@
 
 	const dispatchEvent = createEventDispatcher();
 
-	interface SelectedModuleType {
-		selectedModuleType: string;
+	interface SelectedComponentTypes {
+		selectedComponentTypes: string[];
 	}
 
-	export let data: Profile & SelectedModuleType;
+	export let data: Config & SelectedComponentTypes;
 
 	const display = getContext('display');
 
@@ -230,7 +230,7 @@
 		class=" w-full flex py-1 px-3 justify-between items-center md:border-t-2 border-neutral-200 dark:border-neutral-700"
 	>
 		<div
-			class="dark:text-white text-black text-opacity-80 py-0.5 px-2 dark:border {data.type === data.selectedModuleType
+			class="dark:text-white text-black text-opacity-80 py-0.5 px-2 dark:border {data.selectedComponentTypes.includes(data.type)
 				? 'dark:text-opacity-100 dark:border-white dark:border-opacity-10 dark:bg-white dark:bg-opacity-10'
 				: 'dark:text-opacity-70 dark:border-transparent'}"
 		>

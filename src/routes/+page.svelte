@@ -44,22 +44,22 @@
 	const display = getContext('display');
 
 	let searchSuggestions = [
-    {
-      value: "BU16",
-    },
-    {
-      value: "EF44",
-    },
-    {
-      value: "EN16",
-    },
-    {
-      value: "PBF4",
-    },
-    {
-      value: "PO16",
-    },
-  ];
+		{
+		value: "BU16",
+		},
+		{
+		value: "EF44",
+		},
+		{
+		value: "EN16",
+		},
+		{
+		value: "PBF4",
+		},
+		{
+		value: "PO16",
+		},
+  	];
 
 	let selectedLocalConfigIndex: number | undefined = undefined;
 	let selectedCloudConfigIndex: number | undefined = undefined;
@@ -68,7 +68,8 @@
 	//let myProfiles: any[] = [];
 	let cloudConfigs: any[] = [];
 	let localConfigs: any[] = [];
-	let filteredConfigs: any[] = [];
+	let filteredLocalConfigs: any[] = [];
+	let filteredCloudConfigs: any[] = [];
 
 	let linkConfigs: any[] = [];
 	let linkFlag: string | undefined = undefined;
@@ -80,111 +81,166 @@
 		active: false
 	};
 
-	let selectedModuleType: string = '';
+	let selectedComponentTypes: string[] = [];
+
+	let configTypeSelector = "profile";
 
 	let isSearchSortingShows = false;
 	let searchbarValue = "";
-	let animateFade;
 
 	let sortAsc = true;
-  let sortField = "name";
+	let sortField = "name";
 
-  let compareNameAscending = (a: any, b: any) => {
-    return a.data().name
-      .toLowerCase()
-      .localeCompare(b.data().name.toLowerCase(), undefined, { numeric: true });
-  };
+	let compareNameAscending = (a: any, b: any) => {
+		return a.data().name
+		.toLowerCase()
+		.localeCompare(b.data().name.toLowerCase(), undefined, { numeric: true });
+	};
 
-  let compareNameDescending = (a: any, b: any) => {
-    return b.data().name
-      .toLowerCase()
-      .localeCompare(a.data().name.toLowerCase(), undefined, { numeric: true });
-  };
+	let compareNameDescending = (a: any, b: any) => {
+		return b.data().name
+		.toLowerCase()
+		.localeCompare(a.data().name.toLowerCase(), undefined, { numeric: true });
+	};
 
-  function compareDateAscending(a: any, b: any) {
-    return a.data().fsModifiedAt - b.data().fsModifiedAt;
-  }
+	function compareDateAscending(a: any, b: any) {
+		return a.data().fsModifiedAt - b.data().fsModifiedAt;
+	}
 
-  function compareDateDescending(a: any, b: any) {
-    return b.data().fsModifiedAt - a.data().fsModifiedAt;
-  }
+	function compareDateDescending(a: any, b: any) {
+		return b.data().fsModifiedAt - a.data().fsModifiedAt;
+	}
 
-  function compareModuleAscending(a: any, b: any) {
-    return a.data().type.localeCompare(b.data().type, undefined, {
-      numeric: true,
-    });
-  }
+	function compareModuleAscending(a: any, b: any) {
+		return a.data().type.localeCompare(b.data().type, undefined, {
+		numeric: true,
+		});
+	}
 
-  function compareModuleDescending(a: any, b: any) {
-    return b.data().type.localeCompare(a.data().type, undefined, {
-      numeric: true,
-    });
-  }
+	function compareModuleDescending(a: any, b: any) {
+		return b.data().type.localeCompare(a.data().type, undefined, {
+		numeric: true,
+		});
+	}
 
-  $: cloudConfigs, updateSearchFilter(searchbarValue);
+	$: configTypeSelector, updateSearchSuggestions();
+
+	function updateSearchSuggestions(){
+		if (configTypeSelector === "profile"){
+			searchSuggestions = [
+				{
+				value: "BU16",
+				},
+				{
+				value: "EF44",
+				},
+				{
+				value: "EN16",
+				},
+				{
+				value: "PBF4",
+				},
+				{
+				value: "PO16",
+				},
+			];
+		} else if (configTypeSelector === "preset"){
+			searchSuggestions = [
+				{
+				value: "button",
+				},
+				{
+				value: "encoder",
+				},
+				{
+				value: "potentiometer",
+				},
+				{
+				value: "fader",
+				}
+			];
+		}
+	}
+
+	$: cloudConfigs, searchbarValue, configTypeSelector, updateSearchFilter();
 
 
-	function updateSearchFilter(input : string) {
-    animateFade = false;
+	function updateSearchFilter() {
+		const input = searchbarValue;
+		const arrayOfSearchTerms = input.trim().toLowerCase().split(" ");
+		filteredCloudConfigs = cloudConfigs.filter((config) => {
+			const data = config.data();
+			if (data.configType !== configTypeSelector) {
+				return false;
+			}
+			const currentProfileSearchable =
+				data.name.toLowerCase() +
+				" " +
+				data.type.toLowerCase();
+			let filterMatch = true;
 
-	filteredConfigs = [];
-    const arrayOfSearchTerms = input.trim().toLowerCase().split(" ");
-    cloudConfigs.forEach((config) => {
-	  const data = config.data();
-      const currentProfileSearchable =
-        data.name.toLowerCase() +
-        " " +
-        data.type.toLowerCase();
-      let filterMatch = true;
+			arrayOfSearchTerms.forEach((searchTerm) => {
+				if (currentProfileSearchable.indexOf(searchTerm) === -1) {
+					return false
+				}
+			});
+			return true;
+		});
 
-      arrayOfSearchTerms.forEach((searchTerm) => {
-        if (currentProfileSearchable.indexOf(searchTerm) === -1) {
-          filterMatch = false;
-        }
-      });
+		sortProfileCloud(sortField, sortAsc);
+	}
 
-      if (filterMatch) {
-        filteredConfigs = [...filteredConfigs, config];
-      }
-    });
+  	$: configTypeSelector, resetPageState();
 
-    sortProfileCloud(sortField, sortAsc);
-  }
+	function resetPageState(){
+		selectedLocalConfigIndex = undefined;
+		selectedCloudConfigIndex = undefined;
+		isSearchSortingShows = false;
+		searchbarValue = "";
+		provideSelectedConfigForOptionalUploadingToOneOreMoreModules();
+	}
 
-  function sortProfileCloud(field : string, asc : boolean) {
-    if (field == "name") {
-      if (asc == true) {
-        filteredConfigs = filteredConfigs.sort(compareNameAscending);
-      }
+	$: configTypeSelector, localConfigs, filterLocalConfigs(); 
 
-      if (asc == false) {
-        filteredConfigs = filteredConfigs.sort(compareNameDescending);
-      }
-    }
+	function filterLocalConfigs(){
+		filteredLocalConfigs = localConfigs.filter((config) => config.configType == configTypeSelector);
+		console.log({localConfigs})
+	}
 
-    if (field == "date") {
-      if (asc == true) {
-        filteredConfigs = filteredConfigs.sort(compareDateAscending);
-      }
+	function sortProfileCloud(field : string, asc : boolean) {
+		if (field == "name") {
+			if (asc == true) {
+				filteredCloudConfigs = filteredCloudConfigs.sort(compareNameAscending);
+			}
 
-      if (asc == false) {
-        filteredConfigs = filteredConfigs.sort(compareDateDescending);
-      }
-    }
+			if (asc == false) {
+				filteredCloudConfigs = filteredCloudConfigs.sort(compareNameDescending);
+			}
+		}
 
-    if (field == "module") {
-      if (asc == true) {
-        filteredConfigs = filteredConfigs.sort(
-          compareModuleAscending
-        );
-      }
-      if (asc == false) {
-        filteredConfigs = filteredConfigs.sort(
-          compareModuleDescending
-        );
-      }
-    }
-  }
+		if (field == "date") {
+			if (asc == true) {
+				filteredCloudConfigs = filteredCloudConfigs.sort(compareDateAscending);
+			}
+
+			if (asc == false) {
+				filteredCloudConfigs = filteredCloudConfigs.sort(compareDateDescending);
+			}
+		}
+
+		if (field == "module") {
+			if (asc == true) {
+				filteredCloudConfigs = filteredCloudConfigs.sort(
+				compareModuleAscending
+				);
+			}
+		if (asc == false) {
+			filteredCloudConfigs = filteredCloudConfigs.sort(
+				compareModuleDescending
+				);
+			}
+		}
+	}
 
 	async function submitAnalytics({ eventName, payload }: { eventName: string; payload: any }) {
 		await parentIframeCommunication({
@@ -298,8 +354,8 @@
 			saveCloudConfigToLocalFolder(linkedConfig!);
 		}
 
-		if (event.data.messageType == 'selectedModuleType') {
-			selectedModuleType = event.data.selectedModuleType;
+		if (event.data.messageType == 'selectedComponentTypes') {
+			selectedComponentTypes = event.data.selectedComponentTypes;
 		}
 	}
 
@@ -332,6 +388,7 @@
 			dataForParent: {}
 		});
 		if (result.ok) {
+			console.log({data: result.data});
 			return result.data;
 		}
 	}
@@ -353,13 +410,13 @@
 		}
 	}
 
-	async function deleteLocalConfig(profile: Config) {
+	async function deleteLocalConfig(config: Config) {
 		const result = await parentIframeCommunication({
 			windowPostMessageName: 'deleteLocalConfig',
 			channelPostMessage: {
 				channelMessageType: 'DELETE_LOCAL_CONFIG'
 			},
-			dataForParent: { profile }
+			dataForParent: { config }
 		}).catch((err) => {
 			return { ok: false, data: {} };
 		});
@@ -373,9 +430,9 @@
 			windowPostMessageName: 'createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor',
 			channelPostMessage: {
 				channelMessageType:
-					'CREATE_NEW_LOCAL_CONFIG_WITH_THE_SELECTED_MODULES_CONFIGURATION_FROM_EDITOR'
+					'CREATE_NEW_LOCAL_CONFIG_WITH_THE_SELECTED_MODULES_CONFIGURATION_FROM_EDITOR',
 			},
-			dataForParent: {}
+			dataForParent: {configType: configTypeSelector,}
 		});
 		if (result.ok) {
 			localConfigs = await getListOfLocalConfigs();
@@ -477,7 +534,7 @@
 		const result = await parentIframeCommunication({
 			windowPostMessageName: 'overwriteLocalConfig',
 			channelPostMessage: {
-				channelMessageType: 'OVERWRITE_LOCAL_CONFIG'
+				channelMessageType: 'OVERWRITE_LOCAL_CONFIG',
 			},
 			dataForParent: { configToOverwrite: config }
 		});
@@ -531,8 +588,13 @@
 			.then(async (res) => {
 				cloudConfigs = await getCloudConfigs();
 			})
-			.catch((err) => {
-				console.log('Error deleting config', err);
+			.catch(async (err) => {
+				const profileRef = doc(profilesCollection, config.id!);
+				await deleteDoc(profileRef)
+					.then(async (res) => {
+						cloudConfigs = await getCloudConfigs();
+					})
+					.catch((err) => console.log('Error deleting config', err));
 			});
 	}
 
@@ -612,14 +674,14 @@
 
 		await setDoc(newConfigLinkRef, parsedConfigLink.data)
 			.then(async (res) => {
-				const profileLinkUrl = 'grid-editor://?profile-link=' + newConfigLinkRef.id;
+				const configLinkUrl = 'grid-editor://?profile-link=' + newConfigLinkRef.id;
 
 				await parentIframeCommunication({
 					windowPostMessageName: 'createCloudConfigLink',
 					channelPostMessage: {
 						channelMessageType: 'CREATE_CLOUD_CONFIG_LINK'
 					},
-					dataForParent: { parsedConfigLink }
+					dataForParent: { configLinkUrl }
 				}).then((res) => {
 					linkFlag = config.id;
 					setTimeout(() => {
@@ -651,7 +713,7 @@
   	}
 
 	function useSearchSuggestion(suggestionText : string) {
-    	updateSearchFilter((searchbarValue = suggestionText));
+    	searchbarValue = suggestionText;
 	}
 
 	onMount(async () => {
@@ -701,12 +763,20 @@
 				<div class="flex flex-grow h-screen relative z-0 overflow-hidden">
 					<Splitpanes horizontal={true} theme="modern-theme">
 						<Pane size={31} minSize={20}>
-							<div class="flex flex-col pb-4 h-full ">
+							<div class="flex flex-col pb-4 h-full ">	
+								<ul class="flex">
+									<li>
+										<button class="block px-2 py-1" on:click={() => configTypeSelector = "profile"}>Profiles</button>
+									</li>
+									<li>
+										<button class="block px-2 py-1" on:click={() => configTypeSelector = "preset"}>Presets</button>
+									</li>
+								</ul>			
 								<div class="py-4 flex items-center justify-between">
 									<div class="flex flex-col">
-										<div class="">Local profiles</div>
+										<div class="">Local {configTypeSelector}s</div>
 										<div class="text-xs dark:text-white dark:text-opacity-60">
-											Only you can see these profiles.
+											Only you can see these {configTypeSelector}s.
 										</div>
 									</div>
 									<button
@@ -716,18 +786,19 @@
 											submitAnalytics({
 												eventName: 'Local Profile',
 												payload: {
-													task: 'Save local profile'
+													task: 'Save local config'
 												}
 											});
 										}}
 										class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
-										>save local profile</button
+										>save local {configTypeSelector}</button
 									>
 								</div>
 								<div
 									class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
 								>
-									{#each [...linkConfigs, ...localConfigs.filter((p) => p.folder == 'local')] as config, index}
+									<!--TODO: ...filteredLocalConfigs.filter((p) => p.folder == 'local')-->
+									{#each [...linkConfigs, ...filteredLocalConfigs] as config, index}
 										<LocalProfileCard
 											on:click={() => {
 												if (selectedLocalConfigIndex == index) {
@@ -804,7 +875,7 @@
 											class={index == selectedLocalConfigIndex
 												? 'border-emerald-500'
 												: 'border-white/10'}
-											data={{ ...config, selectedModuleType: selectedModuleType }}
+											data={{ ...config, selectedComponentTypes: selectedComponentTypes }}
 										/>
 									{/each}
 								</div>
@@ -816,7 +887,7 @@
 									<div class="py-4">
 										<div>Profile Cloud</div>
 										<div class="text-white text-opacity-60	">
-											Public profiles from others and save yours as private or public here.
+											Public {configTypeSelector}s from others and save yours as private or public here.
 										</div>
 									</div>
 									<div class="flex justify-end">
@@ -882,7 +953,7 @@
 												<button
 												class="absolute right-2 bottom-[25%]"
 												on:click={() =>
-													updateSearchFilter((searchbarValue = ""))}
+													searchbarValue = ""}
 												>
 												<svg
 													width="28"
@@ -904,12 +975,12 @@
 											<input
 												type="text"
 												bind:value={searchbarValue}
-												on:keyup={() => updateSearchFilter(searchbarValue)}
-												on:input={() => updateSearchFilter(searchbarValue)}
-												on:change={() => updateSearchFilter(searchbarValue)}
+												on:keyup={() => updateSearchFilter()}
+												on:input={() => updateSearchFilter()}
+												on:change={() => updateSearchFilter()}
 												class="w-full py-2 px-12 bg-primary-700 text-white
 											placeholder-gray-400 text-md focus:outline-none"
-												placeholder="Find Profile..."
+												placeholder="Find {configTypeSelector}..."
 											/>
 											</div>
 						
@@ -1010,7 +1081,7 @@
 									<div
 										class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
 									>
-										{#each filteredConfigs as config, index (config.id)}
+										{#each filteredCloudConfigs as config, index (config.id)}
 											{@const data = config.data()}
 											<div in:slide>
 												<CloudProfileCard
@@ -1067,7 +1138,7 @@
 													class={index === selectedCloudConfigIndex
 														? 'border-emerald-500'
 														: 'border-white/10'}
-													data={{ ...data, selectedModuleType: selectedModuleType }}
+													data={{ ...data, selectedComponentTypes: selectedComponentTypes }}
 												>
 													<svelte:fragment slot="link-button">
 														<button
@@ -1360,7 +1431,7 @@
 								<button
 								class="absolute right-2 bottom-[25%]"
 								on:click={() =>
-									updateSearchFilter((searchbarValue = ""))}
+									searchbarValue = ""}
 								>
 								<svg
 									width="28"
@@ -1382,9 +1453,9 @@
 							<input
 								type="text"
 								bind:value={searchbarValue}
-								on:keyup={() => updateSearchFilter(searchbarValue)}
-								on:input={() => updateSearchFilter(searchbarValue)}
-								on:change={() => updateSearchFilter(searchbarValue)}
+								on:keyup={() => updateSearchFilter()}
+								on:input={() => updateSearchFilter()}
+								on:change={() => updateSearchFilter()}
 								class="w-full py-2 px-12 bg-white dark:bg-primary-700 
 							dark:placeholder-gray-400 text-md focus:outline-none"
 								placeholder="Find Profile..."
@@ -1486,7 +1557,7 @@
 					<div
 						class="overflow-y-auto w-full h-full p-2 lg:py-8 grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 gap-4"
 					>
-						{#each filteredConfigs as config, index}
+						{#each filteredCloudConfigs as config, index}
 							{@const data = config.data()}
 							<CloudProfileCard
 								on:click={() => {
