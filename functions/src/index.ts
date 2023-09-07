@@ -7,8 +7,7 @@ const bucket = "gs://profile-cloud-firestore-backup";
 
 export const scheduledFirestoreExport = functions
     .region("europe-west3")
-    .pubsub
-    .schedule("every 24 hours")
+    .pubsub.schedule("every 24 hours")
     .timeZone("Europe/Zurich")
     .onRun((context) => {
         const projectId = process.env.GCP_PROJECT || "profile-cloud";
@@ -20,7 +19,7 @@ export const scheduledFirestoreExport = functions
                 // Leave collectionIds empty to export all collections
                 // or set to a list of collection IDs to export,
                 // collectionIds: ['users', 'posts']
-                collectionIds: [],
+                collectionIds: []
             })
             .then((responses) => {
                 const response = responses[0];

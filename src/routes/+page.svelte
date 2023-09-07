@@ -1,839 +1,854 @@
 <script lang="ts">
-	import { Pane, Splitpanes } from 'svelte-splitpanes';
+    import { Pane, Splitpanes } from "svelte-splitpanes";
 
-	import { getContext, onDestroy, onMount } from 'svelte';
-	import DisplayOnWeb from '$lib/components/DisplayOnWeb.svelte';
-	import { userAccountService } from '$lib/stores';
-	import UserAccount from '$lib/components/UserAccount.svelte';
-	import CloudProfileCard from './CloudProfileCard.svelte';
-	import {
-		Query,
-		and,
-		deleteDoc,
-		doc,
-		getDoc,
-		getDocs,
-		or,
-		query,
-		setDoc,
-		updateDoc,
-		where,
-		type DocumentData,
-		writeBatch
-	} from 'firebase/firestore';
-	import {
-		profileLinksCollection,
-		profilesCollection,
-		userCollection,
-		usernameCollection
-	} from '$lib/collections';
-	import LocalProfileCard from './LocalProfileCard.svelte';
-	import SvgIcon from '$lib/icons/SvgIcon.svelte';
-	import { get } from 'svelte/store';
-	import { ProfileSchema, type Profile, type ProfileLink, ProfileLinkSchema } from '$lib/schemas';
-	import { fade, slide } from 'svelte/transition';
-	import ToggleSwitch from '$lib/components/atomic/ToggleSwitch.svelte';
-	import { PUBLIC_APP_ENV } from '$env/static/public';
-	import { PUBLIC_VERSION_STRING } from '$env/static/public';
-	import { firestore } from '$lib/firebase';
-	import { parentIframeCommunication } from '$lib/utils';
+    import { getContext, onDestroy, onMount } from "svelte";
+    import DisplayOnWeb from "$lib/components/DisplayOnWeb.svelte";
+    import { userAccountService } from "$lib/stores";
+    import UserAccount from "$lib/components/UserAccount.svelte";
+    import CloudProfileCard from "./CloudProfileCard.svelte";
+    import {
+        Query,
+        and,
+        deleteDoc,
+        doc,
+        getDoc,
+        getDocs,
+        or,
+        query,
+        setDoc,
+        updateDoc,
+        where,
+        type DocumentData,
+        writeBatch
+    } from "firebase/firestore";
+    import {
+        profileLinksCollection,
+        profilesCollection,
+        userCollection,
+        usernameCollection
+    } from "$lib/collections";
+    import LocalProfileCard from "./LocalProfileCard.svelte";
+    import SvgIcon from "$lib/icons/SvgIcon.svelte";
+    import { get } from "svelte/store";
+    import { ProfileSchema, type Profile, type ProfileLink, ProfileLinkSchema } from "$lib/schemas";
+    import { fade, slide } from "svelte/transition";
+    import ToggleSwitch from "$lib/components/atomic/ToggleSwitch.svelte";
+    import { PUBLIC_APP_ENV } from "$env/static/public";
+    import { PUBLIC_VERSION_STRING } from "$env/static/public";
+    import { firestore } from "$lib/firebase";
+    import { parentIframeCommunication } from "$lib/utils";
 
-	const display = getContext('display');
+    const display = getContext("display");
 
-	let searchSuggestions = [
-    {
-      value: "BU16",
-    },
-    {
-      value: "EF44",
-    },
-    {
-      value: "EN16",
-    },
-    {
-      value: "PBF4",
-    },
-    {
-      value: "PO16",
-    },
-  ];
-
-	let selectedLocalProfileIndex: number | undefined = undefined;
-	let selectedCloudProfileIndex: number | undefined = undefined;
-
-	//let publicProfiles: any[] = [];
-	//let myProfiles: any[] = [];
-	let cloudProfiles: any[] = [];
-	let localProfiles: any[] = [];
-	let filteredCloud: any[] = [];
-
-	let linkProfiles: any[] = [];
-	let linkFlag: string | undefined = undefined;
-
-	let usernameInput = {
-		element: null as HTMLInputElement | null,
-		exists: false,
-		valid: false,
-		active: false
-	};
-
-	let selectedModuleType: string = '';
-
-	let isSearchSortingShows = false;
-	let searchbarValue = "";
-	let animateFade;
-
-	let sortAsc = true;
-  let sortField = "name";
-
-  let compareNameAscending = (a: any, b: any) => {
-    return a.data().name
-      .toLowerCase()
-      .localeCompare(b.data().name.toLowerCase(), undefined, { numeric: true });
-  };
-
-  let compareNameDescending = (a: any, b: any) => {
-    return b.data().name
-      .toLowerCase()
-      .localeCompare(a.data().name.toLowerCase(), undefined, { numeric: true });
-  };
-
-  function compareDateAscending(a: any, b: any) {
-    return a.data().fsModifiedAt - b.data().fsModifiedAt;
-  }
-
-  function compareDateDescending(a: any, b: any) {
-    return b.data().fsModifiedAt - a.data().fsModifiedAt;
-  }
-
-  function compareModuleAscending(a: any, b: any) {
-    return a.data().type.localeCompare(b.data().type, undefined, {
-      numeric: true,
-    });
-  }
-
-  function compareModuleDescending(a: any, b: any) {
-    return b.data().type.localeCompare(a.data().type, undefined, {
-      numeric: true,
-    });
-  }
-
-  $: cloudProfiles, updateSearchFilter(searchbarValue);
-
-
-	function updateSearchFilter(input : string) {
-    animateFade = false;
-
-	filteredCloud = [];
-    const arrayOfSearchTerms = input.trim().toLowerCase().split(" ");
-    cloudProfiles.forEach((profile) => {
-	  const data = profile.data();
-      const currentProfileSearchable =
-        data.name.toLowerCase() +
-        " " +
-        data.type.toLowerCase();
-      let filterMatch = true;
-
-      arrayOfSearchTerms.forEach((searchTerm) => {
-        if (currentProfileSearchable.indexOf(searchTerm) === -1) {
-          filterMatch = false;
+    let searchSuggestions = [
+        {
+            value: "BU16"
+        },
+        {
+            value: "EF44"
+        },
+        {
+            value: "EN16"
+        },
+        {
+            value: "PBF4"
+        },
+        {
+            value: "PO16"
         }
-      });
+    ];
 
-      if (filterMatch) {
-        filteredCloud = [...filteredCloud, profile];
-      }
+    let selectedLocalProfileIndex: number | undefined = undefined;
+    let selectedCloudProfileIndex: number | undefined = undefined;
+
+    //let publicProfiles: any[] = [];
+    //let myProfiles: any[] = [];
+    let cloudProfiles: any[] = [];
+    let localProfiles: any[] = [];
+    let filteredCloud: any[] = [];
+
+    let linkProfiles: any[] = [];
+    let linkFlag: string | undefined = undefined;
+
+    let usernameInput = {
+        element: null as HTMLInputElement | null,
+        exists: false,
+        valid: false,
+        active: false
+    };
+
+    let selectedModuleType: string = "";
+
+    let isSearchSortingShows = false;
+    let searchbarValue = "";
+    let animateFade;
+
+    let sortAsc = true;
+    let sortField = "name";
+
+    let compareNameAscending = (a: any, b: any) => {
+        return a
+            .data()
+            .name.toLowerCase()
+            .localeCompare(b.data().name.toLowerCase(), undefined, { numeric: true });
+    };
+
+    let compareNameDescending = (a: any, b: any) => {
+        return b
+            .data()
+            .name.toLowerCase()
+            .localeCompare(a.data().name.toLowerCase(), undefined, { numeric: true });
+    };
+
+    function compareDateAscending(a: any, b: any) {
+        return a.data().fsModifiedAt - b.data().fsModifiedAt;
+    }
+
+    function compareDateDescending(a: any, b: any) {
+        return b.data().fsModifiedAt - a.data().fsModifiedAt;
+    }
+
+    function compareModuleAscending(a: any, b: any) {
+        return a.data().type.localeCompare(b.data().type, undefined, {
+            numeric: true
+        });
+    }
+
+    function compareModuleDescending(a: any, b: any) {
+        return b.data().type.localeCompare(a.data().type, undefined, {
+            numeric: true
+        });
+    }
+
+    $: cloudProfiles, updateSearchFilter(searchbarValue);
+
+    function updateSearchFilter(input: string) {
+        animateFade = false;
+
+        filteredCloud = [];
+        const arrayOfSearchTerms = input.trim().toLowerCase().split(" ");
+        cloudProfiles.forEach((profile) => {
+            const data = profile.data();
+            const currentProfileSearchable =
+                data.name.toLowerCase() + " " + data.type.toLowerCase();
+            let filterMatch = true;
+
+            arrayOfSearchTerms.forEach((searchTerm) => {
+                if (currentProfileSearchable.indexOf(searchTerm) === -1) {
+                    filterMatch = false;
+                }
+            });
+
+            if (filterMatch) {
+                filteredCloud = [...filteredCloud, profile];
+            }
+        });
+
+        sortProfileCloud(sortField, sortAsc);
+    }
+
+    function sortProfileCloud(field: string, asc: boolean) {
+        if (field == "name") {
+            if (asc == true) {
+                filteredCloud = filteredCloud.sort(compareNameAscending);
+            }
+
+            if (asc == false) {
+                filteredCloud = filteredCloud.sort(compareNameDescending);
+            }
+        }
+
+        if (field == "date") {
+            if (asc == true) {
+                filteredCloud = filteredCloud.sort(compareDateAscending);
+            }
+
+            if (asc == false) {
+                filteredCloud = filteredCloud.sort(compareDateDescending);
+            }
+        }
+
+        if (field == "module") {
+            if (asc == true) {
+                filteredCloud = filteredCloud.sort(compareModuleAscending);
+            }
+            if (asc == false) {
+                filteredCloud = filteredCloud.sort(compareModuleDescending);
+            }
+        }
+    }
+
+    async function submitAnalytics({ eventName, payload }: { eventName: string; payload: any }) {
+        await parentIframeCommunication({
+            windowPostMessageName: "submitAnalytics",
+            channelPostMessage: { channelMessageType: "SUBMIT_ANALYTICS" },
+            dataForParent: {
+                eventName,
+                payload
+            }
+        });
+    }
+
+    const userAccountSubscription = userAccountService.subscribe(async (userAccount) => {
+        cloudProfiles = await getCloudProfiles();
+        if (userAccount.account?.uid) {
+            const username = await getUserNameByUid(userAccount.account.uid);
+            if (username) {
+                usernameInput.exists = true;
+                usernameInput.element!.value = "@" + username;
+            } else {
+                usernameInput.exists = false;
+            }
+
+            submitAnalytics({
+                eventName: "Authentication",
+                payload: {
+                    task: "Login",
+                    username: username || userAccount.account.displayName
+                }
+            });
+        } else {
+            submitAnalytics({
+                eventName: "Authentication",
+                payload: {
+                    task: "Logout"
+                }
+            });
+        }
     });
 
-    sortProfileCloud(sortField, sortAsc);
-  }
-
-  function sortProfileCloud(field : string, asc : boolean) {
-    if (field == "name") {
-      if (asc == true) {
-        filteredCloud = filteredCloud.sort(compareNameAscending);
-      }
-
-      if (asc == false) {
-        filteredCloud = filteredCloud.sort(compareNameDescending);
-      }
+    async function checkIfUsernameAvailable(username: string) {
+        if (username.length >= 3 && username.length <= 15) {
+            const usernameRef = doc(usernameCollection, username);
+            const res = await getDoc(usernameRef).then((d) => d.data());
+            usernameInput.valid = res == undefined ? true : false;
+        } else {
+            usernameInput.valid = false;
+        }
     }
 
-    if (field == "date") {
-      if (asc == true) {
-        filteredCloud = filteredCloud.sort(compareDateAscending);
-      }
-
-      if (asc == false) {
-        filteredCloud = filteredCloud.sort(compareDateDescending);
-      }
+    async function getUserNameByUid(uid: string) {
+        const userRef = doc(userCollection, uid);
+        const user: string = await getDoc(userRef).then((res) => res.data()?.username);
+        return user;
     }
 
-    if (field == "module") {
-      if (asc == true) {
-        filteredCloud = filteredCloud.sort(
-          compareModuleAscending
-        );
-      }
-      if (asc == false) {
-        filteredCloud = filteredCloud.sort(
-          compareModuleDescending
-        );
-      }
+    function usernameSelectionFeedback(obj: any) {
+        let str = "";
+        if (obj.element?.value != undefined && obj.element?.value.length > 0) {
+            if (obj.element?.value.length > 0) {
+                str += "@";
+            }
+            str += obj.element?.value;
+            if (obj.valid == true && obj.element?.value.length > 0) {
+                str += " is available";
+            } else if (obj.valid == false) {
+                str += " is not available";
+            }
+        }
+        return str;
     }
-  }
 
-	async function submitAnalytics({ eventName, payload }: { eventName: string; payload: any }) {
-		await parentIframeCommunication({
-			windowPostMessageName: 'submitAnalytics',
-			channelPostMessage: { channelMessageType: 'SUBMIT_ANALYTICS' },
-			dataForParent: {
-				eventName,
-				payload
-			}
-		});
-	}
+    async function setUserName(username?: string) {
+        const uid = get(userAccountService).account?.uid;
+        // Create refs for both documents
+        const userDoc = doc(userCollection, uid);
+        const usernameDoc = doc(usernameCollection, username);
 
-	const userAccountSubscription = userAccountService.subscribe(async (userAccount) => {
-		cloudProfiles = await getCloudProfiles();
-		if (userAccount.account?.uid) {
-			const username = await getUserNameByUid(userAccount.account.uid);
-			if (username) {
-				usernameInput.exists = true;
-				usernameInput.element!.value = '@' + username;
-			} else {
-				usernameInput.exists = false;
-			}
+        // Commit both docs together as a batch write.
+        const batch = writeBatch(firestore);
 
-			submitAnalytics({
-				eventName: 'Authentication',
-				payload: {
-					task: 'Login',
-					username: username || userAccount.account.displayName
-				}
-			});
-		} else {
-			submitAnalytics({
-				eventName: 'Authentication',
-				payload: {
-					task: 'Logout'
-				}
-			});
-		}
-	});
+        batch.set(userDoc, { username });
+        batch.set(usernameDoc, { uid });
 
-	async function checkIfUsernameAvailable(username: string) {
-		if (username.length >= 3 && username.length <= 15) {
-			const usernameRef = doc(usernameCollection, username);
-			const res = await getDoc(usernameRef).then((d) => d.data());
-			usernameInput.valid = res == undefined ? true : false;
-		} else {
-			usernameInput.valid = false;
-		}
-	}
+        await batch.commit().then(() => {
+            usernameInput.exists = true;
+            usernameInput.element!.value = "@" + username;
+        });
+    }
 
-	async function getUserNameByUid(uid: string) {
-		const userRef = doc(userCollection, uid);
-		const user: string = await getDoc(userRef).then((res) => res.data()?.username);
-		return user;
-	}
+    async function editorMessageListener(event: MessageEvent) {
+        if (event.data.messageType == "editorDataSaved") {
+            // to do?
+        }
 
-	function usernameSelectionFeedback(obj: any) {
-		let str = '';
-		if (obj.element?.value != undefined && obj.element?.value.length > 0) {
-			if (obj.element?.value.length > 0) {
-				str += '@';
-			}
-			str += obj.element?.value;
-			if (obj.valid == true && obj.element?.value.length > 0) {
-				str += ' is available';
-			} else if (obj.valid == false) {
-				str += ' is not available';
-			}
-		}
-		return str;
-	}
+        if (event.data.messageType == "userAuthentication") {
+            userAccountService.authenticateUser(event.data.authEvent);
+        }
 
-	async function setUserName(username?: string) {
-		const uid = get(userAccountService).account?.uid;
-		// Create refs for both documents
-		const userDoc = doc(userCollection, uid);
-		const usernameDoc = doc(usernameCollection, username);
+        if (event.data.messageType == "profileLink") {
+            const linkedProfile = await getLinkedProfile(event.data.profileLinkId);
+            submitAnalytics({
+                eventName: "Profile Link",
+                payload: {
+                    task: "Import",
+                    owner: linkedProfile?.owner,
+                    profileName: linkedProfile?.name,
+                    profileType: linkedProfile?.type
+                }
+            });
+            saveCloudProfileToLocalFolder(linkedProfile!);
+        }
 
-		// Commit both docs together as a batch write.
-		const batch = writeBatch(firestore);
+        if (event.data.messageType == "selectedModuleType") {
+            selectedModuleType = event.data.selectedModuleType;
+        }
+    }
 
-		batch.set(userDoc, { username });
-		batch.set(usernameDoc, { uid });
+    async function getLinkedProfile(id: string) {
+        const docRef = doc(profileLinksCollection, id);
+        const profileLink = await getDoc(docRef)
+            .then((res) => res.data())
+            .catch((err) => console.log(err));
+        return profileLink;
+    }
 
-		await batch.commit().then(() => {
-			usernameInput.exists = true;
-			usernameInput.element!.value = '@' + username;
-		});
-	}
+    async function getListOfLocalProfiles() {
+        if (display == "web") {
+            return [];
+        }
 
-	async function editorMessageListener(event: MessageEvent) {
-		if (event.data.messageType == 'editorDataSaved') {
-			// to do?
-		}
+        const result = await parentIframeCommunication({
+            windowPostMessageName: "getListOfLocalProfiles",
+            channelPostMessage: { channelMessageType: "GET_LIST_OF_LOCAL_PROFILES" },
+            dataForParent: {}
+        });
+        if (result.ok) {
+            return result.data;
+        }
+    }
 
-		if (event.data.messageType == 'userAuthentication') {
-			userAccountService.authenticateUser(event.data.authEvent);
-		}
+    async function provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+        profile?: Profile | {}
+    ) {
+        if (!profile) {
+            profile = {};
+        }
+        const result = await parentIframeCommunication({
+            windowPostMessageName: "provideSelectedProfileForOptionalUploadingToOneOreMoreModules",
+            channelPostMessage: {
+                channelMessageType:
+                    "PROVIDE_SELECTED_PROFILE_FOR_OPTIONAL_UPLOADING_TO_ONE_OR_MORE_MODULES"
+            },
+            dataForParent: { profile }
+        });
+        if (result.ok) {
+        }
+    }
 
-		if (event.data.messageType == 'profileLink') {
-			const linkedProfile = await getLinkedProfile(event.data.profileLinkId);
-			submitAnalytics({
-				eventName: 'Profile Link',
-				payload: {
-					task: 'Import',
-					owner: linkedProfile?.owner,
-					profileName: linkedProfile?.name,
-					profileType: linkedProfile?.type
-				}
-			});
-			saveCloudProfileToLocalFolder(linkedProfile!);
-		}
+    async function deleteLocalProfile(profile: Profile) {
+        const result = await parentIframeCommunication({
+            windowPostMessageName: "deleteLocalProfile",
+            channelPostMessage: {
+                channelMessageType: "DELETE_LOCAL_PROFILE"
+            },
+            dataForParent: { profile }
+        }).catch((err) => {
+            return { ok: false, data: {} };
+        });
+        if (result.ok) {
+            localProfiles = await getListOfLocalProfiles();
+        }
+    }
 
-		if (event.data.messageType == 'selectedModuleType') {
-			selectedModuleType = event.data.selectedModuleType;
-		}
-	}
+    async function createNewLocalProfileWithTheSelectedModulesConfigurationFromEditor() {
+        const result = await parentIframeCommunication({
+            windowPostMessageName:
+                "createNewLocalProfileWithTheSelectedModulesConfigurationFromEditor",
+            channelPostMessage: {
+                channelMessageType:
+                    "CREATE_NEW_LOCAL_PROFILE_WITH_THE_SELECTED_MODULES_CONFIGURATION_FROM_EDITOR"
+            },
+            dataForParent: {}
+        });
+        if (result.ok) {
+            localProfiles = await getListOfLocalProfiles();
+        }
+    }
 
-	async function getLinkedProfile(id: string) {
-		const docRef = doc(profileLinksCollection, id);
-		const profileLink = await getDoc(docRef)
-			.then((res) => res.data())
-			.catch((err) => console.log(err));
-		return profileLink;
-	}
+    let importFlag: string | undefined = undefined;
+    async function saveCloudProfileToLocalFolder(profile: Profile) {
+        importFlag = profile.id;
+        const result = await parentIframeCommunication({
+            windowPostMessageName: "profileImportCommunication",
+            channelPostMessage: {
+                channelMessageType: "IMPORT_PROFILE"
+            },
+            dataForParent: profile
+        });
+        if (result.ok) {
+            localProfiles = await getListOfLocalProfiles();
+            importFlag = undefined;
+        }
+    }
 
-	async function getListOfLocalProfiles() {
-		if (display == 'web') {
-			return [];
-		}
+    async function splitLocalProfile(profile: Profile) {
+        const result = await parentIframeCommunication({
+            windowPostMessageName: "splitLocalProfile",
+            channelPostMessage: {
+                channelMessageType: "SPLIT_LOCAL_PROFILE"
+            },
+            dataForParent: { profileToSplit: profile }
+        });
+        if (result.ok) {
+        }
+    }
 
-		const result = await parentIframeCommunication({
-			windowPostMessageName: 'getListOfLocalProfiles',
-			channelPostMessage: { channelMessageType: 'GET_LIST_OF_LOCAL_PROFILES' },
-			dataForParent: {}
-		});
-		if (result.ok) {
-			return result.data;
-		}
-	}
+    async function textEditLocalProfile({
+        name,
+        description,
+        profile
+    }: {
+        name?: string;
+        description?: string;
+        profile: Profile;
+    }) {
+        const result = await parentIframeCommunication({
+            windowPostMessageName: "textEditLocalProfile",
+            channelPostMessage: {
+                channelMessageType: "TEXT_EDIT_LOCAL_PROFILE"
+            },
+            dataForParent: { name, description, profile }
+        });
+        if (result.ok) {
+            localProfiles = await getListOfLocalProfiles();
+        }
+    }
 
-	async function provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
-		profile?: Profile | {}
-	) {
-		if (!profile) {
-			profile = {};
-		}
-		const result = await parentIframeCommunication({
-			windowPostMessageName: 'provideSelectedProfileForOptionalUploadingToOneOreMoreModules',
-			channelPostMessage: {
-				channelMessageType: 'PROVIDE_SELECTED_PROFILE_FOR_OPTIONAL_UPLOADING_TO_ONE_OR_MORE_MODULES'
-			},
-			dataForParent: { profile }
-		});
-		if (result.ok) {
-		}
-	}
+    async function textEditCloudProfile({
+        name,
+        description,
+        profile
+    }: {
+        name?: string;
+        description?: string;
+        profile: Profile;
+    }) {
+        interface ProfileTextDetails {
+            name?: string;
+            description?: string;
+        }
 
-	async function deleteLocalProfile(profile: Profile) {
-		const result = await parentIframeCommunication({
-			windowPostMessageName: 'deleteLocalProfile',
-			channelPostMessage: {
-				channelMessageType: 'DELETE_LOCAL_PROFILE'
-			},
-			dataForParent: { profile }
-		}).catch((err) => {
-			return { ok: false, data: {} };
-		});
-		if (result.ok) {
-			localProfiles = await getListOfLocalProfiles();
-		}
-	}
+        let details: ProfileTextDetails = {};
+        if (name) details["name"] = name;
+        if (description) details["description"] = description;
 
-	async function createNewLocalProfileWithTheSelectedModulesConfigurationFromEditor() {
-		const result = await parentIframeCommunication({
-			windowPostMessageName: 'createNewLocalProfileWithTheSelectedModulesConfigurationFromEditor',
-			channelPostMessage: {
-				channelMessageType:
-					'CREATE_NEW_LOCAL_PROFILE_WITH_THE_SELECTED_MODULES_CONFIGURATION_FROM_EDITOR'
-			},
-			dataForParent: {}
-		});
-		if (result.ok) {
-			localProfiles = await getListOfLocalProfiles();
-		}
-	}
+        await updateDoc(doc(profilesCollection, profile.id), {
+            ...details
+        })
+            .then(async () => {
+                cloudProfiles = await getCloudProfiles();
+            })
+            .catch((error) => {
+                console.log("error updating profile", error);
+            });
+    }
 
-	let importFlag: string | undefined = undefined;
-	async function saveCloudProfileToLocalFolder(profile: Profile) {
-		importFlag = profile.id;
-		const result = await parentIframeCommunication({
-			windowPostMessageName: 'profileImportCommunication',
-			channelPostMessage: {
-				channelMessageType: 'IMPORT_PROFILE'
-			},
-			dataForParent: profile
-		});
-		if (result.ok) {
-			localProfiles = await getListOfLocalProfiles();
-			importFlag = undefined;
-		}
-	}
+    // visibiltiy = public true / false
+    async function changeCloudProfileVisibility(profile: Profile, visibility: boolean) {
+        await updateDoc(doc(profilesCollection, profile.id), {
+            public: visibility
+        })
+            .then(async () => {
+                cloudProfiles = await getCloudProfiles();
+            })
+            .catch((error) => {
+                console.log("error updating profile", error);
+            });
+    }
 
-	async function splitLocalProfile(profile: Profile) {
-		const result = await parentIframeCommunication({
-			windowPostMessageName: 'splitLocalProfile',
-			channelPostMessage: {
-				channelMessageType: 'SPLIT_LOCAL_PROFILE'
-			},
-			dataForParent: { profileToSplit: profile }
-		});
-		if (result.ok) {
-		}
-	}
+    async function overwriteLocalProfile(profile: Profile) {
+        const result = await parentIframeCommunication({
+            windowPostMessageName: "overwriteLocalProfile",
+            channelPostMessage: {
+                channelMessageType: "OVERWRITE_LOCAL_PROFILE"
+            },
+            dataForParent: { profileToOverwrite: profile }
+        });
+        if (result.ok) {
+            localProfiles = await getListOfLocalProfiles();
+        }
+    }
 
-	async function textEditLocalProfile({
-		name,
-		description,
-		profile
-	}: {
-		name?: string;
-		description?: string;
-		profile: Profile;
-	}) {
-		const result = await parentIframeCommunication({
-			windowPostMessageName: 'textEditLocalProfile',
-			channelPostMessage: {
-				channelMessageType: 'TEXT_EDIT_LOCAL_PROFILE'
-			},
-			dataForParent: { name, description, profile }
-		});
-		if (result.ok) {
-			localProfiles = await getListOfLocalProfiles();
-		}
-	}
+    async function saveLocalProfileToCloud(profile: Profile) {
+        const newProfileRef = doc(profilesCollection);
+        const userData = get(userAccountService)?.account;
+        if (!userData) {
+            loginToProfileCloud();
+            return;
+        }
 
-	async function textEditCloudProfile({
-		name,
-		description,
-		profile
-	}: {
-		name?: string;
-		description?: string;
-		profile: Profile;
-	}) {
-		interface ProfileTextDetails {
-			name?: string;
-			description?: string;
-		}
+        if (!usernameInput.exists) {
+            return;
+        }
 
-		let details: ProfileTextDetails = {};
-		if (name) details['name'] = name;
-		if (description) details['description'] = description;
+        // reassign, else profile to delete id is overwritten!
+        const profileToSave = { ...profile };
 
-		await updateDoc(doc(profilesCollection, profile.id), {
-			...details
-		})
-			.then(async () => {
-				cloudProfiles = await getCloudProfiles();
-			})
-			.catch((error) => {
-				console.log('error updating profile', error);
-			});
-	}
+        profileToSave.owner = userData.uid;
+        profileToSave.access = [userData.uid];
+        profileToSave.public = false;
+        profileToSave.id = newProfileRef.id;
 
-	// visibiltiy = public true / false
-	async function changeCloudProfileVisibility(profile: Profile, visibility: boolean) {
-		await updateDoc(doc(profilesCollection, profile.id), {
-			public: visibility
-		})
-			.then(async () => {
-				cloudProfiles = await getCloudProfiles();
-			})
-			.catch((error) => {
-				console.log('error updating profile', error);
-			});
-	}
+        const parsedProfile = ProfileSchema.safeParse(profileToSave);
 
-	async function overwriteLocalProfile(profile: Profile) {
-		const result = await parentIframeCommunication({
-			windowPostMessageName: 'overwriteLocalProfile',
-			channelPostMessage: {
-				channelMessageType: 'OVERWRITE_LOCAL_PROFILE'
-			},
-			dataForParent: { profileToOverwrite: profile }
-		});
-		if (result.ok) {
-			localProfiles = await getListOfLocalProfiles();
-		}
-	}
+        if (parsedProfile.success) {
+        } else {
+            console.log(parsedProfile.error);
+            return;
+        }
 
-	async function saveLocalProfileToCloud(profile: Profile) {
-		const newProfileRef = doc(profilesCollection);
-		const userData = get(userAccountService)?.account;
-		if (!userData) {
-			loginToProfileCloud();
-			return;
-		}
+        await setDoc(newProfileRef, parsedProfile.data)
+            .then(async () => {
+                // profile is successfully saved to cloud
+            })
+            .catch((error) => {
+                // profile is not saved to cloud
+                console.error("Profile save to cloud was unsuccessful", error);
+            });
 
-		if (!usernameInput.exists) {
-			return;
-		}
+        await deleteLocalProfile(profile);
+        cloudProfiles = await getCloudProfiles();
+    }
 
-		// reassign, else profile to delete id is overwritten!
-		const profileToSave = { ...profile };
+    async function deleteCloudProfile(profile: Profile) {
+        const profileRef = doc(profilesCollection, profile.id!);
+        await deleteDoc(profileRef)
+            .then(async (res) => {
+                cloudProfiles = await getCloudProfiles();
+            })
+            .catch((err) => {
+                console.log("Error deleting profile", err);
+            });
+    }
 
-		profileToSave.owner = userData.uid;
-		profileToSave.access = [userData.uid];
-		profileToSave.public = false;
-		profileToSave.id = newProfileRef.id;
+    async function getCloudProfiles() {
+        let q: Query | undefined = undefined;
+        if (get(userAccountService)?.account?.uid) {
+            q = query(
+                profilesCollection,
+                or(
+                    where("public", "==", true),
+                    where("access", "array-contains", get(userAccountService)?.account?.uid || "")
+                )
+            );
+        } else {
+            q = query(profilesCollection, where("public", "==", true));
+        }
 
-		const parsedProfile = ProfileSchema.safeParse(profileToSave);
+        // assign the returned documents to a variable, so it's easy to pass it to Grid Editor
+        const profiles = await getDocs(q).then((res) => res.docs);
+        return profiles;
+    }
 
-		if (parsedProfile.success) {
-		} else {
-			console.log(parsedProfile.error);
-			return;
-		}
+    async function loginToProfileCloud() {
+        await parentIframeCommunication({
+            windowPostMessageName: "loginToProfileCloud",
+            channelPostMessage: {
+                channelMessageType: "LOGIN_TO_PROFILE_CLOUD"
+            },
+            dataForParent: {}
+        });
+    }
 
-		await setDoc(newProfileRef, parsedProfile.data)
-			.then(async () => {
-				// profile is successfully saved to cloud
-			})
-			.catch((error) => {
-				// profile is not saved to cloud
-				console.error('Profile save to cloud was unsuccessful', error);
-			});
+    async function logoutFromProfileCloud() {
+        await parentIframeCommunication({
+            windowPostMessageName: "logoutFromProfileCloud",
+            channelPostMessage: {
+                channelMessageType: "LOGOUT_FROM_PROFILE_CLOUD"
+            },
+            dataForParent: {}
+        });
+    }
 
-		await deleteLocalProfile(profile);
-		cloudProfiles = await getCloudProfiles();
-	}
+    async function createCloudProfileLink(profile: Profile) {
+        const newProfileLinkRef = doc(profileLinksCollection);
+        const userData = get(userAccountService)?.account;
+        if (!userData) {
+            loginToProfileCloud();
+            return;
+        }
 
-	async function deleteCloudProfile(profile: Profile) {
-		const profileRef = doc(profilesCollection, profile.id!);
-		await deleteDoc(profileRef)
-			.then(async (res) => {
-				cloudProfiles = await getCloudProfiles();
-			})
-			.catch((err) => {
-				console.log('Error deleting profile', err);
-			});
-	}
+        const profileLink: ProfileLink = {
+            ...profile,
+            linked: true
+        };
 
-	async function getCloudProfiles() {
-		let q: Query | undefined = undefined;
-		if (get(userAccountService)?.account?.uid) {
-			q = query(
-				profilesCollection,
-				or(
-					where('public', '==', true),
-					where('access', 'array-contains', get(userAccountService)?.account?.uid || '')
-				)
-			);
-		} else {
-			q = query(profilesCollection, where('public', '==', true));
-		}
+        profileLink.owner = userData.uid;
+        profileLink.access = [userData.uid];
+        profileLink.public = true;
+        profileLink.id = newProfileLinkRef.id;
 
-		// assign the returned documents to a variable, so it's easy to pass it to Grid Editor
-		const profiles = await getDocs(q).then((res) => res.docs);
-		return profiles;
-	}
+        const parsedProfileLink = ProfileLinkSchema.safeParse(profileLink);
 
-	async function loginToProfileCloud() {
-		await parentIframeCommunication({
-			windowPostMessageName: 'loginToProfileCloud',
-			channelPostMessage: {
-				channelMessageType: 'LOGIN_TO_PROFILE_CLOUD'
-			},
-			dataForParent: {}
-		});
-	}
+        if (parsedProfileLink.success) {
+            // do nothing, continue
+        } else {
+            console.log(parsedProfileLink.error);
+            return;
+        }
 
-	async function logoutFromProfileCloud() {
-		await parentIframeCommunication({
-			windowPostMessageName: 'logoutFromProfileCloud',
-			channelPostMessage: {
-				channelMessageType: 'LOGOUT_FROM_PROFILE_CLOUD'
-			},
-			dataForParent: {}
-		});
-	}
+        await setDoc(newProfileLinkRef, parsedProfileLink.data)
+            .then((res) => {
+                // profile is successfully saved to cloud
+            })
+            .catch(() => {
+                // profile is not saved to cloud
+                console.error("Profile link save to cloud was unsuccessful");
+            });
 
-	async function createCloudProfileLink(profile: Profile) {
-		const newProfileLinkRef = doc(profileLinksCollection);
-		const userData = get(userAccountService)?.account;
-		if (!userData) {
-			loginToProfileCloud();
-			return;
-		}
+        const profileLinkUrl = "grid-editor://?profile-link=" + newProfileLinkRef.id;
 
-		const profileLink: ProfileLink = {
-			...profile,
-			linked: true
-		};
+        await parentIframeCommunication({
+            windowPostMessageName: "createCloudProfileLink",
+            channelPostMessage: {
+                channelMessageType: "CREATE_CLOUD_PROFILE_LINK"
+            },
+            dataForParent: { profileLinkUrl }
+        }).then((res) => {
+            linkFlag = profile.id;
+            setTimeout(() => {
+                linkFlag = undefined;
+            }, 1750);
+        });
+    }
 
-		profileLink.owner = userData.uid;
-		profileLink.access = [userData.uid];
-		profileLink.public = true;
-		profileLink.id = newProfileLinkRef.id;
+    async function profileCloudMounted() {
+        return await parentIframeCommunication({
+            windowPostMessageName: "profileCloudMounted",
+            channelPostMessage: {
+                channelMessageType: "PROFILE_CLOUD_MOUNTED"
+            },
+            dataForParent: {}
+        });
+    }
 
-		const parsedProfileLink = ProfileLinkSchema.safeParse(profileLink);
+    function filterShowHide() {
+        isSearchSortingShows = !isSearchSortingShows;
+        animateFade = true;
+    }
 
-		if (parsedProfileLink.success) {
-			// do nothing, continue
-		} else {
-			console.log(parsedProfileLink.error);
-			return;
-		}
+    function useSearchSuggestion(suggestionText: string) {
+        updateSearchFilter((searchbarValue = suggestionText));
+    }
 
-		await setDoc(newProfileLinkRef, parsedProfileLink.data)
-			.then((res) => {
-				// profile is successfully saved to cloud
-			})
-			.catch(() => {
-				// profile is not saved to cloud
-				console.error('Profile link save to cloud was unsuccessful');
-			});
+    onMount(async () => {
+        window.addEventListener("message", editorMessageListener);
 
-		const profileLinkUrl = 'grid-editor://?profile-link=' + newProfileLinkRef.id;
+        await profileCloudMounted();
 
-		await parentIframeCommunication({
-			windowPostMessageName: 'createCloudProfileLink',
-			channelPostMessage: {
-				channelMessageType: 'CREATE_CLOUD_PROFILE_LINK'
-			},
-			dataForParent: { profileLinkUrl }
-		}).then((res) => {
-			linkFlag = profile.id;
-			setTimeout(() => {
-				linkFlag = undefined;
-			}, 1750);
-		});
-	}
+        console.log("onmount");
 
-	async function profileCloudMounted() {
-		return await parentIframeCommunication({
-			windowPostMessageName: 'profileCloudMounted',
-			channelPostMessage: {
-				channelMessageType: 'PROFILE_CLOUD_MOUNTED'
-			},
-			dataForParent: {}
-		});
-	}
+        localProfiles = await getListOfLocalProfiles();
 
-	function filterShowHide() {
-		isSearchSortingShows = !isSearchSortingShows;
-		animateFade = true;
-  	}
+        cloudProfiles = await getCloudProfiles();
+    });
 
-	function useSearchSuggestion(suggestionText : string) {
-    	updateSearchFilter((searchbarValue = suggestionText));
-	}
-
-	onMount(async () => {
-		window.addEventListener('message', editorMessageListener);
-
-		await profileCloudMounted();
-
-		console.log('onmount');
-
-		localProfiles = await getListOfLocalProfiles();
-
-		cloudProfiles = await getCloudProfiles();
-	});
-
-	onDestroy(() => {
-		window.removeEventListener('message', editorMessageListener);
-		userAccountSubscription();
-	});
+    onDestroy(() => {
+        window.removeEventListener("message", editorMessageListener);
+        userAccountSubscription();
+    });
 </script>
 
 <section class="w-full h-full flex-grow bg-neutral-100 dark:bg-primary">
-	{#if false}
-		<DisplayOnWeb>
-			<div class="p-4 w-full md:w-1/2 lg:md:w-1/3">
-				<UserAccount />
-			</div>
-		</DisplayOnWeb>
-	{/if}
+    {#if false}
+        <DisplayOnWeb>
+            <div class="p-4 w-full md:w-1/2 lg:md:w-1/3">
+                <UserAccount />
+            </div>
+        </DisplayOnWeb>
+    {/if}
 
-	<div class="w-full h-full bg-neutral-100 dark:bg-primary/100">
-		<div class="px-4 container mx-auto flex flex-col max-w-screen-xl h-full">
-			<DisplayOnWeb>
-				<div
-					class="flex flex-col justify-between pt-8 text-opacity-80 text-black dark:text-opacity-80 dark:text-white"
-				>
-					<h1 class="text-3xl font-bold pb-2">profile list</h1>
-					<h2 class="py-2 ">Profile Cloud is coming with Grid Editor version 1.2.35.</h2>
-					<p class="text-opacity-60 text-black dark:text-white dark:text-opacity-60">
-						<a href="https://links.intech.studio/discord" class="hover:underline text-blue-500"
-							>Join the discord channel</a
-						> to get support and early access.
-					</p>
-				</div>
-			</DisplayOnWeb>
+    <div class="w-full h-full bg-neutral-100 dark:bg-primary/100">
+        <div class="px-4 container mx-auto flex flex-col max-w-screen-xl h-full">
+            <DisplayOnWeb>
+                <div
+                    class="flex flex-col justify-between pt-8 text-opacity-80 text-black dark:text-opacity-80 dark:text-white"
+                >
+                    <h1 class="text-3xl font-bold pb-2">profile list</h1>
+                    <h2 class="py-2">Profile Cloud is coming with Grid Editor version 1.2.35.</h2>
+                    <p class="text-opacity-60 text-black dark:text-white dark:text-opacity-60">
+                        <a
+                            href="https://links.intech.studio/discord"
+                            class="hover:underline text-blue-500">Join the discord channel</a
+                        > to get support and early access.
+                    </p>
+                </div>
+            </DisplayOnWeb>
 
-			{#if display == 'editor'}
-				<div class="flex flex-grow h-screen relative z-0 overflow-hidden">
-					<Splitpanes horizontal={true} theme="modern-theme">
-						<Pane size={31} minSize={20}>
-							<div class="flex flex-col pb-4 h-full ">
-								<div class="py-4 flex items-center justify-between">
-									<div class="flex flex-col">
-										<div class="">Local profiles</div>
-										<div class="text-xs dark:text-white dark:text-opacity-60">
-											Only you can see these profiles.
-										</div>
-									</div>
-									<button
-										on:click={() => {
-											createNewLocalProfileWithTheSelectedModulesConfigurationFromEditor();
-											provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
-											submitAnalytics({
-												eventName: 'Local Profile',
-												payload: {
-													task: 'Save local profile'
-												}
-											});
-										}}
-										class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
-										>save local profile</button
-									>
-								</div>
-								<div
-									class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
-								>
-									{#each [...linkProfiles, ...localProfiles.filter((p) => p.folder == 'local')] as profile, index}
-										<LocalProfileCard
-											on:click={() => {
-												if (selectedLocalProfileIndex == index) {
-													return;
-												}
-												// reset the selected cloud profile index
-												selectedCloudProfileIndex = undefined;
-												provideSelectedProfileForOptionalUploadingToOneOreMoreModules(profile);
-												selectedLocalProfileIndex = index;
-											}}
-											on:focusout={(e) => {
-												selectedLocalProfileIndex = undefined;
-											}}
-											on:save-to-cloud={() => {
-												saveLocalProfileToCloud(profile);
-												provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
-												submitAnalytics({
-													eventName: 'Local Profile',
-													payload: {
-														task: 'Save to cloud',
-														...profile
-													}
-												});
-											}}
-											on:delete-local={async () => {
-												deleteLocalProfile(profile);
-												provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
-												submitAnalytics({
-													eventName: 'Local Profile',
-													payload: {
-														task: 'Delete',
-														...profile
-													}
-												});
-											}}
-											on:split-profile={() => {
-												//splitLocalProfile(profile);
-											}}
-											on:name-change={(e) => {
-												const { newName } = e.detail;
-												textEditLocalProfile({ name: newName, profile });
-												submitAnalytics({
-													eventName: 'Local Profile',
-													payload: {
-														task: 'Edit name',
-														oldName: profile.name,
-														newName: newName
-													}
-												});
-											}}
-											on:description-change={(e) => {
-												const { newDescription } = e.detail;
-												textEditLocalProfile({ description: newDescription, profile });
-												submitAnalytics({
-													eventName: 'Local Profile',
-													payload: {
-														task: 'Edit description',
-														oldDescription: profile.description,
-														newDescription: newDescription
-													}
-												});
-											}}
-											on:overwrite-profile={() => {
-												overwriteLocalProfile(profile);
-												provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
-												submitAnalytics({
-													eventName: 'Local Profile',
-													payload: {
-														task: 'Overwrite',
-														...profile
-													}
-												});
-											}}
-											class={index == selectedLocalProfileIndex
-												? 'border-emerald-500'
-												: 'border-white/10'}
-											data={{ ...profile, selectedModuleType: selectedModuleType }}
-										/>
-									{/each}
-								</div>
-							</div>
-						</Pane>
-						{#if cloudProfiles && cloudProfiles.length > 0}
-							<Pane minSize={28}>
-								<div class="flex flex-col h-full pb-4">
-									<div class="py-4">
-										<div>Profile Cloud</div>
-										<div class="text-white text-opacity-60	">
-											Public profiles from others and save yours as private or public here.
-										</div>
-									</div>
-									<div class="flex justify-end">
-										<button
-											on:click={() => {
-												filterShowHide();
-											}}
-											class="text-white text-left font-xs"
-											>
-											{#if isSearchSortingShows}
-												Hide Filters
-											{:else}
-												Show Filters
-											{/if}
-										</button>
-									</div>
-									{#if isSearchSortingShows == true}
-									<!--
+            {#if display == "editor"}
+                <div class="flex flex-grow h-screen relative z-0 overflow-hidden">
+                    <Splitpanes horizontal={true} theme="modern-theme">
+                        <Pane size={31} minSize={20}>
+                            <div class="flex flex-col pb-4 h-full">
+                                <div class="py-4 flex items-center justify-between">
+                                    <div class="flex flex-col">
+                                        <div class="">Local profiles</div>
+                                        <div class="text-xs dark:text-white dark:text-opacity-60">
+                                            Only you can see these profiles.
+                                        </div>
+                                    </div>
+                                    <button
+                                        on:click={() => {
+                                            createNewLocalProfileWithTheSelectedModulesConfigurationFromEditor();
+                                            provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                                {}
+                                            );
+                                            submitAnalytics({
+                                                eventName: "Local Profile",
+                                                payload: {
+                                                    task: "Save local profile"
+                                                }
+                                            });
+                                        }}
+                                        class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
+                                        >save local profile</button
+                                    >
+                                </div>
+                                <div
+                                    class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
+                                >
+                                    {#each [...linkProfiles, ...localProfiles.filter((p) => p.folder == "local")] as profile, index}
+                                        <LocalProfileCard
+                                            on:click={() => {
+                                                if (selectedLocalProfileIndex == index) {
+                                                    return;
+                                                }
+                                                // reset the selected cloud profile index
+                                                selectedCloudProfileIndex = undefined;
+                                                provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                                    profile
+                                                );
+                                                selectedLocalProfileIndex = index;
+                                            }}
+                                            on:focusout={(e) => {
+                                                selectedLocalProfileIndex = undefined;
+                                            }}
+                                            on:save-to-cloud={() => {
+                                                saveLocalProfileToCloud(profile);
+                                                provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                                    {}
+                                                );
+                                                submitAnalytics({
+                                                    eventName: "Local Profile",
+                                                    payload: {
+                                                        task: "Save to cloud",
+                                                        ...profile
+                                                    }
+                                                });
+                                            }}
+                                            on:delete-local={async () => {
+                                                deleteLocalProfile(profile);
+                                                provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                                    {}
+                                                );
+                                                submitAnalytics({
+                                                    eventName: "Local Profile",
+                                                    payload: {
+                                                        task: "Delete",
+                                                        ...profile
+                                                    }
+                                                });
+                                            }}
+                                            on:split-profile={() => {
+                                                //splitLocalProfile(profile);
+                                            }}
+                                            on:name-change={(e) => {
+                                                const { newName } = e.detail;
+                                                textEditLocalProfile({ name: newName, profile });
+                                                submitAnalytics({
+                                                    eventName: "Local Profile",
+                                                    payload: {
+                                                        task: "Edit name",
+                                                        oldName: profile.name,
+                                                        newName: newName
+                                                    }
+                                                });
+                                            }}
+                                            on:description-change={(e) => {
+                                                const { newDescription } = e.detail;
+                                                textEditLocalProfile({
+                                                    description: newDescription,
+                                                    profile
+                                                });
+                                                submitAnalytics({
+                                                    eventName: "Local Profile",
+                                                    payload: {
+                                                        task: "Edit description",
+                                                        oldDescription: profile.description,
+                                                        newDescription: newDescription
+                                                    }
+                                                });
+                                            }}
+                                            on:overwrite-profile={() => {
+                                                overwriteLocalProfile(profile);
+                                                provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                                    {}
+                                                );
+                                                submitAnalytics({
+                                                    eventName: "Local Profile",
+                                                    payload: {
+                                                        task: "Overwrite",
+                                                        ...profile
+                                                    }
+                                                });
+                                            }}
+                                            class={index == selectedLocalProfileIndex
+                                                ? "border-emerald-500"
+                                                : "border-white/10"}
+                                            data={{
+                                                ...profile,
+                                                selectedModuleType: selectedModuleType
+                                            }}
+                                        />
+                                    {/each}
+                                </div>
+                            </div>
+                        </Pane>
+                        {#if cloudProfiles && cloudProfiles.length > 0}
+                            <Pane minSize={28}>
+                                <div class="flex flex-col h-full pb-4">
+                                    <div class="py-4">
+                                        <div>Profile Cloud</div>
+                                        <div class="text-white text-opacity-60">
+                                            Public profiles from others and save yours as private or
+                                            public here.
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <button
+                                            on:click={() => {
+                                                filterShowHide();
+                                            }}
+                                            class="text-white text-left font-xs"
+                                        >
+                                            {#if isSearchSortingShows}
+                                                Hide Filters
+                                            {:else}
+                                                Show Filters
+                                            {/if}
+                                        </button>
+                                    </div>
+                                    {#if isSearchSortingShows == true}
+                                        <!--
 										<div
 										in:fadeAnimation|local={{ fn: fade, y: 50, duration: 150 }}
 										out:fadeAnimation|local={{ fn: fade, y: 50, duration: 150 }}
 										>
-									-->	
-									<div>
-										<div class="flex flex-col gap-1 px-3 pt-3 ">
-											<div class="relative">
-											<svg
-												class="absolute left-3 bottom-[28%]"
-												width="14"
-												height="14"
-												viewBox="0 0 18 18"
-												fill="none"
-												xmlns="http://www.w3.org/2000/svg"
-											>
-												<path
-												d="M13.2095 11.6374C14.2989 10.1509 14.7868 8.30791 14.5756
+									-->
+                                        <div>
+                                            <div class="flex flex-col gap-1 px-3 pt-3">
+                                                <div class="relative">
+                                                    <svg
+                                                        class="absolute left-3 bottom-[28%]"
+                                                        width="14"
+                                                        height="14"
+                                                        viewBox="0 0 18 18"
+                                                        fill="none"
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                    >
+                                                        <path
+                                                            d="M13.2095 11.6374C14.2989 10.1509 14.7868 8.30791 14.5756
 												6.47715C14.3645 4.64639 13.4699 2.96286 12.0708 1.76338C10.6717
 												0.563893 8.87126 -0.0630888 7.02973 0.0078685C5.1882 0.0788258
 												3.44137 0.84249 2.13872 2.14608C0.83606 3.44967 0.0736462 5.19704
@@ -855,463 +870,528 @@
 												4.09802 2.93707 2.93763C4.09745 1.77725 5.67126 1.12536 7.31229
 												1.12536C8.95332 1.12536 10.5271 1.77725 11.6875 2.93763C12.8479
 												4.09802 13.4998 5.67183 13.4998 7.31286V7.31286Z"
-												fill="#CDCDCD"
-												/>
-											</svg>
-						
-											{#if searchbarValue != ""}
-												<button
-												class="absolute right-2 bottom-[25%]"
-												on:click={() =>
-													updateSearchFilter((searchbarValue = ""))}
-												>
-												<svg
-													width="28"
-													height="28"
-													viewBox="0 0 39 39"
-													fill="none"
-													xmlns="http://www.w3.org/2000/svg"
-												>
-													<path
-													d="M24.25 32.9102L14.75 23.4102M24.25 23.4102L14.75 32.9102"
-													stroke="#FFF"
-													stroke-width="2"
-													stroke-linecap="round"
-													/>
-												</svg>
-												</button>
-											{/if}
-						
-											<input
-												type="text"
-												bind:value={searchbarValue}
-												on:keyup={() => updateSearchFilter(searchbarValue)}
-												on:input={() => updateSearchFilter(searchbarValue)}
-												on:change={() => updateSearchFilter(searchbarValue)}
-												class="w-full py-2 px-12 bg-primary-700 text-white
-											placeholder-gray-400 text-md focus:outline-none"
-												placeholder="Find Profile..."
-											/>
-											</div>
-						
-											<div class="flex flex-row gap-1 py-1 flex-wrap">
-											{#each searchSuggestions as suggestion}
-												<button
-												on:click={() => useSearchSuggestion(suggestion.value)}
-												class="border hover:border-primary-500 text-xs text-primary-100 rounded-md
-											py-0.5 px-1 h-min {searchbarValue.toLowerCase() ==
-												suggestion.value.toLowerCase()
-													? 'border-primary-100'
-													: 'border-primary-700'}"
-												>
-												{suggestion.value}
-												</button>
-											{/each}
-											</div>
-										</div>
-						
-										<div
-											class="flex gap-2 items-center justify-between flex-wrap p-3"
-										>
-											<label
-											for="sorting select"
-											class="uppercase text-gray-500 py-1 text-xs"
-											>
-											sort by
-											</label>
-						
-											<select
-											class="bg-secondary border-none flex-grow text-white p-1 focus:outline-none"
-											id="sortingSelectBox"
-											on:change={(e) => {
-												sortField = e.target.value;
-												sortProfileCloud(sortField, sortAsc);
-											}}
-											name="sorting select"
-											>
-											<option
-												selected
-												class="text-white bg-secondary py-1 border-none"
-												value="name"
-											>
-												name
-											</option>
-						
-											<option
-												class="text-white bg-secondary py-1 border-none"
-												value="module"
-											>
-												module
-											</option>
-											</select>
-						
-											<button
-											on:click={() => {
-												sortAsc = !sortAsc;
-												sortProfileCloud(sortField, sortAsc);
-											}}
-											>
-											{#if sortAsc == false}
-												<svg
-												width="20"
-												height="20"
-												viewBox="0 0 24 24"
-												fill="none"
-												xmlns="http://www.w3.org/2000/svg"
-												>
-												<path
-													d="M11 11H15M11 15H18M11 19H21M9 7L6 4L3 7M6 6V20"
-													stroke="white"
-													stroke-width="2"
-													stroke-linecap="round"
-													stroke-linejoin="round"
-												/>
-												</svg>
-											{:else}
-												<svg
-												width="20"
-												height="20"
-												viewBox="0 0 24 24"
-												fill="none"
-												xmlns="http://www.w3.org/2000/svg"
-												>
-												<path
-													d="M11 5H21M11 9H18M11 13H15M3 17L6 20L9 17M6 18V4"
-													stroke="white"
-													stroke-width="2"
-													stroke-linecap="round"
-													stroke-linejoin="round"
-												/>
-												</svg>
-											{/if}
-											</button>
-										</div>
-										</div>
-									{/if}
-									<div
-										class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
-									>
-										{#each filteredCloud as profile, index (profile.id)}
-											{@const data = profile.data()}
-											<div in:slide>
-												<CloudProfileCard
-													on:click={() => {
-														if (selectedCloudProfileIndex == index) {
-															return;
-														}
-														// reset the selection on the local profiles
-														selectedLocalProfileIndex = undefined;
-														provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
-														selectedCloudProfileIndex = index;
-													}}
-													on:focusout={(e) => {
-														selectedCloudProfileIndex = undefined;
-													}}
-													on:delete-cloud={async () => {
-														selectedCloudProfileIndex = undefined;
-														deleteCloudProfile(data);
-														provideSelectedProfileForOptionalUploadingToOneOreMoreModules();
-														submitAnalytics({
-															eventName: 'Profile Cloud',
-															payload: {
-																task: 'Delete',
-																profileName: data.name,
-																public: data.public
-															}
-														});
-													}}
-													on:description-change={(e) => {
-														const { newDescription } = e.detail;
-														textEditCloudProfile({ description: newDescription, profile: data });
-														submitAnalytics({
-															eventName: 'Profile Cloud',
-															payload: {
-																task: 'Edit description',
-																oldDescription: data.description,
-																newDescription: newDescription
-															}
-														});
-													}}
-													on:name-change={(e) => {
-														const { newName } = e.detail;
+                                                            fill="#CDCDCD"
+                                                        />
+                                                    </svg>
 
-														textEditCloudProfile({ name: newName, profile });
-														submitAnalytics({
-															eventName: 'Profile Cloud',
-															payload: {
-																task: 'Edit name',
-																oldProfileName: data.name,
-																newProfileName: newName
-															}
-														});
-													}}
-													class={index === selectedCloudProfileIndex
-														? 'border-emerald-500'
-														: 'border-white/10'}
-													data={{ ...data, selectedModuleType: selectedModuleType }}
-												>
-													<svelte:fragment slot="link-button">
-														<button
-															class="relative group flex"
-															on:click|stopPropagation={() => {
-																createCloudProfileLink(data);
-																provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
-																submitAnalytics({
-																	eventName: 'Profile Link',
-																	payload: {
-																		task: 'Create',
-																		profileName: data.name
-																	}
-																});
-															}}
-														>
-															<SvgIcon class="w-4" iconPath="link" />
-															<div
-																class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-															>
-																Link
-															</div>
-															{#if linkFlag == data.id}
-																<div
-																	transition:fade={{ duration: 100 }}
-																	class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
-																>
-																	Copied to clipboard!
-																</div>
-															{/if}
-														</button>
-													</svelte:fragment>
-													<svelte:fragment slot="import-button">
-														<button
-															on:click|stopPropagation={async () => {
-																saveCloudProfileToLocalFolder(data);
-																provideSelectedProfileForOptionalUploadingToOneOreMoreModules({});
-																submitAnalytics({
-																	eventName: 'Profile Cloud',
-																	payload: {
-																		task: 'Import to local',
-																		profileName: data.name
-																	}
-																});
-															}}
-															class="flex items-center group relative"
-														>
-															{#if importFlag == data.id}
-																loading...
-															{/if}
-															<SvgIcon class="w-4" iconPath="import" />
-															<div
-																class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-															>
-																Import
-															</div>
-														</button>
-													</svelte:fragment>
-													<span slot="toggle-accessibility">
-														<ToggleSwitch
-															checkbox={data.public}
-															on:toggle={(e) => {
-																submitAnalytics({
-																	eventName: 'Profile Cloud',
-																	payload: {
-																		task: 'Set visibility',
-																		profileName: data.name,
-																		visibility: e.detail
-																	}
-																});
-																changeCloudProfileVisibility(data, e.detail);
-															}}
-														>
-															<div class="relative group" slot="on">
-																<SvgIcon display={true} iconPath={'public'} class="mr-1" />
-																<div
-																	class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-																>
-																	Public
-																</div>
-															</div>
-															<div class="relative group" slot="off">
-																<SvgIcon
-																	display={true}
-																	iconPath={'private'}
-																	class="mr-1 text-opacity-70"
-																/>
-																<div
-																	class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-																>
-																	Private
-																</div>
-															</div>
-														</ToggleSwitch>
-													</span>
-												</CloudProfileCard>
-											</div>
-										{/each}
-									</div>
-									<div class="">
-										{#if $userAccountService.account}
-											<div
-												class="{!usernameInput.exists
-													? 'pb-2'
-													: ''} flex items-center justify-between"
-											>
-												<div class="group w-full flex flex-col  text-left py-4">
-													{#if usernameInput.exists == false}
-														<div class="pb-2">
-															Before using the cloud, enter a username which will be displayed with
-															your public profiles.
-														</div>
-													{:else}
-														<div>Profile Cloud - {usernameInput.element?.value}</div>
-													{/if}
-													<div
-														class="group-hover:block font-medium hidden absolute mt-7 bottom-2 left-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5">
-														{PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING}
-													</div>
-													<div class="flex items-center ">
-														<input
-															id="display-name"
-															bind:this={usernameInput.element}
-															on:input={(event) => {
-																checkIfUsernameAvailable(event.target?.value);
-															}}
-															on:keydown={(event) => {
-																if (event.key == 'Enter') {
-																	usernameInput.active = false;
-																	setUserName(usernameInput.element?.value);
-																	submitAnalytics({
-																		eventName: 'Set Username',
-																		payload: {
-																			handler: 'Enter key',
-																			username: usernameInput.element?.value
-																		}
-																	});
-																}
-															}}
-															readonly={usernameInput.exists}
-															placeholder="Username"
-															class="{!usernameInput.exists
-																? 'border-amber-500 focus:border-emerald-500 animate-pulse dark:bg-secondary focus:animate-none'
-																: 'border-transparent bg-transparent text-white text-opacity-80 hidden'}  w-full border focus:outline-none "
-															value={usernameInput.element?.value || ''}
-														/>
-														{#if usernameInput.exists == false}
-															<button
-																on:click={() => {
-																	usernameInput.active = false;
-																	setUserName(usernameInput.element?.value);
-																	submitAnalytics({
-																		eventName: 'Set Username',
-																		payload: {
-																			handler: 'Button',
-																			username: usernameInput.element?.value
-																		}
-																	});
-																}}
-																class="mx-2 relative group"
-															>
-																<SvgIcon iconPath={'save_as_02'} class="w-5" />
-																<div
-																	class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-																>
-																	Save
-																</div>
-															</button>
-														{/if}
-													</div>
-													{#if usernameInput.exists == false}
-														<div class={usernameInput.valid ? 'text-emerald-500' : 'text-amber-500'}>
-															{usernameSelectionFeedback(usernameInput)}
-														</div>
-													{/if}
-												</div>
-												{#if usernameInput.exists == true}
-													<button
-														on:click={() => {
-															logoutFromProfileCloud();
-															submitAnalytics({
-																eventName: 'Authentication',
-																payload: {
-																	task: 'Logout attempt'
-																}
-															});
-														}}
-														class="ml-1 relative group rounded px-1 text-xs border dark:border-white dark:border-opacity-10 dark:hover:bg-neutral-700 font-medium"
-													>
-														<SvgIcon iconPath={'log_out'} class="w-5" />
-														<div
-															class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-														>
-															Logout
-														</div>
-													</button>
-												{/if}
-											</div>
-										{:else}
-											<div class="pt-4">
-												<div class="rounded-md border border-amber-500 p-4 bg-secondary/90">
-													<div class="pb-1 text-white">login to save and browse your profiles</div>
-													<div class="pt-1">
-														<button
-															on:click={() => {
-																loginToProfileCloud();
-																submitAnalytics({
-																	eventName: 'Authentication',
-																	payload: {
-																		task: 'Login attempt'
-																	}
-																});
-															}}
-															class="rounded px-4 py-1 border dark:border-emerald-500 dark:hover:bg-emerald-700 font-medium"
-														>
-															login
-														</button>
-													</div>
-												</div>
-											</div>
-										{/if}
-									</div>
-								</div>
-							</Pane>
-							{/if}
-					</Splitpanes>
-				</div>
-			{:else}
-				<div class="flex-col py-4 h-full ">
-					<div class="flex justify-end">
-						<button 
-							on:click={() => {
-								filterShowHide();
-							}}
-							class="text-left font-xs"
-							>
-							{#if isSearchSortingShows}
-								Hide Filters
-							{:else}
-								Show Filters
-							{/if}
-						</button>
-					</div>
-					{#if isSearchSortingShows == true}
-					<!--
+                                                    {#if searchbarValue != ""}
+                                                        <button
+                                                            class="absolute right-2 bottom-[25%]"
+                                                            on:click={() =>
+                                                                updateSearchFilter(
+                                                                    (searchbarValue = "")
+                                                                )}
+                                                        >
+                                                            <svg
+                                                                width="28"
+                                                                height="28"
+                                                                viewBox="0 0 39 39"
+                                                                fill="none"
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                            >
+                                                                <path
+                                                                    d="M24.25 32.9102L14.75 23.4102M24.25 23.4102L14.75 32.9102"
+                                                                    stroke="#FFF"
+                                                                    stroke-width="2"
+                                                                    stroke-linecap="round"
+                                                                />
+                                                            </svg>
+                                                        </button>
+                                                    {/if}
+
+                                                    <input
+                                                        type="text"
+                                                        bind:value={searchbarValue}
+                                                        on:keyup={() =>
+                                                            updateSearchFilter(searchbarValue)}
+                                                        on:input={() =>
+                                                            updateSearchFilter(searchbarValue)}
+                                                        on:change={() =>
+                                                            updateSearchFilter(searchbarValue)}
+                                                        class="w-full py-2 px-12 bg-primary-700 text-white
+											placeholder-gray-400 text-md focus:outline-none"
+                                                        placeholder="Find Profile..."
+                                                    />
+                                                </div>
+
+                                                <div class="flex flex-row gap-1 py-1 flex-wrap">
+                                                    {#each searchSuggestions as suggestion}
+                                                        <button
+                                                            on:click={() =>
+                                                                useSearchSuggestion(
+                                                                    suggestion.value
+                                                                )}
+                                                            class="border hover:border-primary-500 text-xs text-primary-100 rounded-md
+											py-0.5 px-1 h-min {searchbarValue.toLowerCase() == suggestion.value.toLowerCase()
+                                                                ? 'border-primary-100'
+                                                                : 'border-primary-700'}"
+                                                        >
+                                                            {suggestion.value}
+                                                        </button>
+                                                    {/each}
+                                                </div>
+                                            </div>
+
+                                            <div
+                                                class="flex gap-2 items-center justify-between flex-wrap p-3"
+                                            >
+                                                <label
+                                                    for="sorting select"
+                                                    class="uppercase text-gray-500 py-1 text-xs"
+                                                >
+                                                    sort by
+                                                </label>
+
+                                                <select
+                                                    class="bg-secondary border-none flex-grow text-white p-1 focus:outline-none"
+                                                    id="sortingSelectBox"
+                                                    on:change={(e) => {
+                                                        sortField = e.target.value;
+                                                        sortProfileCloud(sortField, sortAsc);
+                                                    }}
+                                                    name="sorting select"
+                                                >
+                                                    <option
+                                                        selected
+                                                        class="text-white bg-secondary py-1 border-none"
+                                                        value="name"
+                                                    >
+                                                        name
+                                                    </option>
+
+                                                    <option
+                                                        class="text-white bg-secondary py-1 border-none"
+                                                        value="module"
+                                                    >
+                                                        module
+                                                    </option>
+                                                </select>
+
+                                                <button
+                                                    on:click={() => {
+                                                        sortAsc = !sortAsc;
+                                                        sortProfileCloud(sortField, sortAsc);
+                                                    }}
+                                                >
+                                                    {#if sortAsc == false}
+                                                        <svg
+                                                            width="20"
+                                                            height="20"
+                                                            viewBox="0 0 24 24"
+                                                            fill="none"
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                        >
+                                                            <path
+                                                                d="M11 11H15M11 15H18M11 19H21M9 7L6 4L3 7M6 6V20"
+                                                                stroke="white"
+                                                                stroke-width="2"
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                            />
+                                                        </svg>
+                                                    {:else}
+                                                        <svg
+                                                            width="20"
+                                                            height="20"
+                                                            viewBox="0 0 24 24"
+                                                            fill="none"
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                        >
+                                                            <path
+                                                                d="M11 5H21M11 9H18M11 13H15M3 17L6 20L9 17M6 18V4"
+                                                                stroke="white"
+                                                                stroke-width="2"
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                            />
+                                                        </svg>
+                                                    {/if}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    {/if}
+                                    <div
+                                        class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
+                                    >
+                                        {#each filteredCloud as profile, index (profile.id)}
+                                            {@const data = profile.data()}
+                                            <div in:slide>
+                                                <CloudProfileCard
+                                                    on:click={() => {
+                                                        if (selectedCloudProfileIndex == index) {
+                                                            return;
+                                                        }
+                                                        // reset the selection on the local profiles
+                                                        selectedLocalProfileIndex = undefined;
+                                                        provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                                            data
+                                                        );
+                                                        selectedCloudProfileIndex = index;
+                                                    }}
+                                                    on:focusout={(e) => {
+                                                        selectedCloudProfileIndex = undefined;
+                                                    }}
+                                                    on:delete-cloud={async () => {
+                                                        selectedCloudProfileIndex = undefined;
+                                                        deleteCloudProfile(data);
+                                                        provideSelectedProfileForOptionalUploadingToOneOreMoreModules();
+                                                        submitAnalytics({
+                                                            eventName: "Profile Cloud",
+                                                            payload: {
+                                                                task: "Delete",
+                                                                profileName: data.name,
+                                                                public: data.public
+                                                            }
+                                                        });
+                                                    }}
+                                                    on:description-change={(e) => {
+                                                        const { newDescription } = e.detail;
+                                                        textEditCloudProfile({
+                                                            description: newDescription,
+                                                            profile: data
+                                                        });
+                                                        submitAnalytics({
+                                                            eventName: "Profile Cloud",
+                                                            payload: {
+                                                                task: "Edit description",
+                                                                oldDescription: data.description,
+                                                                newDescription: newDescription
+                                                            }
+                                                        });
+                                                    }}
+                                                    on:name-change={(e) => {
+                                                        const { newName } = e.detail;
+
+                                                        textEditCloudProfile({
+                                                            name: newName,
+                                                            profile
+                                                        });
+                                                        submitAnalytics({
+                                                            eventName: "Profile Cloud",
+                                                            payload: {
+                                                                task: "Edit name",
+                                                                oldProfileName: data.name,
+                                                                newProfileName: newName
+                                                            }
+                                                        });
+                                                    }}
+                                                    class={index === selectedCloudProfileIndex
+                                                        ? "border-emerald-500"
+                                                        : "border-white/10"}
+                                                    data={{
+                                                        ...data,
+                                                        selectedModuleType: selectedModuleType
+                                                    }}
+                                                >
+                                                    <svelte:fragment slot="link-button">
+                                                        <button
+                                                            class="relative group flex"
+                                                            on:click|stopPropagation={() => {
+                                                                createCloudProfileLink(data);
+                                                                provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                                                    {}
+                                                                );
+                                                                submitAnalytics({
+                                                                    eventName: "Profile Link",
+                                                                    payload: {
+                                                                        task: "Create",
+                                                                        profileName: data.name
+                                                                    }
+                                                                });
+                                                            }}
+                                                        >
+                                                            <SvgIcon class="w-4" iconPath="link" />
+                                                            <div
+                                                                class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                            >
+                                                                Link
+                                                            </div>
+                                                            {#if linkFlag == data.id}
+                                                                <div
+                                                                    transition:fade={{
+                                                                        duration: 100
+                                                                    }}
+                                                                    class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
+                                                                >
+                                                                    Copied to clipboard!
+                                                                </div>
+                                                            {/if}
+                                                        </button>
+                                                    </svelte:fragment>
+                                                    <svelte:fragment slot="import-button">
+                                                        <button
+                                                            on:click|stopPropagation={async () => {
+                                                                saveCloudProfileToLocalFolder(data);
+                                                                provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                                                    {}
+                                                                );
+                                                                submitAnalytics({
+                                                                    eventName: "Profile Cloud",
+                                                                    payload: {
+                                                                        task: "Import to local",
+                                                                        profileName: data.name
+                                                                    }
+                                                                });
+                                                            }}
+                                                            class="flex items-center group relative"
+                                                        >
+                                                            {#if importFlag == data.id}
+                                                                loading...
+                                                            {/if}
+                                                            <SvgIcon
+                                                                class="w-4"
+                                                                iconPath="import"
+                                                            />
+                                                            <div
+                                                                class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                            >
+                                                                Import
+                                                            </div>
+                                                        </button>
+                                                    </svelte:fragment>
+                                                    <span slot="toggle-accessibility">
+                                                        <ToggleSwitch
+                                                            checkbox={data.public}
+                                                            on:toggle={(e) => {
+                                                                submitAnalytics({
+                                                                    eventName: "Profile Cloud",
+                                                                    payload: {
+                                                                        task: "Set visibility",
+                                                                        profileName: data.name,
+                                                                        visibility: e.detail
+                                                                    }
+                                                                });
+                                                                changeCloudProfileVisibility(
+                                                                    data,
+                                                                    e.detail
+                                                                );
+                                                            }}
+                                                        >
+                                                            <div class="relative group" slot="on">
+                                                                <SvgIcon
+                                                                    display={true}
+                                                                    iconPath={"public"}
+                                                                    class="mr-1"
+                                                                />
+                                                                <div
+                                                                    class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                                >
+                                                                    Public
+                                                                </div>
+                                                            </div>
+                                                            <div class="relative group" slot="off">
+                                                                <SvgIcon
+                                                                    display={true}
+                                                                    iconPath={"private"}
+                                                                    class="mr-1 text-opacity-70"
+                                                                />
+                                                                <div
+                                                                    class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                                >
+                                                                    Private
+                                                                </div>
+                                                            </div>
+                                                        </ToggleSwitch>
+                                                    </span>
+                                                </CloudProfileCard>
+                                            </div>
+                                        {/each}
+                                    </div>
+                                    <div class="">
+                                        {#if $userAccountService.account}
+                                            <div
+                                                class="{!usernameInput.exists
+                                                    ? 'pb-2'
+                                                    : ''} flex items-center justify-between"
+                                            >
+                                                <div
+                                                    class="group w-full flex flex-col text-left py-4"
+                                                >
+                                                    {#if usernameInput.exists == false}
+                                                        <div class="pb-2">
+                                                            Before using the cloud, enter a username
+                                                            which will be displayed with your public
+                                                            profiles.
+                                                        </div>
+                                                    {:else}
+                                                        <div>
+                                                            Profile Cloud - {usernameInput.element
+                                                                ?.value}
+                                                        </div>
+                                                    {/if}
+                                                    <div
+                                                        class="group-hover:block font-medium hidden absolute mt-7 bottom-2 left-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                    >
+                                                        {PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING}
+                                                    </div>
+                                                    <div class="flex items-center">
+                                                        <input
+                                                            id="display-name"
+                                                            bind:this={usernameInput.element}
+                                                            on:input={(event) => {
+                                                                checkIfUsernameAvailable(
+                                                                    event.target?.value
+                                                                );
+                                                            }}
+                                                            on:keydown={(event) => {
+                                                                if (event.key == "Enter") {
+                                                                    usernameInput.active = false;
+                                                                    setUserName(
+                                                                        usernameInput.element?.value
+                                                                    );
+                                                                    submitAnalytics({
+                                                                        eventName: "Set Username",
+                                                                        payload: {
+                                                                            handler: "Enter key",
+                                                                            username:
+                                                                                usernameInput
+                                                                                    .element?.value
+                                                                        }
+                                                                    });
+                                                                }
+                                                            }}
+                                                            readonly={usernameInput.exists}
+                                                            placeholder="Username"
+                                                            class="{!usernameInput.exists
+                                                                ? 'border-amber-500 focus:border-emerald-500 animate-pulse dark:bg-secondary focus:animate-none'
+                                                                : 'border-transparent bg-transparent text-white text-opacity-80 hidden'}  w-full border focus:outline-none"
+                                                            value={usernameInput.element?.value ||
+                                                                ""}
+                                                        />
+                                                        {#if usernameInput.exists == false}
+                                                            <button
+                                                                on:click={() => {
+                                                                    usernameInput.active = false;
+                                                                    setUserName(
+                                                                        usernameInput.element?.value
+                                                                    );
+                                                                    submitAnalytics({
+                                                                        eventName: "Set Username",
+                                                                        payload: {
+                                                                            handler: "Button",
+                                                                            username:
+                                                                                usernameInput
+                                                                                    .element?.value
+                                                                        }
+                                                                    });
+                                                                }}
+                                                                class="mx-2 relative group"
+                                                            >
+                                                                <SvgIcon
+                                                                    iconPath={"save_as_02"}
+                                                                    class="w-5"
+                                                                />
+                                                                <div
+                                                                    class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                                >
+                                                                    Save
+                                                                </div>
+                                                            </button>
+                                                        {/if}
+                                                    </div>
+                                                    {#if usernameInput.exists == false}
+                                                        <div
+                                                            class={usernameInput.valid
+                                                                ? "text-emerald-500"
+                                                                : "text-amber-500"}
+                                                        >
+                                                            {usernameSelectionFeedback(
+                                                                usernameInput
+                                                            )}
+                                                        </div>
+                                                    {/if}
+                                                </div>
+                                                {#if usernameInput.exists == true}
+                                                    <button
+                                                        on:click={() => {
+                                                            logoutFromProfileCloud();
+                                                            submitAnalytics({
+                                                                eventName: "Authentication",
+                                                                payload: {
+                                                                    task: "Logout attempt"
+                                                                }
+                                                            });
+                                                        }}
+                                                        class="ml-1 relative group rounded px-1 text-xs border dark:border-white dark:border-opacity-10 dark:hover:bg-neutral-700 font-medium"
+                                                    >
+                                                        <SvgIcon iconPath={"log_out"} class="w-5" />
+                                                        <div
+                                                            class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                        >
+                                                            Logout
+                                                        </div>
+                                                    </button>
+                                                {/if}
+                                            </div>
+                                        {:else}
+                                            <div class="pt-4">
+                                                <div
+                                                    class="rounded-md border border-amber-500 p-4 bg-secondary/90"
+                                                >
+                                                    <div class="pb-1 text-white">
+                                                        login to save and browse your profiles
+                                                    </div>
+                                                    <div class="pt-1">
+                                                        <button
+                                                            on:click={() => {
+                                                                loginToProfileCloud();
+                                                                submitAnalytics({
+                                                                    eventName: "Authentication",
+                                                                    payload: {
+                                                                        task: "Login attempt"
+                                                                    }
+                                                                });
+                                                            }}
+                                                            class="rounded px-4 py-1 border dark:border-emerald-500 dark:hover:bg-emerald-700 font-medium"
+                                                        >
+                                                            login
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {/if}
+                                    </div>
+                                </div>
+                            </Pane>
+                        {/if}
+                    </Splitpanes>
+                </div>
+            {:else}
+                <div class="flex-col py-4 h-full">
+                    <div class="flex justify-end">
+                        <button
+                            on:click={() => {
+                                filterShowHide();
+                            }}
+                            class="text-left font-xs"
+                        >
+                            {#if isSearchSortingShows}
+                                Hide Filters
+                            {:else}
+                                Show Filters
+                            {/if}
+                        </button>
+                    </div>
+                    {#if isSearchSortingShows == true}
+                        <!--
 						<div
 						in:fadeAnimation|local={{ fn: fade, y: 50, duration: 150 }}
 						out:fadeAnimation|local={{ fn: fade, y: 50, duration: 150 }}
 						>
-					-->	
-					<div>
-						<div class="flex flex-col gap-1 px-3 pt-3 ">
-							<div class="relative">
-							<svg
-								class="absolute left-3 bottom-[28%]"
-								width="14"
-								height="14"
-								viewBox="0 0 18 18"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-							>
-								<path
-								d="M13.2095 11.6374C14.2989 10.1509 14.7868 8.30791 14.5756
+					-->
+                        <div>
+                            <div class="flex flex-col gap-1 px-3 pt-3">
+                                <div class="relative">
+                                    <svg
+                                        class="absolute left-3 bottom-[28%]"
+                                        width="14"
+                                        height="14"
+                                        viewBox="0 0 18 18"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                        <path
+                                            d="M13.2095 11.6374C14.2989 10.1509 14.7868 8.30791 14.5756
 								6.47715C14.3645 4.64639 13.4699 2.96286 12.0708 1.76338C10.6717
 								0.563893 8.87126 -0.0630888 7.02973 0.0078685C5.1882 0.0788258
 								3.44137 0.84249 2.13872 2.14608C0.83606 3.44967 0.0736462 5.19704
@@ -1333,220 +1413,221 @@
 								4.09802 2.93707 2.93763C4.09745 1.77725 5.67126 1.12536 7.31229
 								1.12536C8.95332 1.12536 10.5271 1.77725 11.6875 2.93763C12.8479
 								4.09802 13.4998 5.67183 13.4998 7.31286V7.31286Z"
-								fill="#CDCDCD"
-								/>
-							</svg>
-		
-							{#if searchbarValue != ""}
-								<button
-								class="absolute right-2 bottom-[25%]"
-								on:click={() =>
-									updateSearchFilter((searchbarValue = ""))}
-								>
-								<svg
-									width="28"
-									height="28"
-									viewBox="0 0 39 39"
-									fill="none"
-									xmlns="http://www.w3.org/2000/svg"
-								>
-									<path
-									d="M24.25 32.9102L14.75 23.4102M24.25 23.4102L14.75 32.9102"
-									stroke="#FFF"
-									stroke-width="2"
-									stroke-linecap="round"
-									/>
-								</svg>
-								</button>
-							{/if}
-		
-							<input
-								type="text"
-								bind:value={searchbarValue}
-								on:keyup={() => updateSearchFilter(searchbarValue)}
-								on:input={() => updateSearchFilter(searchbarValue)}
-								on:change={() => updateSearchFilter(searchbarValue)}
-								class="w-full py-2 px-12 bg-white dark:bg-primary-700 
+                                            fill="#CDCDCD"
+                                        />
+                                    </svg>
+
+                                    {#if searchbarValue != ""}
+                                        <button
+                                            class="absolute right-2 bottom-[25%]"
+                                            on:click={() =>
+                                                updateSearchFilter((searchbarValue = ""))}
+                                        >
+                                            <svg
+                                                width="28"
+                                                height="28"
+                                                viewBox="0 0 39 39"
+                                                fill="none"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                            >
+                                                <path
+                                                    d="M24.25 32.9102L14.75 23.4102M24.25 23.4102L14.75 32.9102"
+                                                    stroke="#FFF"
+                                                    stroke-width="2"
+                                                    stroke-linecap="round"
+                                                />
+                                            </svg>
+                                        </button>
+                                    {/if}
+
+                                    <input
+                                        type="text"
+                                        bind:value={searchbarValue}
+                                        on:keyup={() => updateSearchFilter(searchbarValue)}
+                                        on:input={() => updateSearchFilter(searchbarValue)}
+                                        on:change={() => updateSearchFilter(searchbarValue)}
+                                        class="w-full py-2 px-12 bg-white dark:bg-primary-700
 							dark:placeholder-gray-400 text-md focus:outline-none"
-								placeholder="Find Profile..."
-							/>
-							</div>
-		
-							<div class="flex flex-row gap-1 py-1 flex-wrap">
-							{#each searchSuggestions as suggestion}
-								<button
-								on:click={() => useSearchSuggestion(suggestion.value)}
-								class="border hover:border-primary-500 text-xs dark:text-primary-100 rounded-md
-							py-0.5 px-1 h-min {searchbarValue.toLowerCase() ==
-								suggestion.value.toLowerCase()
-									? 'border-primary-100'
-									: 'border-primary-700'}"
-								>
-								{suggestion.value}
-								</button>
-							{/each}
-							</div>
-						</div>
-		
-						<div
-							class="flex gap-2 items-center justify-between flex-wrap p-3"
-						>
-							<label
-							for="sorting select"
-							class="uppercase text-gray-500 py-1 text-xs"
-							>
-							sort by
-							</label>
-		
-							<select
-							class="bg-white dark:bg-secondary border-none flex-grow p-1 focus:outline-none"
-							id="sortingSelectBox"
-							on:change={(e) => {
-								sortField = e.target.value;
-								sortProfileCloud(sortField, sortAsc);
-							}}
-							name="sorting select"
-							>
-							<option
-								selected
-								class="bg-white dark:bg-secondary py-1 border-none"
-								value="name"
-							>
-								name
-							</option>
-		
-							<option
-								class="bg-white dark:bg-secondary py-1 border-none"
-								value="module"
-							>
-								module
-							</option>
-							</select>
-		
-							<button
-							on:click={() => {
-								sortAsc = !sortAsc;
-								sortProfileCloud(sortField, sortAsc);
-							}}
-							>
-							{#if sortAsc == false}
-								<svg
-								width="20"
-								height="20"
-								viewBox="0 0 24 24"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-								>
-								<path
-									class="stroke-black dark:stroke-white stroke-2"
-									d="M11 11H15M11 15H18M11 19H21M9 7L6 4L3 7M6 6V20"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								/>
-								</svg>
-							{:else}
-								<svg
-								width="20"
-								height="20"
-								viewBox="0 0 24 24"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-								>
-								<path
-									d="M11 5H21M11 9H18M11 13H15M3 17L6 20L9 17M6 18V4"
-									class="stroke-black dark:stroke-white stroke-2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								/>
-								</svg>
-							{/if}
-							</button>
-						</div>
-						</div>
-					{/if}
-					<div
-						class="overflow-y-auto w-full h-full p-2 lg:py-8 grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 gap-4"
-					>
-						{#each filteredCloud as profile, index}
-							{@const data = profile.data()}
-							<CloudProfileCard
-								on:click={() => {
-									provideSelectedProfileForOptionalUploadingToOneOreMoreModules(data);
-									selectedCloudProfileIndex = index;
-									selectedLocalProfileIndex = undefined;
-								}}
-								class={index == selectedCloudProfileIndex ? 'border-emerald-500' : ''}
-								{data}
-							/>
-						{/each}
-					</div>
-				</div>
-			{/if}
-		</div>
-	</div>
+                                        placeholder="Find Profile..."
+                                    />
+                                </div>
+
+                                <div class="flex flex-row gap-1 py-1 flex-wrap">
+                                    {#each searchSuggestions as suggestion}
+                                        <button
+                                            on:click={() => useSearchSuggestion(suggestion.value)}
+                                            class="border hover:border-primary-500 text-xs dark:text-primary-100 rounded-md
+							py-0.5 px-1 h-min {searchbarValue.toLowerCase() == suggestion.value.toLowerCase()
+                                                ? 'border-primary-100'
+                                                : 'border-primary-700'}"
+                                        >
+                                            {suggestion.value}
+                                        </button>
+                                    {/each}
+                                </div>
+                            </div>
+
+                            <div class="flex gap-2 items-center justify-between flex-wrap p-3">
+                                <label
+                                    for="sorting select"
+                                    class="uppercase text-gray-500 py-1 text-xs"
+                                >
+                                    sort by
+                                </label>
+
+                                <select
+                                    class="bg-white dark:bg-secondary border-none flex-grow p-1 focus:outline-none"
+                                    id="sortingSelectBox"
+                                    on:change={(e) => {
+                                        sortField = e.target.value;
+                                        sortProfileCloud(sortField, sortAsc);
+                                    }}
+                                    name="sorting select"
+                                >
+                                    <option
+                                        selected
+                                        class="bg-white dark:bg-secondary py-1 border-none"
+                                        value="name"
+                                    >
+                                        name
+                                    </option>
+
+                                    <option
+                                        class="bg-white dark:bg-secondary py-1 border-none"
+                                        value="module"
+                                    >
+                                        module
+                                    </option>
+                                </select>
+
+                                <button
+                                    on:click={() => {
+                                        sortAsc = !sortAsc;
+                                        sortProfileCloud(sortField, sortAsc);
+                                    }}
+                                >
+                                    {#if sortAsc == false}
+                                        <svg
+                                            width="20"
+                                            height="20"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                            <path
+                                                class="stroke-black dark:stroke-white stroke-2"
+                                                d="M11 11H15M11 15H18M11 19H21M9 7L6 4L3 7M6 6V20"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                            />
+                                        </svg>
+                                    {:else}
+                                        <svg
+                                            width="20"
+                                            height="20"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                            <path
+                                                d="M11 5H21M11 9H18M11 13H15M3 17L6 20L9 17M6 18V4"
+                                                class="stroke-black dark:stroke-white stroke-2"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                            />
+                                        </svg>
+                                    {/if}
+                                </button>
+                            </div>
+                        </div>
+                    {/if}
+                    <div
+                        class="overflow-y-auto w-full h-full p-2 lg:py-8 grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 gap-4"
+                    >
+                        {#each filteredCloud as profile, index}
+                            {@const data = profile.data()}
+                            <CloudProfileCard
+                                on:click={() => {
+                                    provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                        data
+                                    );
+                                    selectedCloudProfileIndex = index;
+                                    selectedLocalProfileIndex = undefined;
+                                }}
+                                class={index == selectedCloudProfileIndex
+                                    ? "border-emerald-500"
+                                    : ""}
+                                {data}
+                            />
+                        {/each}
+                    </div>
+                </div>
+            {/if}
+        </div>
+    </div>
 </section>
 
 <style lang="postcss">
-	:global(.splitpanes.modern-theme .splitpanes__pane) {
-		/*  @apply bg-secondary; */
-		position: relative;
-		overflow: visible;
-	}
+    :global(.splitpanes.modern-theme .splitpanes__pane) {
+        /*  @apply bg-secondary; */
+        position: relative;
+        overflow: visible;
+    }
 
-	/*betty magic selector*/
-	:global(.splitpanes.modern-theme .splitpanes__pane.leftPane) {
-		overflow: hidden;
-	}
+    /*betty magic selector*/
+    :global(.splitpanes.modern-theme .splitpanes__pane.leftPane) {
+        overflow: hidden;
+    }
 
-	:global(.splitpanes.modern-theme .splitpanes__splitter) {
-		background-color: #4c4c4c;
-		position: relative;
-	}
-	:global(.splitpanes.modern-theme .splitpanes__splitter:before) {
-		content: '';
-		position: absolute;
-		left: 0;
-		top: 0;
-		transition: opacity 0.3s;
-		background-color: #2db9d2;
-		width: 200;
-		opacity: 0;
-		z-index: 1;
-	}
-	:global(.splitpanes.modern-theme .splitpanes__splitter:hover:before) {
-		opacity: 1;
-	}
-	:global(.splitpanes.modern-theme .splitpanes__splitter.splitpanes__splitter__active) {
-		z-index: 2;
-		/* Fix an issue of overlap fighting with a near hovered splitter */
-	}
-	:global(.modern-theme.splitpanes--vertical > .splitpanes__splitter:before) {
-		left: -3px;
-		right: -3px;
-		height: 100%;
-		cursor: col-resize;
-	}
-	:global(.modern-theme.splitpanes--horizontal > .splitpanes__splitter:before) {
-		top: -3px;
-		bottom: -3px;
-		width: 100%;
-		cursor: row-resize;
-	}
-	:global(.splitpanes.no-splitter .splitpanes__pane) {
-		background-color: #0e100f;
-	}
-	:global(.splitpanes.no-splitter .splitpanes__splitter) {
-		background-color: #4c4c4c;
-		position: relative;
-	}
-	:global(.no-splitter.splitpanes--horizontal > .splitpanes__splitter:before) {
-		width: 0.05rem;
-		pointer-events: none;
-		cursor: none;
-	}
-	:global(.no-splitter.splitpanes--vertical > .splitpanes__splitter:before) {
-		height: 0.05rem;
-		pointer-events: none;
-		cursor: none;
-	}
+    :global(.splitpanes.modern-theme .splitpanes__splitter) {
+        background-color: #4c4c4c;
+        position: relative;
+    }
+    :global(.splitpanes.modern-theme .splitpanes__splitter:before) {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        transition: opacity 0.3s;
+        background-color: #2db9d2;
+        width: 200;
+        opacity: 0;
+        z-index: 1;
+    }
+    :global(.splitpanes.modern-theme .splitpanes__splitter:hover:before) {
+        opacity: 1;
+    }
+    :global(.splitpanes.modern-theme .splitpanes__splitter.splitpanes__splitter__active) {
+        z-index: 2;
+        /* Fix an issue of overlap fighting with a near hovered splitter */
+    }
+    :global(.modern-theme.splitpanes--vertical > .splitpanes__splitter:before) {
+        left: -3px;
+        right: -3px;
+        height: 100%;
+        cursor: col-resize;
+    }
+    :global(.modern-theme.splitpanes--horizontal > .splitpanes__splitter:before) {
+        top: -3px;
+        bottom: -3px;
+        width: 100%;
+        cursor: row-resize;
+    }
+    :global(.splitpanes.no-splitter .splitpanes__pane) {
+        background-color: #0e100f;
+    }
+    :global(.splitpanes.no-splitter .splitpanes__splitter) {
+        background-color: #4c4c4c;
+        position: relative;
+    }
+    :global(.no-splitter.splitpanes--horizontal > .splitpanes__splitter:before) {
+        width: 0.05rem;
+        pointer-events: none;
+        cursor: none;
+    }
+    :global(.no-splitter.splitpanes--vertical > .splitpanes__splitter:before) {
+        height: 0.05rem;
+        pointer-events: none;
+        cursor: none;
+    }
 </style>
