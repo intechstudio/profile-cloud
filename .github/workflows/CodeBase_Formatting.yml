@@ -19,8 +19,7 @@ jobs:
 
             - name: Formatting
               run: |
-                  npm i prettier --global
-                  npm i prettier-plugin-svelte --global
+                  npm i
                   npm run format
                   git status
                   touch format_error.txt
