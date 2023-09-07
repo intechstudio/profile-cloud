@@ -712,7 +712,7 @@
                     class="flex flex-col justify-between pt-8 text-opacity-80 text-black dark:text-opacity-80 dark:text-white"
                 >
                     <h1 class="text-3xl font-bold pb-2">profile list</h1>
-                    <h2 class="py-2 ">Profile Cloud is coming with Grid Editor version 1.2.35.</h2>
+                    <h2 class="py-2">Profile Cloud is coming with Grid Editor version 1.2.35.</h2>
                     <p class="text-opacity-60 text-black dark:text-white dark:text-opacity-60">
                         <a
                             href="https://links.intech.studio/discord"
@@ -773,7 +773,7 @@
 										>
 									-->
                             <div>
-                                <div class="flex flex-col gap-1 px-3 pt-3 ">
+                                <div class="flex flex-col gap-1 px-3 pt-3">
                                     <div class="relative">
                                         <svg
                                             class="absolute left-3 bottom-[28%]"
@@ -1039,7 +1039,7 @@
                                                             transition:fade={{
                                                                 duration: 100
                                                             }}
-                                                            class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
+                                                            class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
                                                         >
                                                             Copied to clipboard!
                                                         </div>
@@ -1068,7 +1068,7 @@
                                                     {/if}
                                                     <SvgIcon class="w-4" iconPath="import" />
                                                     <div
-                                                        class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                        class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
                                                     >
                                                         Import
                                                     </div>
@@ -1228,7 +1228,7 @@
                                         ? 'pb-2'
                                         : ''} flex items-center justify-between"
                                 >
-                                    <div class="w-full flex flex-col  text-left py-4">
+                                    <div class="w-full flex flex-col text-left py-4">
                                         {#if usernameInput.exists == false}
                                             <div class="pb-2">
                                                 Before using the cloud, enter a username which will
@@ -1240,7 +1240,7 @@
                                             </div>
                                         {/if}
 
-                                        <div class="flex items-center ">
+                                        <div class="flex items-center">
                                             <input
                                                 id="display-name"
                                                 bind:this={usernameInput.element}
@@ -1265,7 +1265,7 @@
                                                 placeholder="Username"
                                                 class="{!usernameInput.exists
                                                     ? 'border-amber-500 focus:border-emerald-500 animate-pulse dark:bg-secondary focus:animate-none'
-                                                    : 'border-transparent bg-transparent text-white text-opacity-80 hidden'}  w-full border focus:outline-none "
+                                                    : 'border-transparent bg-transparent text-white text-opacity-80 hidden'}  w-full border focus:outline-none"
                                                 value={usernameInput.element?.value || ""}
                                             />
                                             {#if usernameInput.exists == false}
@@ -1356,7 +1356,7 @@
                     </div>
                 </div>
             {:else}
-                <div class="flex-col py-4 h-full ">
+                <div class="flex-col py-4 h-full">
                     <div class="flex justify-end">
                         <button
                             on:click={() => {
@@ -1379,7 +1379,7 @@
 						>
 					-->
                         <div>
-                            <div class="flex flex-col gap-1 px-3 pt-3 ">
+                            <div class="flex flex-col gap-1 px-3 pt-3">
                                 <div class="relative">
                                     <svg
                                         class="absolute left-3 bottom-[28%]"
@@ -1445,7 +1445,7 @@
                                         on:keyup={() => updateSearchFilter(searchbarValue)}
                                         on:input={() => updateSearchFilter(searchbarValue)}
                                         on:change={() => updateSearchFilter(searchbarValue)}
-                                        class="w-full py-2 px-12 bg-white dark:bg-primary-700 
+                                        class="w-full py-2 px-12 bg-white dark:bg-primary-700
 							dark:placeholder-gray-400 text-md focus:outline-none"
                                         placeholder="Find Profile..."
                                     />

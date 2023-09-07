@@ -43,7 +43,7 @@
 >
     <div class="flex w-full justify-between">
         <div class="flex flex-row h-full w-full">
-            <div class="bg-emerald-500 w-1 mr-2 rounded-l " />
+            <div class="bg-emerald-500 w-1 mr-2 rounded-l" />
             <div class="flex-grow py-3 pr-3">
                 <div class="flex justify-between items-center">
                     <input
@@ -91,7 +91,7 @@
                             >
                                 <SvgIcon class="w-5" iconPath="delete" />
                                 <div
-                                    class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                    class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
                                 >
                                     Delete
                                 </div>
@@ -118,7 +118,7 @@
                         >
                             <SvgIcon class="w-5" iconPath="move_to_cloud_02" />
                             <div
-                                class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
                             >
                                 Upload
                             </div>
@@ -132,7 +132,7 @@
                             >
                                 <SvgIcon class="w-5" iconPath="overwrite_profile" />
                                 <div
-                                    class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                    class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
                                 >
                                     Overwrite
                                 </div>

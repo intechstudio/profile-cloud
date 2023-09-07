@@ -1,117 +1,117 @@
 <script lang="ts">
-	import ToggleSwitch from '$lib/components/atomic/ToggleSwitch.svelte';
-	import DisplayOnWeb from '$lib/components/DisplayOnWeb.svelte';
-	import { getContext, onMount, setContext } from 'svelte';
-	import '../app.css';
-	import SvgIcon from '$lib/icons/SvgIcon.svelte';
-	import { PUBLIC_APP_ENV } from '$env/static/public';
-	import { PUBLIC_VERSION_STRING } from '$env/static/public';
+    import ToggleSwitch from "$lib/components/atomic/ToggleSwitch.svelte";
+    import DisplayOnWeb from "$lib/components/DisplayOnWeb.svelte";
+    import { getContext, onMount, setContext } from "svelte";
+    import "../app.css";
+    import SvgIcon from "$lib/icons/SvgIcon.svelte";
+    import { PUBLIC_APP_ENV } from "$env/static/public";
+    import { PUBLIC_VERSION_STRING } from "$env/static/public";
 
-	function isThisAnIframe() {
-		try {
-			return window.self !== window.top;
-		} catch (e) {
-			return true;
-		}
-	}
+    function isThisAnIframe() {
+        try {
+            return window.self !== window.top;
+        } catch (e) {
+            return true;
+        }
+    }
 
-	if (isThisAnIframe()) {
-		setContext('display', 'editor');
-	} else {
-		setContext('display', 'web');
-	}
+    if (isThisAnIframe()) {
+        setContext("display", "editor");
+    } else {
+        setContext("display", "web");
+    }
 
-	let darkMode = getContext('display') === 'editor' ? true : false;
+    let darkMode = getContext("display") === "editor" ? true : false;
 
-	function toggleDarkMode() {
-		darkMode = !darkMode;
-		// set class on body, so on overscrolling the background will match the app color
-		document.body.classList.toggle('bg-primary');
-	}
+    function toggleDarkMode() {
+        darkMode = !darkMode;
+        // set class on body, so on overscrolling the background will match the app color
+        document.body.classList.toggle("bg-primary");
+    }
 
-	let fontSize = getContext('display') === 'editor' ? '12px' : '16px';
+    let fontSize = getContext("display") === "editor" ? "12px" : "16px";
 
-	console.log('Dark mode:', darkMode);
+    console.log("Dark mode:", darkMode);
 
-	console.log('Application context:', getContext('display'));
+    console.log("Application context:", getContext("display"));
 </script>
 
 <svelte:head>
-	<link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 </svelte:head>
 
-<main style={'font-size: ' + fontSize} class={darkMode ? 'dark' : ''}>
-	<div
-		class="dark:bg-primary flex flex-col justify-between dark:text-white bg-white text-black transition duration-200 min-h-screen"
-	>
-		<DisplayOnWeb>
-			<div class="dark:bg-neutral-700">
-				<nav class=" container mx-auto flex w-full justify-between p-4">
-					<a href="https://intech.studio">
-						<img
-							src={darkMode
-								? '/icon-logo-white-transparent.svg'
-								: '/icon-logo-black-transparent.svg'}
-							alt="Intech Studio"
-							class="h-8 p-1 "
-						/>
-					</a>
-					<ToggleSwitch on:toggle={toggleDarkMode}>
-						<svelte:fragment slot="on">
-							<img src="/moon_icon.svg" alt="dark mode" class="w-6 h-6" />
-						</svelte:fragment>
-						<svelte:fragment slot="off">
-							<img src="/sun_icon.svg" alt="light mode" class="w-6 h-6 p-1" />
-						</svelte:fragment>
-					</ToggleSwitch>
-				</nav>
-			</div>
-		</DisplayOnWeb>
+<main style={"font-size: " + fontSize} class={darkMode ? "dark" : ""}>
+    <div
+        class="dark:bg-primary flex flex-col justify-between dark:text-white bg-white text-black transition duration-200 min-h-screen"
+    >
+        <DisplayOnWeb>
+            <div class="dark:bg-neutral-700">
+                <nav class=" container mx-auto flex w-full justify-between p-4">
+                    <a href="https://intech.studio">
+                        <img
+                            src={darkMode
+                                ? "/icon-logo-white-transparent.svg"
+                                : "/icon-logo-black-transparent.svg"}
+                            alt="Intech Studio"
+                            class="h-8 p-1"
+                        />
+                    </a>
+                    <ToggleSwitch on:toggle={toggleDarkMode}>
+                        <svelte:fragment slot="on">
+                            <img src="/moon_icon.svg" alt="dark mode" class="w-6 h-6" />
+                        </svelte:fragment>
+                        <svelte:fragment slot="off">
+                            <img src="/sun_icon.svg" alt="light mode" class="w-6 h-6 p-1" />
+                        </svelte:fragment>
+                    </ToggleSwitch>
+                </nav>
+            </div>
+        </DisplayOnWeb>
 
-		<slot />
+        <slot />
 
-		{#if getContext('display') === 'web'}
-		<footer class=" bg-emerald-300 dark:bg-emerald-800">
-			<div class="container mx-auto flex w-full justify-center p-4 text-center">
-				<p class="text-sm">
-					<a
-						href="https://intech.studio"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="text-neutral-500 hover:text-neutral-600 dark:text-white dark:text-opacity-80 dark:hover:text-opacity-60"
-					>
-						&copy; {new Date().getFullYear()} Intech Studio - {PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING}
-					</a>
-				</p>
-			</div>
-		</footer>
-		{:else}
-		<footer class="bg-transparent">
-			<div class="container mx-auto flex w-full justify-center p-4 text-center">
-				<p class="text-sm">
-					{PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING}
-				</p>
-			</div>
-		</footer>
-		{/if}
-	</div>
+        {#if getContext("display") === "web"}
+            <footer class=" bg-emerald-300 dark:bg-emerald-800">
+                <div class="container mx-auto flex w-full justify-center p-4 text-center">
+                    <p class="text-sm">
+                        <a
+                            href="https://intech.studio"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="text-neutral-500 hover:text-neutral-600 dark:text-white dark:text-opacity-80 dark:hover:text-opacity-60"
+                        >
+                            &copy; {new Date().getFullYear()} Intech Studio - {PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING}
+                        </a>
+                    </p>
+                </div>
+            </footer>
+        {:else}
+            <footer class="bg-transparent">
+                <div class="container mx-auto flex w-full justify-center p-4 text-center">
+                    <p class="text-sm">
+                        {PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING}
+                    </p>
+                </div>
+            </footer>
+        {/if}
+    </div>
 </main>
 
 <style lang="postcss">
-	/**
+    /**
 	This is the global style for the scrollbar from the editor.
 	*/
-	:global(::-webkit-scrollbar) {
-		height: 0.375rem;
-		width: 0.375rem;
-		@apply dark:rounded-md dark:bg-secondary bg-neutral-100;
-	}
+    :global(::-webkit-scrollbar) {
+        height: 0.375rem;
+        width: 0.375rem;
+        @apply dark:rounded-md dark:bg-secondary bg-neutral-100;
+    }
 
-	:global(::-webkit-scrollbar-thumb) {
-		@apply dark:rounded-md dark:bg-neutral-600 bg-neutral-400 dark:shadow;
-	}
+    :global(::-webkit-scrollbar-thumb) {
+        @apply dark:rounded-md dark:bg-neutral-600 bg-neutral-400 dark:shadow;
+    }
 
-	:global(::-webkit-scrollbar-corner) {
-		@apply dark:rounded-md dark:bg-secondary;
-	}
+    :global(::-webkit-scrollbar-corner) {
+        @apply dark:rounded-md dark:bg-secondary;
+    }
 </style>
