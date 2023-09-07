@@ -41,9 +41,10 @@
     }}
     class="{$$props.class} flex flex-col justify-between items-start text-left w-full bg-white rounded border shadow dark:bg-secondary"
 >
-    <div class="flex w-full justify-between">
+    <div 
+class="flex w-full justify-between">
         <div class="flex-grow p-3">
-            <div class="flex justify-between items-center">
+            <div class="flex justify-between items-center test">
                 <input
                     bind:this={nameInputField.element}
                     class="w-full mr-1 font-bold border bg-transparent hover:bg-neutral-800 focus:outline-none {nameInputField.doubleClicked
