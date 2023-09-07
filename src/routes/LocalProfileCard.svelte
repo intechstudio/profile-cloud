@@ -41,8 +41,7 @@
     }}
     class="{$$props.class} flex flex-col justify-between items-start text-left w-full bg-white rounded border shadow dark:bg-secondary"
 >
-    <div 
-class="flex w-full justify-between">
+    <div class="flex w-full justify-between">
         <div class="flex-grow p-3">
             <div class="flex justify-between items-center test">
                 <input
