@@ -1052,7 +1052,7 @@
                                                                         transition:fade={{
                                                                             duration: 100
                                                                         }}
-                                                                        class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
+                                                                        class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
                                                                     >
                                                                         Copied to clipboard!
                                                                     </div>
@@ -1086,7 +1086,7 @@
                                                                     iconPath="import"
                                                                 />
                                                                 <div
-                                                                    class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                                    class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
                                                                 >
                                                                     Import
                                                                 </div>

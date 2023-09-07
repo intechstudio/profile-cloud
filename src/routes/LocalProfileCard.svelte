@@ -43,7 +43,7 @@
 >
     <div class="flex w-full justify-between">
         <div class="flex flex-row h-full w-full">
-            <div class="bg-emerald-500 w-1 mr-2 rounded-l " />
+            <div class="bg-emerald-500 w-1 mr-2 rounded-l" />
             <div class="flex-grow py-3 pr-3">
                 <div class="flex justify-between items-center">
                     <input
