@@ -65,7 +65,8 @@
     //let myProfiles: any[] = [];
     let cloudProfiles: any[] = [];
     let localProfiles: any[] = [];
-    let filteredCloud: any[] = [];
+    let filteredProfiles: any[] = [];
+    let allProfiles: any[] = [];
 
     let linkProfiles: any[] = [];
     let linkFlag: string | undefined = undefined;
@@ -86,49 +87,48 @@
     let sortAsc = true;
     let sortField = "name";
 
+    $: {
+        if (localProfiles.length > 0 || cloudProfiles.length > 0 || linkProfiles.length > 0) {
+            mergeProfiles(localProfiles, cloudProfiles, linkProfiles);
+        }
+    }
+
     let compareNameAscending = (a: any, b: any) => {
-        return a
-            .data()
-            .name.toLowerCase()
-            .localeCompare(b.data().name.toLowerCase(), undefined, { numeric: true });
+        return a.data.name
+            .toLowerCase()
+            .localeCompare(b.data.name.toLowerCase(), undefined, { numeric: true });
     };
-
     let compareNameDescending = (a: any, b: any) => {
-        return b
-            .data()
-            .name.toLowerCase()
-            .localeCompare(a.data().name.toLowerCase(), undefined, { numeric: true });
+        return b.data.name
+            .toLowerCase()
+            .localeCompare(a.data.name.toLowerCase(), undefined, { numeric: true });
     };
-
     function compareDateAscending(a: any, b: any) {
-        return a.data().fsModifiedAt - b.data().fsModifiedAt;
+        return a.data.fsModifiedAt - b.data.fsModifiedAt;
     }
-
     function compareDateDescending(a: any, b: any) {
-        return b.data().fsModifiedAt - a.data().fsModifiedAt;
+        return b.data.fsModifiedAt - a.data.fsModifiedAt;
     }
-
     function compareModuleAscending(a: any, b: any) {
-        return a.data().type.localeCompare(b.data().type, undefined, {
+        return a.data.type.localeCompare(b.data.type, undefined, {
             numeric: true
         });
     }
-
     function compareModuleDescending(a: any, b: any) {
-        return b.data().type.localeCompare(a.data().type, undefined, {
+        return b.data.type.localeCompare(a.data.type, undefined, {
             numeric: true
         });
     }
 
-    $: cloudProfiles, updateSearchFilter(searchbarValue);
+    $: cloudProfiles, localProfiles, linkProfiles, updateSearchFilter(searchbarValue);
 
     function updateSearchFilter(input: string) {
         animateFade = false;
 
-        filteredCloud = [];
+        filteredProfiles = [];
         const arrayOfSearchTerms = input.trim().toLowerCase().split(" ");
-        cloudProfiles.forEach((profile) => {
-            const data = profile.data();
+        allProfiles.forEach((profile) => {
+            const data = profile.data;
             const currentProfileSearchable =
                 data.name.toLowerCase() + " " + data.type.toLowerCase();
             let filterMatch = true;
@@ -140,7 +140,7 @@
             });
 
             if (filterMatch) {
-                filteredCloud = [...filteredCloud, profile];
+                filteredProfiles = [...filteredProfiles, profile];
             }
         });
 
@@ -150,32 +150,71 @@
     function sortProfileCloud(field: string, asc: boolean) {
         if (field == "name") {
             if (asc == true) {
-                filteredCloud = filteredCloud.sort(compareNameAscending);
+                filteredProfiles = filteredProfiles.sort(compareNameAscending);
             }
 
             if (asc == false) {
-                filteredCloud = filteredCloud.sort(compareNameDescending);
+                filteredProfiles = filteredProfiles.sort(compareNameDescending);
             }
         }
 
         if (field == "date") {
             if (asc == true) {
-                filteredCloud = filteredCloud.sort(compareDateAscending);
+                filteredProfiles = filteredProfiles.sort(compareDateAscending);
             }
 
             if (asc == false) {
-                filteredCloud = filteredCloud.sort(compareDateDescending);
+                filteredProfiles = filteredProfiles.sort(compareDateDescending);
             }
         }
 
         if (field == "module") {
             if (asc == true) {
-                filteredCloud = filteredCloud.sort(compareModuleAscending);
+                filteredProfiles = filteredProfiles.sort(compareModuleAscending);
             }
             if (asc == false) {
-                filteredCloud = filteredCloud.sort(compareModuleDescending);
+                filteredProfiles = filteredProfiles.sort(compareModuleDescending);
             }
         }
+
+        //After the sorting, separate locale and cloud profiles, keeping the initial sort order
+        filteredProfiles = filteredProfiles.sort((a, b) => {
+            if (a.location === b.location) {
+                return 0; // Maintain relative order for the same type
+            } else {
+                return a.location === "local" ? -1 : 1; // 'local' comes before 'cloud'
+            }
+        });
+    }
+
+    async function mergeProfiles(local: any[], cloud: any[], link: any[]) {
+        //LOCAL
+        const arr1 = local
+            .filter((p) => p.folder == "local")
+            .map((p: any) => {
+                return {
+                    data: p,
+                    location: "local"
+                };
+            });
+        //CLOUD
+        const arr2 = cloud.map((p) => {
+            return {
+                data: p.data(),
+                location: "cloud"
+            };
+        });
+        //LINK
+        const arr3 = link.map((p: any) => {
+            return {
+                data: p,
+                location: "local"
+            };
+        });
+        //MERGED
+        let profiles = [...arr1, ...arr2, ...arr3];
+        console.log(profiles);
+        allProfiles = profiles;
     }
 
     async function submitAnalytics({ eventName, payload }: { eventName: string; payload: any }) {
@@ -344,9 +383,11 @@
             },
             dataForParent: { profile }
         }).catch((err) => {
+            console.log(profile);
             return { ok: false, data: {} };
         });
         if (result.ok) {
+            console.log("ok");
             localProfiles = await getListOfLocalProfiles();
         }
     }
@@ -401,8 +442,9 @@
     }: {
         name?: string;
         description?: string;
-        profile: Profile;
+        profile: any | Profile;
     }) {
+        console.log(profile);
         const result = await parentIframeCommunication({
             windowPostMessageName: "textEditLocalProfile",
             channelPostMessage: {
@@ -679,141 +721,33 @@
             {#if display == "editor"}
                 <div class="flex flex-grow h-screen relative z-0 overflow-hidden">
                     <Splitpanes horizontal={true} theme="modern-theme">
-                        <Pane size={31} minSize={20}>
-                            <div class="flex flex-col pb-4 h-full">
-                                <div class="py-4 flex items-center justify-between">
-                                    <div class="flex flex-col">
-                                        <div class="">Local profiles</div>
-                                        <div class="text-xs dark:text-white dark:text-opacity-60">
-                                            Only you can see these profiles.
-                                        </div>
-                                    </div>
-                                    <button
-                                        on:click={() => {
-                                            createNewLocalProfileWithTheSelectedModulesConfigurationFromEditor();
-                                            provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
-                                                {}
-                                            );
-                                            submitAnalytics({
-                                                eventName: "Local Profile",
-                                                payload: {
-                                                    task: "Save local profile"
-                                                }
-                                            });
-                                        }}
-                                        class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
-                                        >save local profile</button
-                                    >
-                                </div>
-                                <div
-                                    class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
-                                >
-                                    {#each [...linkProfiles, ...localProfiles.filter((p) => p.folder == "local")] as profile, index}
-                                        <LocalProfileCard
-                                            on:click={() => {
-                                                if (selectedLocalProfileIndex == index) {
-                                                    return;
-                                                }
-                                                // reset the selected cloud profile index
-                                                selectedCloudProfileIndex = undefined;
-                                                provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
-                                                    profile
-                                                );
-                                                selectedLocalProfileIndex = index;
-                                            }}
-                                            on:focusout={(e) => {
-                                                selectedLocalProfileIndex = undefined;
-                                            }}
-                                            on:save-to-cloud={() => {
-                                                saveLocalProfileToCloud(profile);
-                                                provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
-                                                    {}
-                                                );
-                                                submitAnalytics({
-                                                    eventName: "Local Profile",
-                                                    payload: {
-                                                        task: "Save to cloud",
-                                                        ...profile
-                                                    }
-                                                });
-                                            }}
-                                            on:delete-local={async () => {
-                                                deleteLocalProfile(profile);
-                                                provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
-                                                    {}
-                                                );
-                                                submitAnalytics({
-                                                    eventName: "Local Profile",
-                                                    payload: {
-                                                        task: "Delete",
-                                                        ...profile
-                                                    }
-                                                });
-                                            }}
-                                            on:split-profile={() => {
-                                                //splitLocalProfile(profile);
-                                            }}
-                                            on:name-change={(e) => {
-                                                const { newName } = e.detail;
-                                                textEditLocalProfile({ name: newName, profile });
-                                                submitAnalytics({
-                                                    eventName: "Local Profile",
-                                                    payload: {
-                                                        task: "Edit name",
-                                                        oldName: profile.name,
-                                                        newName: newName
-                                                    }
-                                                });
-                                            }}
-                                            on:description-change={(e) => {
-                                                const { newDescription } = e.detail;
-                                                textEditLocalProfile({
-                                                    description: newDescription,
-                                                    profile
-                                                });
-                                                submitAnalytics({
-                                                    eventName: "Local Profile",
-                                                    payload: {
-                                                        task: "Edit description",
-                                                        oldDescription: profile.description,
-                                                        newDescription: newDescription
-                                                    }
-                                                });
-                                            }}
-                                            on:overwrite-profile={() => {
-                                                overwriteLocalProfile(profile);
-                                                provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
-                                                    {}
-                                                );
-                                                submitAnalytics({
-                                                    eventName: "Local Profile",
-                                                    payload: {
-                                                        task: "Overwrite",
-                                                        ...profile
-                                                    }
-                                                });
-                                            }}
-                                            class={index == selectedLocalProfileIndex
-                                                ? "border-emerald-500"
-                                                : "border-white/10"}
-                                            data={{
-                                                ...profile,
-                                                selectedModuleType: selectedModuleType
-                                            }}
-                                        />
-                                    {/each}
-                                </div>
-                            </div>
-                        </Pane>
                         {#if cloudProfiles && cloudProfiles.length > 0}
                             <Pane minSize={28}>
                                 <div class="flex flex-col h-full pb-4">
-                                    <div class="py-4">
-                                        <div>Profile Cloud</div>
-                                        <div class="text-white text-opacity-60">
-                                            Public profiles from others and save yours as private or
-                                            public here.
+                                    <div class="py-4 flex flex-row items-center justify-between">
+                                        <div class="flex flex-col mr-2">
+                                            <div>Profile Cloud</div>
+                                            <div class="text-white text-opacity-60">
+                                                Public profiles from others and save yours as
+                                                private or public here.
+                                            </div>
                                         </div>
+                                        <button
+                                            on:click={() => {
+                                                createNewLocalProfileWithTheSelectedModulesConfigurationFromEditor();
+                                                provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                                    {}
+                                                );
+                                                submitAnalytics({
+                                                    eventName: "Local Profile",
+                                                    payload: {
+                                                        task: "Save local profile"
+                                                    }
+                                                });
+                                            }}
+                                            class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium min-w-fit"
+                                            >save local profile</button
+                                        >
                                     </div>
                                     <div class="flex justify-end">
                                         <button
@@ -1013,187 +947,304 @@
                                     <div
                                         class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
                                     >
-                                        {#each filteredCloud as profile, index (profile.id)}
-                                            {@const data = profile.data()}
+                                        {#each filteredProfiles as profile, index (profile.data.id)}
+                                            {@const data = profile.data}
                                             <div in:slide>
-                                                <CloudProfileCard
-                                                    on:click={() => {
-                                                        if (selectedCloudProfileIndex == index) {
-                                                            return;
-                                                        }
-                                                        // reset the selection on the local profiles
-                                                        selectedLocalProfileIndex = undefined;
-                                                        provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
-                                                            data
-                                                        );
-                                                        selectedCloudProfileIndex = index;
-                                                    }}
-                                                    on:focusout={(e) => {
-                                                        selectedCloudProfileIndex = undefined;
-                                                    }}
-                                                    on:delete-cloud={async () => {
-                                                        selectedCloudProfileIndex = undefined;
-                                                        deleteCloudProfile(data);
-                                                        provideSelectedProfileForOptionalUploadingToOneOreMoreModules();
-                                                        submitAnalytics({
-                                                            eventName: "Profile Cloud",
-                                                            payload: {
-                                                                task: "Delete",
-                                                                profileName: data.name,
-                                                                public: data.public
+                                                {#if profile.location === "cloud"}
+                                                    <CloudProfileCard
+                                                        on:click={() => {
+                                                            if (
+                                                                selectedCloudProfileIndex == index
+                                                            ) {
+                                                                return;
                                                             }
-                                                        });
-                                                    }}
-                                                    on:description-change={(e) => {
-                                                        const { newDescription } = e.detail;
-                                                        textEditCloudProfile({
-                                                            description: newDescription,
-                                                            profile: data
-                                                        });
-                                                        submitAnalytics({
-                                                            eventName: "Profile Cloud",
-                                                            payload: {
-                                                                task: "Edit description",
-                                                                oldDescription: data.description,
-                                                                newDescription: newDescription
-                                                            }
-                                                        });
-                                                    }}
-                                                    on:name-change={(e) => {
-                                                        const { newName } = e.detail;
+                                                            // reset the selection on the local profiles
+                                                            selectedLocalProfileIndex = undefined;
+                                                            provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                                                data
+                                                            );
+                                                            selectedCloudProfileIndex = index;
+                                                        }}
+                                                        on:focusout={(e) => {
+                                                            selectedCloudProfileIndex = undefined;
+                                                        }}
+                                                        on:delete-cloud={async () => {
+                                                            selectedCloudProfileIndex = undefined;
+                                                            deleteCloudProfile(data);
+                                                            provideSelectedProfileForOptionalUploadingToOneOreMoreModules();
+                                                            submitAnalytics({
+                                                                eventName: "Profile Cloud",
+                                                                payload: {
+                                                                    task: "Delete",
+                                                                    profileName: data.name,
+                                                                    public: data.public
+                                                                }
+                                                            });
+                                                        }}
+                                                        on:description-change={(e) => {
+                                                            const { newDescription } = e.detail;
+                                                            textEditCloudProfile({
+                                                                description: newDescription,
+                                                                profile: data
+                                                            });
+                                                            submitAnalytics({
+                                                                eventName: "Profile Cloud",
+                                                                payload: {
+                                                                    task: "Edit description",
+                                                                    oldDescription:
+                                                                        data.description,
+                                                                    newDescription: newDescription
+                                                                }
+                                                            });
+                                                        }}
+                                                        on:name-change={(e) => {
+                                                            const { newName } = e.detail;
 
-                                                        textEditCloudProfile({
-                                                            name: newName,
-                                                            profile
-                                                        });
-                                                        submitAnalytics({
-                                                            eventName: "Profile Cloud",
-                                                            payload: {
-                                                                task: "Edit name",
-                                                                oldProfileName: data.name,
-                                                                newProfileName: newName
+                                                            textEditCloudProfile({
+                                                                name: newName,
+                                                                profile
+                                                            });
+                                                            submitAnalytics({
+                                                                eventName: "Profile Cloud",
+                                                                payload: {
+                                                                    task: "Edit name",
+                                                                    oldProfileName: data.name,
+                                                                    newProfileName: newName
+                                                                }
+                                                            });
+                                                        }}
+                                                        class={index === selectedCloudProfileIndex
+                                                            ? "border-emerald-500"
+                                                            : "border-white/10"}
+                                                        data={{
+                                                            ...data,
+                                                            selectedModuleType: selectedModuleType
+                                                        }}
+                                                    >
+                                                        <svelte:fragment slot="link-button">
+                                                            <button
+                                                                class="relative group flex"
+                                                                on:click|stopPropagation={() => {
+                                                                    createCloudProfileLink(data);
+                                                                    provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                                                        {}
+                                                                    );
+                                                                    submitAnalytics({
+                                                                        eventName: "Profile Link",
+                                                                        payload: {
+                                                                            task: "Create",
+                                                                            profileName: data.name
+                                                                        }
+                                                                    });
+                                                                }}
+                                                            >
+                                                                <SvgIcon
+                                                                    class="w-4"
+                                                                    iconPath="link"
+                                                                />
+                                                                <div
+                                                                    class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                                >
+                                                                    Link
+                                                                </div>
+                                                                {#if linkFlag == data.id}
+                                                                    <div
+                                                                        transition:fade={{
+                                                                            duration: 100
+                                                                        }}
+                                                                        class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
+                                                                    >
+                                                                        Copied to clipboard!
+                                                                    </div>
+                                                                {/if}
+                                                            </button>
+                                                        </svelte:fragment>
+                                                        <svelte:fragment slot="import-button">
+                                                            <button
+                                                                on:click|stopPropagation={async () => {
+                                                                    saveCloudProfileToLocalFolder(
+                                                                        data
+                                                                    );
+                                                                    provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                                                        {}
+                                                                    );
+                                                                    submitAnalytics({
+                                                                        eventName: "Profile Cloud",
+                                                                        payload: {
+                                                                            task: "Import to local",
+                                                                            profileName: data.name
+                                                                        }
+                                                                    });
+                                                                }}
+                                                                class="flex items-center group relative"
+                                                            >
+                                                                {#if importFlag == data.id}
+                                                                    loading...
+                                                                {/if}
+                                                                <SvgIcon
+                                                                    class="w-4"
+                                                                    iconPath="import"
+                                                                />
+                                                                <div
+                                                                    class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                                >
+                                                                    Import
+                                                                </div>
+                                                            </button>
+                                                        </svelte:fragment>
+                                                        <span slot="toggle-accessibility">
+                                                            <ToggleSwitch
+                                                                checkbox={data.public}
+                                                                on:toggle={(e) => {
+                                                                    submitAnalytics({
+                                                                        eventName: "Profile Cloud",
+                                                                        payload: {
+                                                                            task: "Set visibility",
+                                                                            profileName: data.name,
+                                                                            visibility: e.detail
+                                                                        }
+                                                                    });
+                                                                    changeCloudProfileVisibility(
+                                                                        data,
+                                                                        e.detail
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <div
+                                                                    class="relative group"
+                                                                    slot="on"
+                                                                >
+                                                                    <SvgIcon
+                                                                        display={true}
+                                                                        iconPath={"public"}
+                                                                        class="mr-1"
+                                                                    />
+                                                                    <div
+                                                                        class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                                    >
+                                                                        Public
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    class="relative group"
+                                                                    slot="off"
+                                                                >
+                                                                    <SvgIcon
+                                                                        display={true}
+                                                                        iconPath={"private"}
+                                                                        class="mr-1 text-opacity-70"
+                                                                    />
+                                                                    <div
+                                                                        class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                                    >
+                                                                        Private
+                                                                    </div>
+                                                                </div>
+                                                            </ToggleSwitch>
+                                                        </span>
+                                                    </CloudProfileCard>
+                                                {/if}
+                                                {#if profile.location === "local"}
+                                                    {@const data = profile.data}
+                                                    <LocalProfileCard
+                                                        on:click={() => {
+                                                            if (
+                                                                selectedLocalProfileIndex == index
+                                                            ) {
+                                                                return;
                                                             }
-                                                        });
-                                                    }}
-                                                    class={index === selectedCloudProfileIndex
-                                                        ? "border-emerald-500"
-                                                        : "border-white/10"}
-                                                    data={{
-                                                        ...data,
-                                                        selectedModuleType: selectedModuleType
-                                                    }}
-                                                >
-                                                    <svelte:fragment slot="link-button">
-                                                        <button
-                                                            class="relative group flex"
-                                                            on:click|stopPropagation={() => {
-                                                                createCloudProfileLink(data);
-                                                                provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
-                                                                    {}
-                                                                );
-                                                                submitAnalytics({
-                                                                    eventName: "Profile Link",
-                                                                    payload: {
-                                                                        task: "Create",
-                                                                        profileName: data.name
-                                                                    }
-                                                                });
-                                                            }}
-                                                        >
-                                                            <SvgIcon class="w-4" iconPath="link" />
-                                                            <div
-                                                                class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                                            >
-                                                                Link
-                                                            </div>
-                                                            {#if linkFlag == data.id}
-                                                                <div
-                                                                    transition:fade={{
-                                                                        duration: 100
-                                                                    }}
-                                                                    class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
-                                                                >
-                                                                    Copied to clipboard!
-                                                                </div>
-                                                            {/if}
-                                                        </button>
-                                                    </svelte:fragment>
-                                                    <svelte:fragment slot="import-button">
-                                                        <button
-                                                            on:click|stopPropagation={async () => {
-                                                                saveCloudProfileToLocalFolder(data);
-                                                                provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
-                                                                    {}
-                                                                );
-                                                                submitAnalytics({
-                                                                    eventName: "Profile Cloud",
-                                                                    payload: {
-                                                                        task: "Import to local",
-                                                                        profileName: data.name
-                                                                    }
-                                                                });
-                                                            }}
-                                                            class="flex items-center group relative"
-                                                        >
-                                                            {#if importFlag == data.id}
-                                                                loading...
-                                                            {/if}
-                                                            <SvgIcon
-                                                                class="w-4"
-                                                                iconPath="import"
-                                                            />
-                                                            <div
-                                                                class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                                            >
-                                                                Import
-                                                            </div>
-                                                        </button>
-                                                    </svelte:fragment>
-                                                    <span slot="toggle-accessibility">
-                                                        <ToggleSwitch
-                                                            checkbox={data.public}
-                                                            on:toggle={(e) => {
-                                                                submitAnalytics({
-                                                                    eventName: "Profile Cloud",
-                                                                    payload: {
-                                                                        task: "Set visibility",
-                                                                        profileName: data.name,
-                                                                        visibility: e.detail
-                                                                    }
-                                                                });
-                                                                changeCloudProfileVisibility(
-                                                                    data,
-                                                                    e.detail
-                                                                );
-                                                            }}
-                                                        >
-                                                            <div class="relative group" slot="on">
-                                                                <SvgIcon
-                                                                    display={true}
-                                                                    iconPath={"public"}
-                                                                    class="mr-1"
-                                                                />
-                                                                <div
-                                                                    class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                                                >
-                                                                    Public
-                                                                </div>
-                                                            </div>
-                                                            <div class="relative group" slot="off">
-                                                                <SvgIcon
-                                                                    display={true}
-                                                                    iconPath={"private"}
-                                                                    class="mr-1 text-opacity-70"
-                                                                />
-                                                                <div
-                                                                    class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                                                >
-                                                                    Private
-                                                                </div>
-                                                            </div>
-                                                        </ToggleSwitch>
-                                                    </span>
-                                                </CloudProfileCard>
+                                                            // reset the selected cloud profile index
+                                                            selectedCloudProfileIndex = undefined;
+                                                            provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                                                data
+                                                            );
+                                                            selectedLocalProfileIndex = index;
+                                                        }}
+                                                        on:focusout={(e) => {
+                                                            selectedLocalProfileIndex = undefined;
+                                                        }}
+                                                        on:save-to-cloud={() => {
+                                                            saveLocalProfileToCloud(data);
+                                                            provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                                                {}
+                                                            );
+                                                            submitAnalytics({
+                                                                eventName: "Local Profile",
+                                                                payload: {
+                                                                    task: "Save to cloud",
+                                                                    ...data
+                                                                }
+                                                            });
+                                                        }}
+                                                        on:delete-local={async () => {
+                                                            deleteLocalProfile(data);
+                                                            provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                                                {}
+                                                            );
+                                                            submitAnalytics({
+                                                                eventName: "Local Profile",
+                                                                payload: {
+                                                                    task: "Delete",
+                                                                    ...data
+                                                                }
+                                                            });
+                                                        }}
+                                                        on:split-profile={() => {
+                                                            //splitLocalProfile(profile);
+                                                        }}
+                                                        on:name-change={(e) => {
+                                                            const { newName } = e.detail;
+                                                            textEditLocalProfile({
+                                                                name: newName,
+                                                                profile: data
+                                                            });
+                                                            submitAnalytics({
+                                                                eventName: "Local Profile",
+                                                                payload: {
+                                                                    task: "Edit name",
+                                                                    oldName: data.name,
+                                                                    newName: newName
+                                                                }
+                                                            });
+                                                        }}
+                                                        on:description-change={(e) => {
+                                                            const { newDescription } = e.detail;
+                                                            textEditLocalProfile({
+                                                                description: newDescription,
+                                                                profile: data
+                                                            });
+                                                            submitAnalytics({
+                                                                eventName: "Local Profile",
+                                                                payload: {
+                                                                    task: "Edit description",
+                                                                    oldDescription:
+                                                                        data.description,
+                                                                    newDescription: newDescription
+                                                                }
+                                                            });
+                                                        }}
+                                                        on:overwrite-profile={() => {
+                                                            overwriteLocalProfile(data);
+                                                            provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
+                                                                {}
+                                                            );
+                                                            submitAnalytics({
+                                                                eventName: "Local Profile",
+                                                                payload: {
+                                                                    task: "Overwrite",
+                                                                    ...data
+                                                                }
+                                                            });
+                                                        }}
+                                                        class={index == selectedLocalProfileIndex
+                                                            ? "border-emerald-500"
+                                                            : "border-white/10"}
+                                                        data={{
+                                                            ...data,
+                                                            selectedModuleType: selectedModuleType
+                                                        }}
+                                                    />
+                                                {/if}
                                             </div>
                                         {/each}
                                     </div>
@@ -1544,8 +1595,8 @@
                     <div
                         class="overflow-y-auto w-full h-full p-2 lg:py-8 grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 gap-4"
                     >
-                        {#each filteredCloud as profile, index}
-                            {@const data = profile.data()}
+                        {#each filteredProfiles as profile, index}
+                            {@const data = profile.data}
                             <CloudProfileCard
                                 on:click={() => {
                                     provideSelectedProfileForOptionalUploadingToOneOreMoreModules(
