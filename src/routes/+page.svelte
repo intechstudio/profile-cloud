@@ -783,7 +783,7 @@
                     class="flex flex-col justify-between pt-8 text-opacity-80 text-black dark:text-opacity-80 dark:text-white"
                 >
                     <h1 class="text-3xl font-bold pb-2">profile list</h1>
-                    <h2 class="py-2 ">Profile Cloud is coming with Grid Editor version 1.2.35.</h2>
+                    <h2 class="py-2">Profile Cloud is coming with Grid Editor version 1.2.35.</h2>
                     <p class="text-opacity-60 text-black dark:text-white dark:text-opacity-60">
                         <a
                             href="https://links.intech.studio/discord"
@@ -797,7 +797,7 @@
                 <div class="flex flex-grow h-screen relative z-0 overflow-hidden">
                     <Splitpanes horizontal={true} theme="modern-theme">
                         <Pane minSize={28}>
-                            <div class="flex flex-col pb-4 h-full ">
+                            <div class="flex flex-col pb-4 h-full">
                                 <ul class="flex">
                                     <li>
                                         <button
@@ -1124,7 +1124,7 @@
                                                                     transition:fade={{
                                                                         duration: 100
                                                                     }}
-                                                                    class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
+                                                                    class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
                                                                 >
                                                                     Copied to clipboard!
                                                                 </div>
@@ -1156,7 +1156,7 @@
                                                                 iconPath="import"
                                                             />
                                                             <div
-                                                                class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                                class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
                                                             >
                                                                 Import
                                                             </div>
@@ -1462,7 +1462,7 @@
                     </Splitpanes>
                 </div>
             {:else}
-                <div class="flex-col py-4 h-full ">
+                <div class="flex-col py-4 h-full">
                     <div class="flex justify-end">
                         <button
                             on:click={() => {
@@ -1550,7 +1550,7 @@
                                         on:keyup={() => updateSearchFilter()}
                                         on:input={() => updateSearchFilter()}
                                         on:change={() => updateSearchFilter()}
-                                        class="w-full py-2 px-12 bg-white dark:bg-primary-700 
+                                        class="w-full py-2 px-12 bg-white dark:bg-primary-700
 							dark:placeholder-gray-400 text-md focus:outline-none"
                                         placeholder="Find Profile..."
                                     />
