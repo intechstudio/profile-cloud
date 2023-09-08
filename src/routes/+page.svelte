@@ -1,197 +1,203 @@
 <script lang="ts">
-	import { Pane, Splitpanes } from 'svelte-splitpanes';
+    import { Pane, Splitpanes } from "svelte-splitpanes";
 
-	import { getContext, onDestroy, onMount } from 'svelte';
-	import DisplayOnWeb from '$lib/components/DisplayOnWeb.svelte';
-	import { userAccountService } from '$lib/stores';
-	import UserAccount from '$lib/components/UserAccount.svelte';
-	import CloudProfileCard from './CloudProfileCard.svelte';
-	import {
-		Query,
-		and,
-		deleteDoc,
-		doc,
-		getDoc,
-		getDocs,
-		or,
-		query,
-		setDoc,
-		updateDoc,
-		where,
-		type DocumentData,
-		writeBatch
-	} from 'firebase/firestore';
-	import {
-		configLinksCollection,
-		configsCollection,
-		profileLinksCollection,
-		profilesCollection,
-		userCollection,
-		usernameCollection
-	} from '$lib/collections';
-	import LocalProfileCard from './LocalProfileCard.svelte';
-	import SvgIcon from '$lib/icons/SvgIcon.svelte';
-	import { get } from 'svelte/store';
-	import { ConfigSchema, type Config, type ConfigLink, ConfigLinkSchema } from '$lib/schemas';
-	import { ProfileSchema, type Profile, type ProfileLink, ProfileLinkSchema } from '$lib/schemas';
-	import { fade, slide } from 'svelte/transition';
-	import ToggleSwitch from '$lib/components/atomic/ToggleSwitch.svelte';
-	import { PUBLIC_APP_ENV } from '$env/static/public';
-	import { PUBLIC_VERSION_STRING } from '$env/static/public';
-	import { firestore } from '$lib/firebase';
-	import { parentIframeCommunication } from '$lib/utils';
+    import { getContext, onDestroy, onMount } from "svelte";
+    import DisplayOnWeb from "$lib/components/DisplayOnWeb.svelte";
+    import { userAccountService } from "$lib/stores";
+    import UserAccount from "$lib/components/UserAccount.svelte";
+    import CloudProfileCard from "./CloudProfileCard.svelte";
+    import {
+        Query,
+        and,
+        deleteDoc,
+        doc,
+        getDoc,
+        getDocs,
+        or,
+        query,
+        setDoc,
+        updateDoc,
+        where,
+        type DocumentData,
+        writeBatch
+    } from "firebase/firestore";
+    import {
+        configLinksCollection,
+        configsCollection,
+        profileLinksCollection,
+        profilesCollection,
+        userCollection,
+        usernameCollection
+    } from "$lib/collections";
+    import LocalProfileCard from "./LocalProfileCard.svelte";
+    import SvgIcon from "$lib/icons/SvgIcon.svelte";
+    import { get } from "svelte/store";
+    import { ConfigSchema, type Config, type ConfigLink, ConfigLinkSchema } from "$lib/schemas";
+    import { ProfileSchema, type Profile, type ProfileLink, ProfileLinkSchema } from "$lib/schemas";
+    import { fade, slide } from "svelte/transition";
+    import ToggleSwitch from "$lib/components/atomic/ToggleSwitch.svelte";
+    import { PUBLIC_APP_ENV } from "$env/static/public";
+    import { PUBLIC_VERSION_STRING } from "$env/static/public";
+    import { firestore } from "$lib/firebase";
+    import { parentIframeCommunication } from "$lib/utils";
 
-	const display = getContext('display');
+    const display = getContext("display");
 
-	let searchSuggestions = [
-		{
-		value: "BU16",
-		},
-		{
-		value: "EF44",
-		},
-		{
-		value: "EN16",
-		},
-		{
-		value: "PBF4",
-		},
-		{
-		value: "PO16",
-		},
-  	];
+    let searchSuggestions = [
+        {
+            value: "BU16"
+        },
+        {
+            value: "EF44"
+        },
+        {
+            value: "EN16"
+        },
+        {
+            value: "PBF4"
+        },
+        {
+            value: "PO16"
+        }
+    ];
 
-	let selectedLocalConfigIndex: number | undefined = undefined;
-	let selectedCloudConfigIndex: number | undefined = undefined;
+    let selectedLocalConfigIndex: number | undefined = undefined;
+    let selectedCloudConfigIndex: number | undefined = undefined;
 
-	//let publicProfiles: any[] = [];
-	//let myProfiles: any[] = [];
-	let cloudConfigs: any[] = [];
-	let localConfigs: any[] = [];
-	let filteredLocalConfigs: any[] = [];
-	let filteredConfigs: any[] = [];
+    //let publicProfiles: any[] = [];
+    //let myProfiles: any[] = [];
+    let cloudConfigs: any[] = [];
+    let localConfigs: any[] = [];
+    let filteredLocalConfigs: any[] = [];
+    let filteredConfigs: any[] = [];
 
-	let linkConfigs: any[] = [];
-	let linkFlag: string | undefined = undefined;
+    let linkConfigs: any[] = [];
+    let linkFlag: string | undefined = undefined;
 
-	let usernameInput = {
-		element: null as HTMLInputElement | null,
-		exists: false,
-		valid: false,
-		active: false
-	};
+    let usernameInput = {
+        element: null as HTMLInputElement | null,
+        exists: false,
+        valid: false,
+        active: false
+    };
 
-	let selectedComponentTypes: string[] = [];
+    let selectedComponentTypes: string[] = [];
 
-	let configTypeSelector = "profile";
+    let configTypeSelector = "profile";
 
-	let isSearchSortingShows = false;
-	let searchbarValue = "";
+    let isSearchSortingShows = false;
+    let searchbarValue = "";
 
-	let sortAsc = true;
-	let sortField = "name";
+    let sortAsc = true;
+    let sortField = "name";
 
-	let compareNameAscending = (a: any, b: any) => {
-		return a.data.name
-		.toLowerCase()
-		.localeCompare(b.data.name.toLowerCase(), undefined, { numeric: true });
-	};
+    let compareNameAscending = (a: any, b: any) => {
+        return a.data.name
+            .toLowerCase()
+            .localeCompare(b.data.name.toLowerCase(), undefined, { numeric: true });
+    };
 
-	let compareNameDescending = (a: any, b: any) => {
-		return b.data.name
-		.toLowerCase()
-		.localeCompare(a.data.name.toLowerCase(), undefined, { numeric: true });
-	};
+    let compareNameDescending = (a: any, b: any) => {
+        return b.data.name
+            .toLowerCase()
+            .localeCompare(a.data.name.toLowerCase(), undefined, { numeric: true });
+    };
 
-	function compareDateAscending(a: any, b: any) {
-		return a.data.fsModifiedAt - b.data.fsModifiedAt;
-	}
+    function compareDateAscending(a: any, b: any) {
+        return a.data.fsModifiedAt - b.data.fsModifiedAt;
+    }
 
-	function compareDateDescending(a: any, b: any) {
-		return b.data.fsModifiedAt - a.data.fsModifiedAt;
-	}
+    function compareDateDescending(a: any, b: any) {
+        return b.data.fsModifiedAt - a.data.fsModifiedAt;
+    }
 
-	function compareModuleAscending(a: any, b: any) {
-		return a.data.type.localeCompare(b.data.type, undefined, {
-		numeric: true,
-		});
-	}
+    function compareModuleAscending(a: any, b: any) {
+        return a.data.type.localeCompare(b.data.type, undefined, {
+            numeric: true
+        });
+    }
 
-	function compareModuleDescending(a: any, b: any) {
-		return b.data.type.localeCompare(a.data.type, undefined, {
-		numeric: true,
-		});
-	}
+    function compareModuleDescending(a: any, b: any) {
+        return b.data.type.localeCompare(a.data.type, undefined, {
+            numeric: true
+        });
+    }
 
-	$: configTypeSelector, updateSearchSuggestions();
+    $: configTypeSelector, updateSearchSuggestions();
 
-	function updateSearchSuggestions(){
-		if (configTypeSelector === "profile"){
-			searchSuggestions = [
-				{
-				value: "BU16",
-				},
-				{
-				value: "EF44",
-				},
-				{
-				value: "EN16",
-				},
-				{
-				value: "PBF4",
-				},
-				{
-				value: "PO16",
-				},
-			];
-		} else if (configTypeSelector === "preset"){
-			searchSuggestions = [
-				{
-				value: "button",
-				},
-				{
-				value: "encoder",
-				},
-				{
-				value: "potentiometer",
-				},
-				{
-				value: "fader",
-				}
-			];
-		}
-	}
+    function updateSearchSuggestions() {
+        if (configTypeSelector === "profile") {
+            searchSuggestions = [
+                {
+                    value: "BU16"
+                },
+                {
+                    value: "EF44"
+                },
+                {
+                    value: "EN16"
+                },
+                {
+                    value: "PBF4"
+                },
+                {
+                    value: "PO16"
+                }
+            ];
+        } else if (configTypeSelector === "preset") {
+            searchSuggestions = [
+                {
+                    value: "button"
+                },
+                {
+                    value: "encoder"
+                },
+                {
+                    value: "potentiometer"
+                },
+                {
+                    value: "fader"
+                }
+            ];
+        }
+    }
 
-	$: cloudConfigs, localConfigs, linkConfigs, searchbarValue, configTypeSelector, updateSearchFilter();
+    $: cloudConfigs,
+        localConfigs,
+        linkConfigs,
+        searchbarValue,
+        configTypeSelector,
+        updateSearchFilter();
 
-	function updateSearchFilter() {
-		const input = searchbarValue;
-		const arrayOfSearchTerms = input.trim().toLowerCase().split(" ");
+    function updateSearchFilter() {
+        const input = searchbarValue;
+        const arrayOfSearchTerms = input.trim().toLowerCase().split(" ");
 
-        
-        console.log({list: getMergedConfigList(), configTypeSelector, arrayOfSearchTerms});
-		filteredConfigs = getMergedConfigList().filter((config) => {
-			const data = config.data;
-			if (data.configType !== configTypeSelector && !(data.isGridProfile && configTypeSelector === "profile") && !(data.isGridPreset && configTypeSelector === "preset")) {
-				return false;
-			}
-			const currentProfileSearchable =
-				data.name.toLowerCase() +
-				" " +
-				data.type.toLowerCase();
+        console.log({ list: getMergedConfigList(), configTypeSelector, arrayOfSearchTerms });
+        filteredConfigs = getMergedConfigList().filter((config) => {
+            const data = config.data;
+            if (
+                data.configType !== configTypeSelector &&
+                !(data.isGridProfile && configTypeSelector === "profile") &&
+                !(data.isGridPreset && configTypeSelector === "preset")
+            ) {
+                return false;
+            }
+            const currentProfileSearchable =
+                data.name.toLowerCase() + " " + data.type.toLowerCase();
 
-			arrayOfSearchTerms.forEach((searchTerm) => {
-				if (currentProfileSearchable.indexOf(searchTerm) === -1) {
-					return false
-				}
-			});
-			return true;
-		});
-		sortProfileCloud(sortField, sortAsc);
-	}
+            arrayOfSearchTerms.forEach((searchTerm) => {
+                if (currentProfileSearchable.indexOf(searchTerm) === -1) {
+                    return false;
+                }
+            });
+            return true;
+        });
+        sortProfileCloud(sortField, sortAsc);
+    }
 
-    function getMergedConfigList() : any[]{
-         const arr1 = localConfigs
+    function getMergedConfigList(): any[] {
+        const arr1 = localConfigs
             //TODO: .filter((p) => p.folder == "local")
             .map((config: any) => {
                 return {
@@ -215,55 +221,53 @@
         return configs;
     }
 
-  	$: configTypeSelector, resetPageState();
+    $: configTypeSelector, resetPageState();
 
-	function resetPageState(){
-		selectedLocalConfigIndex = undefined;
-		selectedCloudConfigIndex = undefined;
-		isSearchSortingShows = false;
-		searchbarValue = "";
-		provideSelectedConfigForOptionalUploadingToOneOreMoreModules();
-	}
+    function resetPageState() {
+        selectedLocalConfigIndex = undefined;
+        selectedCloudConfigIndex = undefined;
+        isSearchSortingShows = false;
+        searchbarValue = "";
+        provideSelectedConfigForOptionalUploadingToOneOreMoreModules();
+    }
 
-	$: configTypeSelector, localConfigs, filterLocalConfigs(); 
+    $: configTypeSelector, localConfigs, filterLocalConfigs();
 
-	function filterLocalConfigs(){
-		filteredLocalConfigs = localConfigs.filter((config) => config.configType == configTypeSelector);
-	}
+    function filterLocalConfigs() {
+        filteredLocalConfigs = localConfigs.filter(
+            (config) => config.configType == configTypeSelector
+        );
+    }
 
-	function sortProfileCloud(field : string, asc : boolean) {
-		if (field == "name") {
-			if (asc == true) {
-				filteredConfigs = filteredConfigs.sort(compareNameAscending);
-			}
+    function sortProfileCloud(field: string, asc: boolean) {
+        if (field == "name") {
+            if (asc == true) {
+                filteredConfigs = filteredConfigs.sort(compareNameAscending);
+            }
 
-			if (asc == false) {
-				filteredConfigs = filteredConfigs.sort(compareNameDescending);
-			}
-		}
+            if (asc == false) {
+                filteredConfigs = filteredConfigs.sort(compareNameDescending);
+            }
+        }
 
-		if (field == "date") {
-			if (asc == true) {
-				filteredConfigs = filteredConfigs.sort(compareDateAscending);
-			}
+        if (field == "date") {
+            if (asc == true) {
+                filteredConfigs = filteredConfigs.sort(compareDateAscending);
+            }
 
-			if (asc == false) {
-				filteredConfigs = filteredConfigs.sort(compareDateDescending);
-			}
-		}
+            if (asc == false) {
+                filteredConfigs = filteredConfigs.sort(compareDateDescending);
+            }
+        }
 
-		if (field == "module") {
-			if (asc == true) {
-				filteredConfigs = filteredConfigs.sort(
-				compareModuleAscending
-				);
-			}
-		if (asc == false) {
-			filteredConfigs = filteredConfigs.sort(
-				compareModuleDescending
-				);
-			}
-		}
+        if (field == "module") {
+            if (asc == true) {
+                filteredConfigs = filteredConfigs.sort(compareModuleAscending);
+            }
+            if (asc == false) {
+                filteredConfigs = filteredConfigs.sort(compareModuleDescending);
+            }
+        }
 
         //After the sorting, separate locale and cloud profiles, keeping the initial sort order
         filteredConfigs = filteredConfigs.sort((a, b) => {
@@ -273,564 +277,575 @@
                 return a.location === "local" ? -1 : 1; // 'local' comes before 'cloud'
             }
         });
-	}
+    }
 
-	async function submitAnalytics({ eventName, payload }: { eventName: string; payload: any }) {
-		await parentIframeCommunication({
-			windowPostMessageName: 'submitAnalytics',
-			channelPostMessage: { channelMessageType: 'SUBMIT_ANALYTICS' },
-			dataForParent: {
-				eventName,
-				payload
-			}
-		});
-	}
+    async function submitAnalytics({ eventName, payload }: { eventName: string; payload: any }) {
+        await parentIframeCommunication({
+            windowPostMessageName: "submitAnalytics",
+            channelPostMessage: { channelMessageType: "SUBMIT_ANALYTICS" },
+            dataForParent: {
+                eventName,
+                payload
+            }
+        });
+    }
 
-	const userAccountSubscription = userAccountService.subscribe(async (userAccount) => {
-		cloudConfigs = await getCloudConfigs();
-		if (userAccount.account?.uid) {
-			const username = await getUserNameByUid(userAccount.account.uid);
-			if (username) {
-				usernameInput.exists = true;
-				usernameInput.element!.value = '@' + username;
-			} else {
-				usernameInput.exists = false;
-			}
+    const userAccountSubscription = userAccountService.subscribe(async (userAccount) => {
+        cloudConfigs = await getCloudConfigs();
+        if (userAccount.account?.uid) {
+            const username = await getUserNameByUid(userAccount.account.uid);
+            if (username) {
+                usernameInput.exists = true;
+                usernameInput.element!.value = "@" + username;
+            } else {
+                usernameInput.exists = false;
+            }
 
-			submitAnalytics({
-				eventName: 'Authentication',
-				payload: {
-					task: 'Login',
-					username: username || userAccount.account.displayName
-				}
-			});
-		} else {
-			submitAnalytics({
-				eventName: 'Authentication',
-				payload: {
-					task: 'Logout'
-				}
-			});
-		}
-	});
+            submitAnalytics({
+                eventName: "Authentication",
+                payload: {
+                    task: "Login",
+                    username: username || userAccount.account.displayName
+                }
+            });
+        } else {
+            submitAnalytics({
+                eventName: "Authentication",
+                payload: {
+                    task: "Logout"
+                }
+            });
+        }
+    });
 
-	async function checkIfUsernameAvailable(username: string) {
-		if (username.length >= 3 && username.length <= 15) {
-			const usernameRef = doc(usernameCollection, username);
-			const res = await getDoc(usernameRef).then((d) => d.data());
-			usernameInput.valid = res == undefined ? true : false;
-		} else {
-			usernameInput.valid = false;
-		}
-	}
+    async function checkIfUsernameAvailable(username: string) {
+        if (username.length >= 3 && username.length <= 15) {
+            const usernameRef = doc(usernameCollection, username);
+            const res = await getDoc(usernameRef).then((d) => d.data());
+            usernameInput.valid = res == undefined ? true : false;
+        } else {
+            usernameInput.valid = false;
+        }
+    }
 
-	async function getUserNameByUid(uid: string) {
-		const userRef = doc(userCollection, uid);
-		const user: string = await getDoc(userRef).then((res) => res.data()?.username);
-		return user;
-	}
+    async function getUserNameByUid(uid: string) {
+        const userRef = doc(userCollection, uid);
+        const user: string = await getDoc(userRef).then((res) => res.data()?.username);
+        return user;
+    }
 
-	function usernameSelectionFeedback(obj: any) {
-		let str = '';
-		if (obj.element?.value != undefined && obj.element?.value.length > 0) {
-			if (obj.element?.value.length > 0) {
-				str += '@';
-			}
-			str += obj.element?.value;
-			if (obj.valid == true && obj.element?.value.length > 0) {
-				str += ' is available';
-			} else if (obj.valid == false) {
-				str += ' is not available';
-			}
-		}
-		return str;
-	}
+    function usernameSelectionFeedback(obj: any) {
+        let str = "";
+        if (obj.element?.value != undefined && obj.element?.value.length > 0) {
+            if (obj.element?.value.length > 0) {
+                str += "@";
+            }
+            str += obj.element?.value;
+            if (obj.valid == true && obj.element?.value.length > 0) {
+                str += " is available";
+            } else if (obj.valid == false) {
+                str += " is not available";
+            }
+        }
+        return str;
+    }
 
-	async function setUserName(username?: string) {
-		const uid = get(userAccountService).account?.uid;
-		// Create refs for both documents
-		const userDoc = doc(userCollection, uid);
-		const usernameDoc = doc(usernameCollection, username);
+    async function setUserName(username?: string) {
+        const uid = get(userAccountService).account?.uid;
+        // Create refs for both documents
+        const userDoc = doc(userCollection, uid);
+        const usernameDoc = doc(usernameCollection, username);
 
-		// Commit both docs together as a batch write.
-		const batch = writeBatch(firestore);
+        // Commit both docs together as a batch write.
+        const batch = writeBatch(firestore);
 
-		batch.set(userDoc, { username });
-		batch.set(usernameDoc, { uid });
+        batch.set(userDoc, { username });
+        batch.set(usernameDoc, { uid });
 
-		await batch.commit().then(() => {
-			usernameInput.exists = true;
-			usernameInput.element!.value = '@' + username;
-		});
-	}
+        await batch.commit().then(() => {
+            usernameInput.exists = true;
+            usernameInput.element!.value = "@" + username;
+        });
+    }
 
-	async function editorMessageListener(event: MessageEvent) {
-		if (event.data.messageType == 'editorDataSaved') {
-			// to do?
-		}
+    async function editorMessageListener(event: MessageEvent) {
+        if (event.data.messageType == "editorDataSaved") {
+            // to do?
+        }
 
-		if (event.data.messageType == 'userAuthentication') {
-			userAccountService.authenticateUser(event.data.authEvent);
-		}
+        if (event.data.messageType == "userAuthentication") {
+            userAccountService.authenticateUser(event.data.authEvent);
+        }
 
-		if (event.data.messageType == 'configLink') {
-			const linkedConfig = await getLinkedConfig(event.data.configLinkId);
-			submitAnalytics({
-				eventName: 'Config Link',
-				payload: {
-					task: 'Import',
-					owner: linkedConfig?.owner,
-					profileName: linkedConfig?.name,
-					profileType: linkedConfig?.type
-				}
-			});
-			saveCloudConfigToLocalFolder(linkedConfig!);
-		}
-	}
+        if (event.data.messageType == "configLink") {
+            const linkedConfig = await getLinkedConfig(event.data.configLinkId);
+            submitAnalytics({
+                eventName: "Config Link",
+                payload: {
+                    task: "Import",
+                    owner: linkedConfig?.owner,
+                    profileName: linkedConfig?.name,
+                    profileType: linkedConfig?.type
+                }
+            });
+            saveCloudConfigToLocalFolder(linkedConfig!);
+        }
+    }
 
-	async function getLinkedConfig(id: string) {
-		const docRef = doc(configLinksCollection, id);
-		let configLink = await getDoc(docRef)
-			.then((res) => res.data())
-			.catch((err) => console.log(err));
-		if (!configLink){
-			let profileLink = await getDoc(doc(profileLinksCollection, id))
-				.then((res) => res.data())
-				.catch((err) => console.log(err));
-			if (!profileLink){
-				return configLink;
-			}
-			profileLink.configType = "profile";
-			configLink = profileLink;
-		}
-		return configLink;
-	}
+    async function getLinkedConfig(id: string) {
+        const docRef = doc(configLinksCollection, id);
+        let configLink = await getDoc(docRef)
+            .then((res) => res.data())
+            .catch((err) => console.log(err));
+        if (!configLink) {
+            let profileLink = await getDoc(doc(profileLinksCollection, id))
+                .then((res) => res.data())
+                .catch((err) => console.log(err));
+            if (!profileLink) {
+                return configLink;
+            }
+            profileLink.configType = "profile";
+            configLink = profileLink;
+        }
+        return configLink;
+    }
 
-	async function getListOfLocalConfigs() {
-		if (display == 'web') {
-			return [];
-		}
+    async function getListOfLocalConfigs() {
+        if (display == "web") {
+            return [];
+        }
 
-		const result = await parentIframeCommunication({
-			windowPostMessageName: 'getListOfLocalConfigs',
-			channelPostMessage: { channelMessageType: 'GET_LIST_OF_LOCAL_CONFIGS' },
-			dataForParent: {}
-		});
-		if (result.ok) {
-			console.log({data: result.data});
-			return result.data;
-		}
-	}
+        const result = await parentIframeCommunication({
+            windowPostMessageName: "getListOfLocalConfigs",
+            channelPostMessage: { channelMessageType: "GET_LIST_OF_LOCAL_CONFIGS" },
+            dataForParent: {}
+        });
+        if (result.ok) {
+            console.log({ data: result.data });
+            return result.data;
+        }
+    }
 
-	async function provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
-		config?: Config | {}
-	) {
-		if (!config) {
-			config = {};
-		}
-		const result = await parentIframeCommunication({
-			windowPostMessageName: 'provideSelectedConfigForOptionalUploadingToOneOreMoreModules',
-			channelPostMessage: {
-				channelMessageType: 'PROVIDE_SELECTED_CONFIG_FOR_OPTIONAL_UPLOADING_TO_ONE_OR_MORE_MODULES'
-			},
-			dataForParent: { config }
-		});
-		if (result.ok) {
-		}
-	}
+    async function provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+        config?: Config | {}
+    ) {
+        if (!config) {
+            config = {};
+        }
+        const result = await parentIframeCommunication({
+            windowPostMessageName: "provideSelectedConfigForOptionalUploadingToOneOreMoreModules",
+            channelPostMessage: {
+                channelMessageType:
+                    "PROVIDE_SELECTED_CONFIG_FOR_OPTIONAL_UPLOADING_TO_ONE_OR_MORE_MODULES"
+            },
+            dataForParent: { config }
+        });
+        if (result.ok) {
+        }
+    }
 
-	async function deleteLocalConfig(config: Config) {
-		const result = await parentIframeCommunication({
-			windowPostMessageName: 'deleteLocalConfig',
-			channelPostMessage: {
-				channelMessageType: 'DELETE_LOCAL_CONFIG'
-			},
-			dataForParent: { config }
-		}).catch((err) => {
-			return { ok: false, data: {} };
-		});
-		if (result.ok) {
-			localConfigs = await getListOfLocalConfigs();
-		}
-	}
+    async function deleteLocalConfig(config: Config) {
+        const result = await parentIframeCommunication({
+            windowPostMessageName: "deleteLocalConfig",
+            channelPostMessage: {
+                channelMessageType: "DELETE_LOCAL_CONFIG"
+            },
+            dataForParent: { config }
+        }).catch((err) => {
+            return { ok: false, data: {} };
+        });
+        if (result.ok) {
+            localConfigs = await getListOfLocalConfigs();
+        }
+    }
 
-	async function createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor() {
-		const result = await parentIframeCommunication({
-			windowPostMessageName: 'createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor',
-			channelPostMessage: {
-				channelMessageType:
-					'CREATE_NEW_LOCAL_CONFIG_WITH_THE_SELECTED_MODULES_CONFIGURATION_FROM_EDITOR',
-			},
-			dataForParent: {configType: configTypeSelector,}
-		});
-		if (result.ok) {
-			localConfigs = await getListOfLocalConfigs();
-		}
-	}
+    async function createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor() {
+        const result = await parentIframeCommunication({
+            windowPostMessageName:
+                "createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor",
+            channelPostMessage: {
+                channelMessageType:
+                    "CREATE_NEW_LOCAL_CONFIG_WITH_THE_SELECTED_MODULES_CONFIGURATION_FROM_EDITOR"
+            },
+            dataForParent: { configType: configTypeSelector }
+        });
+        if (result.ok) {
+            localConfigs = await getListOfLocalConfigs();
+        }
+    }
 
-	let importFlag: string | undefined = undefined;
-	async function saveCloudConfigToLocalFolder(config: Config) {
-		importFlag = config.id;
-		const result = await parentIframeCommunication({
-			windowPostMessageName: 'configImportCommunication',
-			channelPostMessage: {
-				channelMessageType: 'IMPORT_CONFIG'
-			},
-			dataForParent: config
-		});
-		if (result.ok) {
-			localConfigs = await getListOfLocalConfigs();
-			importFlag = undefined;
-		}
-	}
+    let importFlag: string | undefined = undefined;
+    async function saveCloudConfigToLocalFolder(config: Config) {
+        importFlag = config.id;
+        const result = await parentIframeCommunication({
+            windowPostMessageName: "configImportCommunication",
+            channelPostMessage: {
+                channelMessageType: "IMPORT_CONFIG"
+            },
+            dataForParent: config
+        });
+        if (result.ok) {
+            localConfigs = await getListOfLocalConfigs();
+            importFlag = undefined;
+        }
+    }
 
-	async function splitLocalConfig(config: Config) {
-		const result = await parentIframeCommunication({
-			windowPostMessageName: 'splitLocalConfig',
-			channelPostMessage: {
-				channelMessageType: 'SPLIT_LOCAL_CONFIG'
-			},
-			dataForParent: { configToSplit: config }
-		});
-		if (result.ok) {
-		}
-	}
+    async function splitLocalConfig(config: Config) {
+        const result = await parentIframeCommunication({
+            windowPostMessageName: "splitLocalConfig",
+            channelPostMessage: {
+                channelMessageType: "SPLIT_LOCAL_CONFIG"
+            },
+            dataForParent: { configToSplit: config }
+        });
+        if (result.ok) {
+        }
+    }
 
-	async function textEditLocalConfig({
-		name,
-		description,
-		config
-	}: {
-		name?: string;
-		description?: string;
-		config: Config;
-	}) {
-		const result = await parentIframeCommunication({
-			windowPostMessageName: 'textEditLocalConfig',
-			channelPostMessage: {
-				channelMessageType: 'TEXT_EDIT_LOCAL_CONFIG'
-			},
-			dataForParent: { name, description, config }
-		});
-		if (result.ok) {
-			localConfigs = await getListOfLocalConfigs();
-		}
-	}
+    async function textEditLocalConfig({
+        name,
+        description,
+        config
+    }: {
+        name?: string;
+        description?: string;
+        config: Config;
+    }) {
+        const result = await parentIframeCommunication({
+            windowPostMessageName: "textEditLocalConfig",
+            channelPostMessage: {
+                channelMessageType: "TEXT_EDIT_LOCAL_CONFIG"
+            },
+            dataForParent: { name, description, config }
+        });
+        if (result.ok) {
+            localConfigs = await getListOfLocalConfigs();
+        }
+    }
 
-	async function textEditCloudConfig({
-		name,
-		description,
-		config
-	}: {
-		name?: string;
-		description?: string;
-		config: Config;
-	}) {
-		interface ConfigTextDetails {
-			name?: string;
-			description?: string;
-		}
+    async function textEditCloudConfig({
+        name,
+        description,
+        config
+    }: {
+        name?: string;
+        description?: string;
+        config: Config;
+    }) {
+        interface ConfigTextDetails {
+            name?: string;
+            description?: string;
+        }
 
-		let details: ConfigTextDetails = {};
-		if (name) details['name'] = name;
-		if (description) details['description'] = description;
+        let details: ConfigTextDetails = {};
+        if (name) details["name"] = name;
+        if (description) details["description"] = description;
 
-		await updateDoc(doc(configsCollection, config.id), {
-			...details
-		})
-			.then(async () => {
-				cloudConfigs = await getCloudConfigs();
-			})
-			.catch((error) => {
-				console.log('error updating profile', error);
-			});
-	}
+        await updateDoc(doc(configsCollection, config.id), {
+            ...details
+        })
+            .then(async () => {
+                cloudConfigs = await getCloudConfigs();
+            })
+            .catch((error) => {
+                console.log("error updating profile", error);
+            });
+    }
 
-	// visibiltiy = public true / false
-	async function changeCloudConfigVisibility(config: Config, visibility: boolean) {
-		await updateDoc(doc(configsCollection, config.id), {
-			public: visibility
-		})
-			.then(async () => {
-				cloudConfigs = await getCloudConfigs();
-			})
-			.catch((error) => {
-				console.log('error updating config', error);
-			});
-	}
+    // visibiltiy = public true / false
+    async function changeCloudConfigVisibility(config: Config, visibility: boolean) {
+        await updateDoc(doc(configsCollection, config.id), {
+            public: visibility
+        })
+            .then(async () => {
+                cloudConfigs = await getCloudConfigs();
+            })
+            .catch((error) => {
+                console.log("error updating config", error);
+            });
+    }
 
-	async function overwriteLocalConfig(config: Config) {
-		const result = await parentIframeCommunication({
-			windowPostMessageName: 'overwriteLocalConfig',
-			channelPostMessage: {
-				channelMessageType: 'OVERWRITE_LOCAL_CONFIG',
-			},
-			dataForParent: { configToOverwrite: config }
-		});
-		if (result.ok) {
-			localConfigs = await getListOfLocalConfigs();
-		}
-	}
+    async function overwriteLocalConfig(config: Config) {
+        const result = await parentIframeCommunication({
+            windowPostMessageName: "overwriteLocalConfig",
+            channelPostMessage: {
+                channelMessageType: "OVERWRITE_LOCAL_CONFIG"
+            },
+            dataForParent: { configToOverwrite: config }
+        });
+        if (result.ok) {
+            localConfigs = await getListOfLocalConfigs();
+        }
+    }
 
-	async function saveLocalConfigToCloud(config: Config) {
-		const newConfigRef = doc(configsCollection);
-		const userData = get(userAccountService)?.account;
-		if (!userData) {
-			loginToProfileCloud();
-			return;
-		}
+    async function saveLocalConfigToCloud(config: Config) {
+        const newConfigRef = doc(configsCollection);
+        const userData = get(userAccountService)?.account;
+        if (!userData) {
+            loginToProfileCloud();
+            return;
+        }
 
-		if (!usernameInput.exists) {
-			return;
-		}
+        if (!usernameInput.exists) {
+            return;
+        }
 
-		// reassign, else config to delete id is overwritten!
-		const configToSave = { ...config };
+        // reassign, else config to delete id is overwritten!
+        const configToSave = { ...config };
 
-		configToSave.owner = userData.uid;
-		configToSave.access = [userData.uid];
-		configToSave.public = false;
-		configToSave.id = newConfigRef.id;
+        configToSave.owner = userData.uid;
+        configToSave.access = [userData.uid];
+        configToSave.public = false;
+        configToSave.id = newConfigRef.id;
 
-		const parsedConfig = ConfigSchema.safeParse(configToSave);
+        const parsedConfig = ConfigSchema.safeParse(configToSave);
 
-		if (parsedConfig.success) {
-		} else {
-			console.log(parsedConfig.error);
-			return;
-		}
+        if (parsedConfig.success) {
+        } else {
+            console.log(parsedConfig.error);
+            return;
+        }
 
-		await setDoc(newConfigRef, parsedConfig.data)
-			.then(async () => {
-				await deleteLocalConfig(config);
-				cloudConfigs = await getCloudConfigs();
-			})
-			.catch((error) => {
-				// profile is not saved to cloud
-				console.error('Config save to cloud was unsuccessful', error);
-			});
-	}
+        await setDoc(newConfigRef, parsedConfig.data)
+            .then(async () => {
+                await deleteLocalConfig(config);
+                cloudConfigs = await getCloudConfigs();
+            })
+            .catch((error) => {
+                // profile is not saved to cloud
+                console.error("Config save to cloud was unsuccessful", error);
+            });
+    }
 
-	async function deleteCloudConfig(config: Config) {
-		const configRef = doc(configsCollection, config.id!);
-		await deleteDoc(configRef)
-			.then(async (res) => {
-				cloudConfigs = await getCloudConfigs();
-			})
-			.catch(async (err) => {
-				const profileRef = doc(profilesCollection, config.id!);
-				await deleteDoc(profileRef)
-					.then(async (res) => {
-						cloudConfigs = await getCloudConfigs();
-					})
-					.catch((err) => console.log('Error deleting config', err));
-			});
-	}
+    async function deleteCloudConfig(config: Config) {
+        const configRef = doc(configsCollection, config.id!);
+        await deleteDoc(configRef)
+            .then(async (res) => {
+                cloudConfigs = await getCloudConfigs();
+            })
+            .catch(async (err) => {
+                const profileRef = doc(profilesCollection, config.id!);
+                await deleteDoc(profileRef)
+                    .then(async (res) => {
+                        cloudConfigs = await getCloudConfigs();
+                    })
+                    .catch((err) => console.log("Error deleting config", err));
+            });
+    }
 
-	async function getCloudConfigs() {
-		let q: Query | undefined = undefined;
-		let qOldProfile: Query | undefined = undefined;
-		if (get(userAccountService)?.account?.uid) {
-			q = query(
-				configsCollection,
-				or(
-					where('public', '==', true),
-					where('access', 'array-contains', get(userAccountService)?.account?.uid || '')
-				)
-			);
-			qOldProfile = query(
-				profilesCollection,
-				or(
-					where('public', '==', true),
-					where('access', 'array-contains', get(userAccountService)?.account?.uid || '')
-				)
-			);
-		} else {
-			q = query(configsCollection, where('public', '==', true));
-			qOldProfile = query(profilesCollection, where('public', '==', true));
-		}
+    async function getCloudConfigs() {
+        let q: Query | undefined = undefined;
+        let qOldProfile: Query | undefined = undefined;
+        if (get(userAccountService)?.account?.uid) {
+            q = query(
+                configsCollection,
+                or(
+                    where("public", "==", true),
+                    where("access", "array-contains", get(userAccountService)?.account?.uid || "")
+                )
+            );
+            qOldProfile = query(
+                profilesCollection,
+                or(
+                    where("public", "==", true),
+                    where("access", "array-contains", get(userAccountService)?.account?.uid || "")
+                )
+            );
+        } else {
+            q = query(configsCollection, where("public", "==", true));
+            qOldProfile = query(profilesCollection, where("public", "==", true));
+        }
 
-		// assign the returned documents to a variable, so it's easy to pass it to Grid Editor
-		const configs = await getDocs(q).then((res) => res.docs);
-		const profiles = await getDocs(qOldProfile).then((res) => res.docs);
-		return [...configs, ...profiles];
-	}
+        // assign the returned documents to a variable, so it's easy to pass it to Grid Editor
+        const configs = await getDocs(q).then((res) => res.docs);
+        const profiles = await getDocs(qOldProfile).then((res) => res.docs);
+        return [...configs, ...profiles];
+    }
 
-	async function loginToProfileCloud() {
-		await parentIframeCommunication({
-			windowPostMessageName: 'loginToProfileCloud',
-			channelPostMessage: {
-				channelMessageType: 'LOGIN_TO_PROFILE_CLOUD'
-			},
-			dataForParent: {}
-		});
-	}
+    async function loginToProfileCloud() {
+        await parentIframeCommunication({
+            windowPostMessageName: "loginToProfileCloud",
+            channelPostMessage: {
+                channelMessageType: "LOGIN_TO_PROFILE_CLOUD"
+            },
+            dataForParent: {}
+        });
+    }
 
-	async function logoutFromProfileCloud() {
-		await parentIframeCommunication({
-			windowPostMessageName: 'logoutFromProfileCloud',
-			channelPostMessage: {
-				channelMessageType: 'LOGOUT_FROM_PROFILE_CLOUD'
-			},
-			dataForParent: {}
-		});
-	}
+    async function logoutFromProfileCloud() {
+        await parentIframeCommunication({
+            windowPostMessageName: "logoutFromProfileCloud",
+            channelPostMessage: {
+                channelMessageType: "LOGOUT_FROM_PROFILE_CLOUD"
+            },
+            dataForParent: {}
+        });
+    }
 
-	async function createCloudConfigLink(config: Config) {
-		const newConfigLinkRef = doc(configLinksCollection);
-		const userData = get(userAccountService)?.account;
-		if (!userData) {
-			loginToProfileCloud();
-			return;
-		}
+    async function createCloudConfigLink(config: Config) {
+        const newConfigLinkRef = doc(configLinksCollection);
+        const userData = get(userAccountService)?.account;
+        if (!userData) {
+            loginToProfileCloud();
+            return;
+        }
 
-		const configLink: ConfigLink = {
-			...config,
-			linked: true
-		};
+        const configLink: ConfigLink = {
+            ...config,
+            linked: true
+        };
 
-		configLink.owner = userData.uid;
-		configLink.access = [userData.uid];
-		configLink.public = true;
-		configLink.id = newConfigLinkRef.id;
+        configLink.owner = userData.uid;
+        configLink.access = [userData.uid];
+        configLink.public = true;
+        configLink.id = newConfigLinkRef.id;
 
-		const parsedConfigLink = ConfigLinkSchema.safeParse(configLink);
+        const parsedConfigLink = ConfigLinkSchema.safeParse(configLink);
 
-		if (!parsedConfigLink.success) {
-			console.log(parsedConfigLink.error);
-			return;
-		}
+        if (!parsedConfigLink.success) {
+            console.log(parsedConfigLink.error);
+            return;
+        }
 
-		await setDoc(newConfigLinkRef, parsedConfigLink.data)
-			.then(async (res) => {
-				const configLinkUrl = 'grid-editor://?profile-link=' + newConfigLinkRef.id;
+        await setDoc(newConfigLinkRef, parsedConfigLink.data)
+            .then(async (res) => {
+                const configLinkUrl = "grid-editor://?profile-link=" + newConfigLinkRef.id;
 
-				await parentIframeCommunication({
-					windowPostMessageName: 'createCloudConfigLink',
-					channelPostMessage: {
-						channelMessageType: 'CREATE_CLOUD_CONFIG_LINK'
-					},
-					dataForParent: { configLinkUrl }
-				}).then((res) => {
-					linkFlag = config.id;
-					setTimeout(() => {
-						linkFlag = undefined;
-					}, 1750);
-				});
-			})
-			.catch(() => {
-				// config is not saved to cloud
-				console.error('Config link save to cloud was unsuccessful');
-			});
+                await parentIframeCommunication({
+                    windowPostMessageName: "createCloudConfigLink",
+                    channelPostMessage: {
+                        channelMessageType: "CREATE_CLOUD_CONFIG_LINK"
+                    },
+                    dataForParent: { configLinkUrl }
+                }).then((res) => {
+                    linkFlag = config.id;
+                    setTimeout(() => {
+                        linkFlag = undefined;
+                    }, 1750);
+                });
+            })
+            .catch(() => {
+                // config is not saved to cloud
+                console.error("Config link save to cloud was unsuccessful");
+            });
+    }
 
-		
-	}
+    async function profileCloudMounted() {
+        return await parentIframeCommunication({
+            windowPostMessageName: "profileCloudMounted",
+            channelPostMessage: {
+                channelMessageType: "PROFILE_CLOUD_MOUNTED"
+            },
+            dataForParent: {}
+        });
+    }
 
-	async function profileCloudMounted() {
-		return await parentIframeCommunication({
-			windowPostMessageName: 'profileCloudMounted',
-			channelPostMessage: {
-				channelMessageType: 'PROFILE_CLOUD_MOUNTED'
-			},
-			dataForParent: {}
-		});
-	}
+    function filterShowHide() {
+        isSearchSortingShows = !isSearchSortingShows;
+        animateFade = true;
+    }
 
-	function filterShowHide() {
-		isSearchSortingShows = !isSearchSortingShows;
-		animateFade = true;
-  	}
+    function useSearchSuggestion(suggestionText: string) {
+        searchbarValue = suggestionText;
+    }
 
-	function useSearchSuggestion(suggestionText : string) {
-    	searchbarValue = suggestionText;
-	}
+    onMount(async () => {
+        window.addEventListener("message", editorMessageListener);
 
-	onMount(async () => {
-		window.addEventListener('message', editorMessageListener);
+        await profileCloudMounted();
 
-		await profileCloudMounted();
+        console.log("onmount");
 
-		console.log('onmount');
+        localConfigs = await getListOfLocalConfigs();
 
-		localConfigs = await getListOfLocalConfigs();
+        cloudConfigs = await getCloudConfigs();
+    });
 
-		cloudConfigs = await getCloudConfigs();
-	});
-
-	onDestroy(() => {
-		window.removeEventListener('message', editorMessageListener);
-		userAccountSubscription();
-	});
+    onDestroy(() => {
+        window.removeEventListener("message", editorMessageListener);
+        userAccountSubscription();
+    });
 </script>
 
 <section class="w-full h-full flex-grow bg-neutral-100 dark:bg-primary">
-	{#if false}
-		<DisplayOnWeb>
-			<div class="p-4 w-full md:w-1/2 lg:md:w-1/3">
-				<UserAccount />
-			</div>
-		</DisplayOnWeb>
-	{/if}
+    {#if false}
+        <DisplayOnWeb>
+            <div class="p-4 w-full md:w-1/2 lg:md:w-1/3">
+                <UserAccount />
+            </div>
+        </DisplayOnWeb>
+    {/if}
 
-	<div class="w-full h-full bg-neutral-100 dark:bg-primary/100">
-		<div class="px-4 container mx-auto flex flex-col max-w-screen-xl h-full">
-			<DisplayOnWeb>
-				<div
-					class="flex flex-col justify-between pt-8 text-opacity-80 text-black dark:text-opacity-80 dark:text-white"
-				>
-					<h1 class="text-3xl font-bold pb-2">profile list</h1>
-					<h2 class="py-2 ">Profile Cloud is coming with Grid Editor version 1.2.35.</h2>
-					<p class="text-opacity-60 text-black dark:text-white dark:text-opacity-60">
-						<a href="https://links.intech.studio/discord" class="hover:underline text-blue-500"
-							>Join the discord channel</a
-						> to get support and early access.
-					</p>
-				</div>
-			</DisplayOnWeb>
+    <div class="w-full h-full bg-neutral-100 dark:bg-primary/100">
+        <div class="px-4 container mx-auto flex flex-col max-w-screen-xl h-full">
+            <DisplayOnWeb>
+                <div
+                    class="flex flex-col justify-between pt-8 text-opacity-80 text-black dark:text-opacity-80 dark:text-white"
+                >
+                    <h1 class="text-3xl font-bold pb-2">profile list</h1>
+                    <h2 class="py-2 ">Profile Cloud is coming with Grid Editor version 1.2.35.</h2>
+                    <p class="text-opacity-60 text-black dark:text-white dark:text-opacity-60">
+                        <a
+                            href="https://links.intech.studio/discord"
+                            class="hover:underline text-blue-500">Join the discord channel</a
+                        > to get support and early access.
+                    </p>
+                </div>
+            </DisplayOnWeb>
 
-			{#if display == 'editor'}
-				<div class="flex flex-grow h-screen relative z-0 overflow-hidden">
-					<Splitpanes horizontal={true} theme="modern-theme">
-						<Pane minSize={28}>
-							<div class="flex flex-col pb-4 h-full ">	
-								<ul class="flex">
-									<li>
-										<button class="block px-2 py-1" on:click={() => configTypeSelector = "profile"}>Profiles</button>
-									</li>
-									<li>
-										<button class="block px-2 py-1" on:click={() => configTypeSelector = "preset"}>Presets</button>
-									</li>
-								</ul>			
-								<div class="py-4 flex items-center justify-between">
-									<div class="flex flex-col">
-										<div>Profile Cloud</div>
-										<div class="text-white text-opacity-60">
-                                            Public {configTypeSelector}s from others and save yours as
-                                            private or public here.
-										</div>
-									</div>
-									<button
-										on:click={() => {
-											createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor();
-											provideSelectedConfigForOptionalUploadingToOneOreMoreModules({});
-											submitAnalytics({
-												eventName: 'Local Config',
-												payload: {
-													task: 'Save config'
-												}
-											});
-										}}
-										class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
-										>save local {configTypeSelector}</button
-									>
-								</div>
+            {#if display == "editor"}
+                <div class="flex flex-grow h-screen relative z-0 overflow-hidden">
+                    <Splitpanes horizontal={true} theme="modern-theme">
+                        <Pane minSize={28}>
+                            <div class="flex flex-col pb-4 h-full ">
+                                <ul class="flex">
+                                    <li>
+                                        <button
+                                            class="block px-2 py-1"
+                                            on:click={() => (configTypeSelector = "profile")}
+                                            >Profiles</button
+                                        >
+                                    </li>
+                                    <li>
+                                        <button
+                                            class="block px-2 py-1"
+                                            on:click={() => (configTypeSelector = "preset")}
+                                            >Presets</button
+                                        >
+                                    </li>
+                                </ul>
+                                <div class="py-4 flex items-center justify-between">
+                                    <div class="flex flex-col">
+                                        <div>Profile Cloud</div>
+                                        <div class="text-white text-opacity-60">
+                                            Public {configTypeSelector}s from others and save yours
+                                            as private or public here.
+                                        </div>
+                                    </div>
+                                    <button
+                                        on:click={() => {
+                                            createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor();
+                                            provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                                {}
+                                            );
+                                            submitAnalytics({
+                                                eventName: "Local Config",
+                                                payload: {
+                                                    task: "Save config"
+                                                }
+                                            });
+                                        }}
+                                        class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
+                                        >save local {configTypeSelector}</button
+                                    >
+                                </div>
                                 <div class="flex justify-end">
                                     <button
                                         on:click={() => {
                                             filterShowHide();
                                         }}
                                         class="text-white text-left font-xs"
-                                        >
+                                    >
                                         {#if isSearchSortingShows}
                                             Hide Filters
                                         {:else}
@@ -873,297 +888,325 @@
                                             4.09802 2.93707 2.93763C4.09745 1.77725 5.67126 1.12536 7.31229
                                             1.12536C8.95332 1.12536 10.5271 1.77725 11.6875 2.93763C12.8479
                                             4.09802 13.4998 5.67183 13.4998 7.31286V7.31286Z"
-                                            fill="#CDCDCD"
-                                            />
-                                        </svg>
-                    
-                                        {#if searchbarValue != ""}
-                                            <button
-                                            class="absolute right-2 bottom-[25%]"
-                                            on:click={() =>
-                                                searchbarValue = ""}
-                                            >
-                                            <svg
-                                                width="28"
-                                                height="28"
-                                                viewBox="0 0 39 39"
-                                                fill="none"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                            >
-                                                <path
-                                                d="M24.25 32.9102L14.75 23.4102M24.25 23.4102L14.75 32.9102"
-                                                stroke="#FFF"
-                                                stroke-width="2"
-                                                stroke-linecap="round"
-                                                />
-                                            </svg>
-                                            </button>
-                                        {/if}
-                    
-                                        <input
-                                            type="text"
-                                            bind:value={searchbarValue}
-                                            on:keyup={() => updateSearchFilter()}
-                                            on:input={() => updateSearchFilter()}
-                                            on:change={() => updateSearchFilter()}
-                                            class="w-full py-2 px-12 bg-primary-700 text-white
+                                                        fill="#CDCDCD"
+                                                    />
+                                                </svg>
+
+                                                {#if searchbarValue != ""}
+                                                    <button
+                                                        class="absolute right-2 bottom-[25%]"
+                                                        on:click={() => (searchbarValue = "")}
+                                                    >
+                                                        <svg
+                                                            width="28"
+                                                            height="28"
+                                                            viewBox="0 0 39 39"
+                                                            fill="none"
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                        >
+                                                            <path
+                                                                d="M24.25 32.9102L14.75 23.4102M24.25 23.4102L14.75 32.9102"
+                                                                stroke="#FFF"
+                                                                stroke-width="2"
+                                                                stroke-linecap="round"
+                                                            />
+                                                        </svg>
+                                                    </button>
+                                                {/if}
+
+                                                <input
+                                                    type="text"
+                                                    bind:value={searchbarValue}
+                                                    on:keyup={() => updateSearchFilter()}
+                                                    on:input={() => updateSearchFilter()}
+                                                    on:change={() => updateSearchFilter()}
+                                                    class="w-full py-2 px-12 bg-primary-700 text-white
                                         placeholder-gray-400 text-md focus:outline-none"
-                                            placeholder="Find {configTypeSelector}..."
-                                        />
-                                        </div>
-                    
-                                        <div class="flex flex-row gap-1 py-1 flex-wrap">
-                                        {#each searchSuggestions as suggestion}
-                                            <button
-                                            on:click={() => useSearchSuggestion(suggestion.value)}
-                                            class="border hover:border-primary-500 text-xs text-primary-100 rounded-md
+                                                    placeholder="Find {configTypeSelector}..."
+                                                />
+                                            </div>
+
+                                            <div class="flex flex-row gap-1 py-1 flex-wrap">
+                                                {#each searchSuggestions as suggestion}
+                                                    <button
+                                                        on:click={() =>
+                                                            useSearchSuggestion(suggestion.value)}
+                                                        class="border hover:border-primary-500 text-xs text-primary-100 rounded-md
                                         py-0.5 px-1 h-min {searchbarValue.toLowerCase() ==
-                                            suggestion.value.toLowerCase()
-                                                ? 'border-primary-100'
-                                                : 'border-primary-700'}"
-                                            >
-                                            {suggestion.value}
-                                            </button>
-                                        {/each}
+                                                        suggestion.value.toLowerCase()
+                                                            ? 'border-primary-100'
+                                                            : 'border-primary-700'}"
+                                                    >
+                                                        {suggestion.value}
+                                                    </button>
+                                                {/each}
+                                            </div>
                                         </div>
-                                    </div>
-                    
-                                    <div
-                                        class="flex gap-2 items-center justify-between flex-wrap p-3"
-                                    >
-                                        <label
-                                        for="sorting select"
-                                        class="uppercase text-gray-500 py-1 text-xs"
+
+                                        <div
+                                            class="flex gap-2 items-center justify-between flex-wrap p-3"
                                         >
-                                        sort by
-                                        </label>
-                    
-                                        <select
-                                        class="bg-secondary border-none flex-grow text-white p-1 focus:outline-none"
-                                        id="sortingSelectBox"
-                                        on:change={(e) => {
-                                            sortField = e.target.value;
-                                            sortProfileCloud(sortField, sortAsc);
-                                        }}
-                                        name="sorting select"
-                                        >
-                                        <option
-                                            selected
-                                            class="text-white bg-secondary py-1 border-none"
-                                            value="name"
-                                        >
-                                            name
-                                        </option>
-                    
-                                        <option
-                                            class="text-white bg-secondary py-1 border-none"
-                                            value="module"
-                                        >
-                                            module
-                                        </option>
-                                        </select>
-                    
-                                        <button
-                                        on:click={() => {
-                                            sortAsc = !sortAsc;
-                                            sortProfileCloud(sortField, sortAsc);
-                                        }}
-                                        >
-                                        {#if sortAsc == false}
-                                            <svg
-                                            width="20"
-                                            height="20"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            xmlns="http://www.w3.org/2000/svg"
+                                            <label
+                                                for="sorting select"
+                                                class="uppercase text-gray-500 py-1 text-xs"
                                             >
-                                            <path
-                                                d="M11 11H15M11 15H18M11 19H21M9 7L6 4L3 7M6 6V20"
-                                                stroke="white"
-                                                stroke-width="2"
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                            />
-                                            </svg>
-                                        {:else}
-                                            <svg
-                                            width="20"
-                                            height="20"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            xmlns="http://www.w3.org/2000/svg"
+                                                sort by
+                                            </label>
+
+                                            <select
+                                                class="bg-secondary border-none flex-grow text-white p-1 focus:outline-none"
+                                                id="sortingSelectBox"
+                                                on:change={(e) => {
+                                                    sortField = e.target.value;
+                                                    sortProfileCloud(sortField, sortAsc);
+                                                }}
+                                                name="sorting select"
                                             >
-                                            <path
-                                                d="M11 5H21M11 9H18M11 13H15M3 17L6 20L9 17M6 18V4"
-                                                stroke="white"
-                                                stroke-width="2"
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                            />
-                                            </svg>
-                                        {/if}
-                                        </button>
-                                    </div>
+                                                <option
+                                                    selected
+                                                    class="text-white bg-secondary py-1 border-none"
+                                                    value="name"
+                                                >
+                                                    name
+                                                </option>
+
+                                                <option
+                                                    class="text-white bg-secondary py-1 border-none"
+                                                    value="module"
+                                                >
+                                                    module
+                                                </option>
+                                            </select>
+
+                                            <button
+                                                on:click={() => {
+                                                    sortAsc = !sortAsc;
+                                                    sortProfileCloud(sortField, sortAsc);
+                                                }}
+                                            >
+                                                {#if sortAsc == false}
+                                                    <svg
+                                                        width="20"
+                                                        height="20"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                    >
+                                                        <path
+                                                            d="M11 11H15M11 15H18M11 19H21M9 7L6 4L3 7M6 6V20"
+                                                            stroke="white"
+                                                            stroke-width="2"
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                        />
+                                                    </svg>
+                                                {:else}
+                                                    <svg
+                                                        width="20"
+                                                        height="20"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                    >
+                                                        <path
+                                                            d="M11 5H21M11 9H18M11 13H15M3 17L6 20L9 17M6 18V4"
+                                                            stroke="white"
+                                                            stroke-width="2"
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                        />
+                                                    </svg>
+                                                {/if}
+                                            </button>
+                                        </div>
                                     </div>
                                 {/if}
-								<div
-									class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
-								>
-									{#each filteredConfigs as config, index(config.data.id ?? config.data.name)}
+                                <div
+                                    class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
+                                >
+                                    {#each filteredConfigs as config, index (config.data.id ?? config.data.name)}
                                         {@const data = config.data}
                                         <div in:slide>
                                             {#if config.location === "cloud"}
                                                 <CloudProfileCard
-													on:click={() => {
-														if (selectedCloudConfigIndex == index) {
-															return;
-														}
-														// reset the selection on the local profiles
-														selectedLocalConfigIndex = undefined;
-														provideSelectedConfigForOptionalUploadingToOneOreMoreModules(data);
-														selectedCloudConfigIndex = index;
-													}}
-													on:focusout={(e) => {
-														selectedCloudConfigIndex = undefined;
-													}}
-													on:delete-cloud={async () => {
-														selectedCloudConfigIndex = undefined;
-														deleteCloudConfig(data);
-														provideSelectedConfigForOptionalUploadingToOneOreMoreModules();
-														submitAnalytics({
-															eventName: 'Profile Cloud',
-															payload: {
-																task: 'Delete',
-																profileName: data.name,
-																public: data.public
-															}
-														});
-													}}
-													on:description-change={(e) => {
-														const { newDescription } = e.detail;
-														textEditCloudConfig({ description: newDescription, config: data });
-														submitAnalytics({
-															eventName: 'Profile Cloud',
-															payload: {
-																task: 'Edit description',
-																oldDescription: data.description,
-																newDescription: newDescription
-															}
-														});
-													}}
-													on:name-change={(e) => {
-														const { newName } = e.detail;
+                                                    on:click={() => {
+                                                        if (selectedCloudConfigIndex == index) {
+                                                            return;
+                                                        }
+                                                        // reset the selection on the local profiles
+                                                        selectedLocalConfigIndex = undefined;
+                                                        provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                                            data
+                                                        );
+                                                        selectedCloudConfigIndex = index;
+                                                    }}
+                                                    on:focusout={(e) => {
+                                                        selectedCloudConfigIndex = undefined;
+                                                    }}
+                                                    on:delete-cloud={async () => {
+                                                        selectedCloudConfigIndex = undefined;
+                                                        deleteCloudConfig(data);
+                                                        provideSelectedConfigForOptionalUploadingToOneOreMoreModules();
+                                                        submitAnalytics({
+                                                            eventName: "Profile Cloud",
+                                                            payload: {
+                                                                task: "Delete",
+                                                                profileName: data.name,
+                                                                public: data.public
+                                                            }
+                                                        });
+                                                    }}
+                                                    on:description-change={(e) => {
+                                                        const { newDescription } = e.detail;
+                                                        textEditCloudConfig({
+                                                            description: newDescription,
+                                                            config: data
+                                                        });
+                                                        submitAnalytics({
+                                                            eventName: "Profile Cloud",
+                                                            payload: {
+                                                                task: "Edit description",
+                                                                oldDescription: data.description,
+                                                                newDescription: newDescription
+                                                            }
+                                                        });
+                                                    }}
+                                                    on:name-change={(e) => {
+                                                        const { newName } = e.detail;
 
-														textEditCloudConfig({ name: newName, config: data });
-														submitAnalytics({
-															eventName: 'Profile Cloud',
-															payload: {
-																task: 'Edit name',
-																oldProfileName: data.name,
-																newProfileName: newName
-															}
-														});
-													}}
-													class={index === selectedCloudConfigIndex
-														? 'border-emerald-500'
-														: 'border-white/10'}
-													data={{ ...data, selectedComponentTypes: selectedComponentTypes }}
-												>
-													<svelte:fragment slot="link-button">
-														<button
-															class="relative group flex"
-															on:click|stopPropagation={() => {
-																createCloudConfigLink(data);
-																provideSelectedConfigForOptionalUploadingToOneOreMoreModules({});
-																submitAnalytics({
-																	eventName: 'Profile Link',
-																	payload: {
-																		task: 'Create',
-																		profileName: data.name
-																	}
-																});
-															}}
-														>
-															<SvgIcon class="w-4" iconPath="link" />
-															<div
-																class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-															>
-																Link
-															</div>
-															{#if linkFlag == data.id}
-																<div
-																	transition:fade={{ duration: 100 }}
-																	class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
-																>
-																	Copied to clipboard!
-																</div>
-															{/if}
-														</button>
-													</svelte:fragment>
-													<svelte:fragment slot="import-button">
-														<button
-															on:click|stopPropagation={async () => {
-																saveCloudConfigToLocalFolder(data);
-																provideSelectedConfigForOptionalUploadingToOneOreMoreModules({});
-																submitAnalytics({
-																	eventName: 'Profile Cloud',
-																	payload: {
-																		task: 'Import to local',
-																		profileName: data.name
-																	}
-																});
-															}}
-															class="flex items-center group relative"
-														>
-															{#if importFlag == data.id}
-																loading...
-															{/if}
-															<SvgIcon class="w-4" iconPath="import" />
-															<div
-																class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-															>
-																Import
-															</div>
-														</button>
-													</svelte:fragment>
-													<span slot="toggle-accessibility">
-														<ToggleSwitch
-															checkbox={data.public}
-															on:toggle={(e) => {
-																submitAnalytics({
-																	eventName: 'Profile Cloud',
-																	payload: {
-																		task: 'Set visibility',
-																		profileName: data.name,
-																		visibility: e.detail
-																	}
-																});
-																changeCloudConfigVisibility(data, e.detail);
-															}}
-														>
-															<div class="relative group" slot="on">
-																<SvgIcon display={true} iconPath={'public'} class="mr-1" />
-																<div
-																	class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-																>
-																	Public
-																</div>
-															</div>
-															<div class="relative group" slot="off">
-																<SvgIcon
-																	display={true}
-																	iconPath={'private'}
-																	class="mr-1 text-opacity-70"
-																/>
-																<div
-																	class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-																>
-																	Private
-																</div>
-															</div>
-														</ToggleSwitch>
-													</span>
-												</CloudProfileCard>
+                                                        textEditCloudConfig({
+                                                            name: newName,
+                                                            config: data
+                                                        });
+                                                        submitAnalytics({
+                                                            eventName: "Profile Cloud",
+                                                            payload: {
+                                                                task: "Edit name",
+                                                                oldProfileName: data.name,
+                                                                newProfileName: newName
+                                                            }
+                                                        });
+                                                    }}
+                                                    class={index === selectedCloudConfigIndex
+                                                        ? "border-emerald-500"
+                                                        : "border-white/10"}
+                                                    data={{
+                                                        ...data,
+                                                        selectedComponentTypes:
+                                                            selectedComponentTypes
+                                                    }}
+                                                >
+                                                    <svelte:fragment slot="link-button">
+                                                        <button
+                                                            class="relative group flex"
+                                                            on:click|stopPropagation={() => {
+                                                                createCloudConfigLink(data);
+                                                                provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                                                    {}
+                                                                );
+                                                                submitAnalytics({
+                                                                    eventName: "Profile Link",
+                                                                    payload: {
+                                                                        task: "Create",
+                                                                        profileName: data.name
+                                                                    }
+                                                                });
+                                                            }}
+                                                        >
+                                                            <SvgIcon class="w-4" iconPath="link" />
+                                                            <div
+                                                                class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                            >
+                                                                Link
+                                                            </div>
+                                                            {#if linkFlag == data.id}
+                                                                <div
+                                                                    transition:fade={{
+                                                                        duration: 100
+                                                                    }}
+                                                                    class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
+                                                                >
+                                                                    Copied to clipboard!
+                                                                </div>
+                                                            {/if}
+                                                        </button>
+                                                    </svelte:fragment>
+                                                    <svelte:fragment slot="import-button">
+                                                        <button
+                                                            on:click|stopPropagation={async () => {
+                                                                saveCloudConfigToLocalFolder(data);
+                                                                provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                                                    {}
+                                                                );
+                                                                submitAnalytics({
+                                                                    eventName: "Profile Cloud",
+                                                                    payload: {
+                                                                        task: "Import to local",
+                                                                        profileName: data.name
+                                                                    }
+                                                                });
+                                                            }}
+                                                            class="flex items-center group relative"
+                                                        >
+                                                            {#if importFlag == data.id}
+                                                                loading...
+                                                            {/if}
+                                                            <SvgIcon
+                                                                class="w-4"
+                                                                iconPath="import"
+                                                            />
+                                                            <div
+                                                                class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80  border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                            >
+                                                                Import
+                                                            </div>
+                                                        </button>
+                                                    </svelte:fragment>
+                                                    <span slot="toggle-accessibility">
+                                                        <ToggleSwitch
+                                                            checkbox={data.public}
+                                                            on:toggle={(e) => {
+                                                                submitAnalytics({
+                                                                    eventName: "Profile Cloud",
+                                                                    payload: {
+                                                                        task: "Set visibility",
+                                                                        profileName: data.name,
+                                                                        visibility: e.detail
+                                                                    }
+                                                                });
+                                                                changeCloudConfigVisibility(
+                                                                    data,
+                                                                    e.detail
+                                                                );
+                                                            }}
+                                                        >
+                                                            <div class="relative group" slot="on">
+                                                                <SvgIcon
+                                                                    display={true}
+                                                                    iconPath={"public"}
+                                                                    class="mr-1"
+                                                                />
+                                                                <div
+                                                                    class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                                >
+                                                                    Public
+                                                                </div>
+                                                            </div>
+                                                            <div class="relative group" slot="off">
+                                                                <SvgIcon
+                                                                    display={true}
+                                                                    iconPath={"private"}
+                                                                    class="mr-1 text-opacity-70"
+                                                                />
+                                                                <div
+                                                                    class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                                >
+                                                                    Private
+                                                                </div>
+                                                            </div>
+                                                        </ToggleSwitch>
+                                                    </span>
+                                                </CloudProfileCard>
                                             {:else if config.location === "local"}
                                                 <LocalProfileCard
                                                     on:click={() => {
@@ -1172,7 +1215,9 @@
                                                         }
                                                         // reset the selected cloud config index
                                                         selectedCloudConfigIndex = undefined;
-                                                        provideSelectedConfigForOptionalUploadingToOneOreMoreModules(data);
+                                                        provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                                            data
+                                                        );
                                                         selectedLocalConfigIndex = index;
                                                     }}
                                                     on:focusout={(e) => {
@@ -1180,22 +1225,26 @@
                                                     }}
                                                     on:save-to-cloud={() => {
                                                         saveLocalConfigToCloud(data);
-                                                        provideSelectedConfigForOptionalUploadingToOneOreMoreModules({});
+                                                        provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                                            {}
+                                                        );
                                                         submitAnalytics({
-                                                            eventName: 'Local Profile',
+                                                            eventName: "Local Profile",
                                                             payload: {
-                                                                task: 'Save to cloud',
+                                                                task: "Save to cloud",
                                                                 ...data
                                                             }
                                                         });
                                                     }}
                                                     on:delete-local={async () => {
                                                         deleteLocalConfig(data);
-                                                        provideSelectedConfigForOptionalUploadingToOneOreMoreModules({});
+                                                        provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                                            {}
+                                                        );
                                                         submitAnalytics({
-                                                            eventName: 'Local Profile',
+                                                            eventName: "Local Profile",
                                                             payload: {
-                                                                task: 'Delete',
+                                                                task: "Delete",
                                                                 ...data
                                                             }
                                                         });
@@ -1205,11 +1254,14 @@
                                                     }}
                                                     on:name-change={(e) => {
                                                         const { newName } = e.detail;
-                                                        textEditLocalConfig({ name: newName, config: data });
+                                                        textEditLocalConfig({
+                                                            name: newName,
+                                                            config: data
+                                                        });
                                                         submitAnalytics({
-                                                            eventName: 'Local Config',
+                                                            eventName: "Local Config",
                                                             payload: {
-                                                                task: 'Edit name',
+                                                                task: "Edit name",
                                                                 oldName: data.name,
                                                                 newName: newName
                                                             }
@@ -1217,11 +1269,14 @@
                                                     }}
                                                     on:description-change={(e) => {
                                                         const { newDescription } = e.detail;
-                                                        textEditLocalConfig({ description: newDescription, data });
+                                                        textEditLocalConfig({
+                                                            description: newDescription,
+                                                            data
+                                                        });
                                                         submitAnalytics({
-                                                            eventName: 'Local Profile',
+                                                            eventName: "Local Profile",
                                                             payload: {
-                                                                task: 'Edit description',
+                                                                task: "Edit description",
                                                                 oldDescription: data.description,
                                                                 newDescription: newDescription
                                                             }
@@ -1229,24 +1284,30 @@
                                                     }}
                                                     on:overwrite-profile={() => {
                                                         overwriteLocalConfig(data);
-                                                        provideSelectedConfigForOptionalUploadingToOneOreMoreModules({});
+                                                        provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                                            {}
+                                                        );
                                                         submitAnalytics({
-                                                            eventName: 'Local Profile',
+                                                            eventName: "Local Profile",
                                                             payload: {
-                                                                task: 'Overwrite',
+                                                                task: "Overwrite",
                                                                 ...data
                                                             }
                                                         });
                                                     }}
                                                     class={index == selectedLocalConfigIndex
-                                                        ? 'border-emerald-500'
-                                                        : 'border-white/10'}
-                                                    data={{ ...data, selectedComponentTypes: selectedComponentTypes }}
+                                                        ? "border-emerald-500"
+                                                        : "border-white/10"}
+                                                    data={{
+                                                        ...data,
+                                                        selectedComponentTypes:
+                                                            selectedComponentTypes
+                                                    }}
                                                 />
                                             {/if}
                                         </div>
-									{/each}
-								</div>
+                                    {/each}
+                                </div>
                                 <div>
                                     {#if $userAccountService.account}
                                         <div
@@ -1254,9 +1315,7 @@
                                                 ? 'pb-2'
                                                 : ''} flex items-center justify-between"
                                         >
-                                            <div
-                                                class="group w-full flex flex-col text-left py-4"
-                                            >
+                                            <div class="group w-full flex flex-col text-left py-4">
                                                 {#if usernameInput.exists == false}
                                                     <div class="pb-2">
                                                         Before using the cloud, enter a username
@@ -1294,8 +1353,8 @@
                                                                     payload: {
                                                                         handler: "Enter key",
                                                                         username:
-                                                                            usernameInput
-                                                                                .element?.value
+                                                                            usernameInput.element
+                                                                                ?.value
                                                                     }
                                                                 });
                                                             }
@@ -1305,8 +1364,7 @@
                                                         class="{!usernameInput.exists
                                                             ? 'border-amber-500 focus:border-emerald-500 animate-pulse dark:bg-secondary focus:animate-none'
                                                             : 'border-transparent bg-transparent text-white text-opacity-80 hidden'}  w-full border focus:outline-none"
-                                                        value={usernameInput.element?.value ||
-                                                            ""}
+                                                        value={usernameInput.element?.value || ""}
                                                     />
                                                     {#if usernameInput.exists == false}
                                                         <button
@@ -1320,8 +1378,8 @@
                                                                     payload: {
                                                                         handler: "Button",
                                                                         username:
-                                                                            usernameInput
-                                                                                .element?.value
+                                                                            usernameInput.element
+                                                                                ?.value
                                                                     }
                                                                 });
                                                             }}
@@ -1345,9 +1403,7 @@
                                                             ? "text-emerald-500"
                                                             : "text-amber-500"}
                                                     >
-                                                        {usernameSelectionFeedback(
-                                                            usernameInput
-                                                        )}
+                                                        {usernameSelectionFeedback(usernameInput)}
                                                     </div>
                                                 {/if}
                                             </div>
@@ -1401,28 +1457,28 @@
                                         </div>
                                     {/if}
                                 </div>
-							</div>
-						</Pane>
-					</Splitpanes>
-				</div>
-			{:else}
-				<div class="flex-col py-4 h-full ">
-					<div class="flex justify-end">
-						<button 
-							on:click={() => {
-								filterShowHide();
-							}}
-							class="text-left font-xs"
-							>
-							{#if isSearchSortingShows}
-								Hide Filters
-							{:else}
-								Show Filters
-							{/if}
-						</button>
-					</div>
-					{#if isSearchSortingShows == true}
-					<!--
+                            </div>
+                        </Pane>
+                    </Splitpanes>
+                </div>
+            {:else}
+                <div class="flex-col py-4 h-full ">
+                    <div class="flex justify-end">
+                        <button
+                            on:click={() => {
+                                filterShowHide();
+                            }}
+                            class="text-left font-xs"
+                        >
+                            {#if isSearchSortingShows}
+                                Hide Filters
+                            {:else}
+                                Show Filters
+                            {/if}
+                        </button>
+                    </div>
+                    {#if isSearchSortingShows == true}
+                        <!--
 						<div
 						in:fadeAnimation|local={{ fn: fade, y: 50, duration: 150 }}
 						out:fadeAnimation|local={{ fn: fade, y: 50, duration: 150 }}
@@ -1462,157 +1518,157 @@
 								4.09802 2.93707 2.93763C4.09745 1.77725 5.67126 1.12536 7.31229
 								1.12536C8.95332 1.12536 10.5271 1.77725 11.6875 2.93763C12.8479
 								4.09802 13.4998 5.67183 13.4998 7.31286V7.31286Z"
-								fill="#CDCDCD"
-								/>
-							</svg>
-		
-							{#if searchbarValue != ""}
-								<button
-								class="absolute right-2 bottom-[25%]"
-								on:click={() =>
-									searchbarValue = ""}
-								>
-								<svg
-									width="28"
-									height="28"
-									viewBox="0 0 39 39"
-									fill="none"
-									xmlns="http://www.w3.org/2000/svg"
-								>
-									<path
-									d="M24.25 32.9102L14.75 23.4102M24.25 23.4102L14.75 32.9102"
-									stroke="#FFF"
-									stroke-width="2"
-									stroke-linecap="round"
-									/>
-								</svg>
-								</button>
-							{/if}
-		
-							<input
-								type="text"
-								bind:value={searchbarValue}
-								on:keyup={() => updateSearchFilter()}
-								on:input={() => updateSearchFilter()}
-								on:change={() => updateSearchFilter()}
-								class="w-full py-2 px-12 bg-white dark:bg-primary-700 
+                                            fill="#CDCDCD"
+                                        />
+                                    </svg>
+
+                                    {#if searchbarValue != ""}
+                                        <button
+                                            class="absolute right-2 bottom-[25%]"
+                                            on:click={() => (searchbarValue = "")}
+                                        >
+                                            <svg
+                                                width="28"
+                                                height="28"
+                                                viewBox="0 0 39 39"
+                                                fill="none"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                            >
+                                                <path
+                                                    d="M24.25 32.9102L14.75 23.4102M24.25 23.4102L14.75 32.9102"
+                                                    stroke="#FFF"
+                                                    stroke-width="2"
+                                                    stroke-linecap="round"
+                                                />
+                                            </svg>
+                                        </button>
+                                    {/if}
+
+                                    <input
+                                        type="text"
+                                        bind:value={searchbarValue}
+                                        on:keyup={() => updateSearchFilter()}
+                                        on:input={() => updateSearchFilter()}
+                                        on:change={() => updateSearchFilter()}
+                                        class="w-full py-2 px-12 bg-white dark:bg-primary-700 
 							dark:placeholder-gray-400 text-md focus:outline-none"
-								placeholder="Find Profile..."
-							/>
-							</div>
-		
-							<div class="flex flex-row gap-1 py-1 flex-wrap">
-							{#each searchSuggestions as suggestion}
-								<button
-								on:click={() => useSearchSuggestion(suggestion.value)}
-								class="border hover:border-primary-500 text-xs dark:text-primary-100 rounded-md
-							py-0.5 px-1 h-min {searchbarValue.toLowerCase() ==
-								suggestion.value.toLowerCase()
-									? 'border-primary-100'
-									: 'border-primary-700'}"
-								>
-								{suggestion.value}
-								</button>
-							{/each}
-							</div>
-						</div>
-		
-						<div
-							class="flex gap-2 items-center justify-between flex-wrap p-3"
-						>
-							<label
-							for="sorting select"
-							class="uppercase text-gray-500 py-1 text-xs"
-							>
-							sort by
-							</label>
-		
-							<select
-							class="bg-white dark:bg-secondary border-none flex-grow p-1 focus:outline-none"
-							id="sortingSelectBox"
-							on:change={(e) => {
-								sortField = e.target.value;
-								sortProfileCloud(sortField, sortAsc);
-							}}
-							name="sorting select"
-							>
-							<option
-								selected
-								class="bg-white dark:bg-secondary py-1 border-none"
-								value="name"
-							>
-								name
-							</option>
-		
-							<option
-								class="bg-white dark:bg-secondary py-1 border-none"
-								value="module"
-							>
-								module
-							</option>
-							</select>
-		
-							<button
-							on:click={() => {
-								sortAsc = !sortAsc;
-								sortProfileCloud(sortField, sortAsc);
-							}}
-							>
-							{#if sortAsc == false}
-								<svg
-								width="20"
-								height="20"
-								viewBox="0 0 24 24"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-								>
-								<path
-									class="stroke-black dark:stroke-white stroke-2"
-									d="M11 11H15M11 15H18M11 19H21M9 7L6 4L3 7M6 6V20"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								/>
-								</svg>
-							{:else}
-								<svg
-								width="20"
-								height="20"
-								viewBox="0 0 24 24"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-								>
-								<path
-									d="M11 5H21M11 9H18M11 13H15M3 17L6 20L9 17M6 18V4"
-									class="stroke-black dark:stroke-white stroke-2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								/>
-								</svg>
-							{/if}
-							</button>
-						</div>
-						</div>
-					{/if}
-					<div
-						class="overflow-y-auto w-full h-full p-2 lg:py-8 grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 gap-4"
-					>
-						{#each filteredConfigs as config, index}
-							{@const data = config.data}
-							<CloudProfileCard
-								on:click={() => {
-									provideSelectedConfigForOptionalUploadingToOneOreMoreModules(data);
-									selectedCloudConfigIndex = index;
-									selectedLocalConfigIndex = undefined;
-								}}
-								class={index == selectedCloudConfigIndex ? 'border-emerald-500' : ''}
-								{data}
-							/>
-						{/each}
-					</div>
-				</div>
-			{/if}
-		</div>
-	</div>
+                                        placeholder="Find Profile..."
+                                    />
+                                </div>
+
+                                <div class="flex flex-row gap-1 py-1 flex-wrap">
+                                    {#each searchSuggestions as suggestion}
+                                        <button
+                                            on:click={() => useSearchSuggestion(suggestion.value)}
+                                            class="border hover:border-primary-500 text-xs dark:text-primary-100 rounded-md
+							py-0.5 px-1 h-min {searchbarValue.toLowerCase() == suggestion.value.toLowerCase()
+                                                ? 'border-primary-100'
+                                                : 'border-primary-700'}"
+                                        >
+                                            {suggestion.value}
+                                        </button>
+                                    {/each}
+                                </div>
+                            </div>
+
+                            <div class="flex gap-2 items-center justify-between flex-wrap p-3">
+                                <label
+                                    for="sorting select"
+                                    class="uppercase text-gray-500 py-1 text-xs"
+                                >
+                                    sort by
+                                </label>
+
+                                <select
+                                    class="bg-white dark:bg-secondary border-none flex-grow p-1 focus:outline-none"
+                                    id="sortingSelectBox"
+                                    on:change={(e) => {
+                                        sortField = e.target.value;
+                                        sortProfileCloud(sortField, sortAsc);
+                                    }}
+                                    name="sorting select"
+                                >
+                                    <option
+                                        selected
+                                        class="bg-white dark:bg-secondary py-1 border-none"
+                                        value="name"
+                                    >
+                                        name
+                                    </option>
+
+                                    <option
+                                        class="bg-white dark:bg-secondary py-1 border-none"
+                                        value="module"
+                                    >
+                                        module
+                                    </option>
+                                </select>
+
+                                <button
+                                    on:click={() => {
+                                        sortAsc = !sortAsc;
+                                        sortProfileCloud(sortField, sortAsc);
+                                    }}
+                                >
+                                    {#if sortAsc == false}
+                                        <svg
+                                            width="20"
+                                            height="20"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                            <path
+                                                class="stroke-black dark:stroke-white stroke-2"
+                                                d="M11 11H15M11 15H18M11 19H21M9 7L6 4L3 7M6 6V20"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                            />
+                                        </svg>
+                                    {:else}
+                                        <svg
+                                            width="20"
+                                            height="20"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                            <path
+                                                d="M11 5H21M11 9H18M11 13H15M3 17L6 20L9 17M6 18V4"
+                                                class="stroke-black dark:stroke-white stroke-2"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                            />
+                                        </svg>
+                                    {/if}
+                                </button>
+                            </div>
+                        </div>
+                    {/if}
+                    <div
+                        class="overflow-y-auto w-full h-full p-2 lg:py-8 grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 gap-4"
+                    >
+                        {#each filteredConfigs as config, index}
+                            {@const data = config.data}
+                            <CloudProfileCard
+                                on:click={() => {
+                                    provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                        data
+                                    );
+                                    selectedCloudConfigIndex = index;
+                                    selectedLocalConfigIndex = undefined;
+                                }}
+                                class={index == selectedCloudConfigIndex
+                                    ? "border-emerald-500"
+                                    : ""}
+                                {data}
+                            />
+                        {/each}
+                    </div>
+                </div>
+            {/if}
+        </div>
+    </div>
 </section>
 
 <style lang="postcss">

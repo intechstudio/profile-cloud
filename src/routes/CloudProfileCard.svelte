@@ -1,22 +1,22 @@
 <script lang="ts">
-	import type { EditorReturnType } from '$lib/types';
-	import { createEventDispatcher, getContext, onDestroy, onMount } from 'svelte';
-	import AtomicButton from '$lib/components/atomic/AtomicButton.svelte';
-	import SvgIcon from '$lib/icons/SvgIcon.svelte';
-	import type { Config } from '$lib/schemas';
-	import { applyFocus } from '$lib/utils';
-	import { userAccountService } from '$lib/stores';
-	import { get } from 'svelte/store';
-	import { doc, getDoc } from 'firebase/firestore';
-	import { userCollection } from '$lib/collections';
+    import type { EditorReturnType } from "$lib/types";
+    import { createEventDispatcher, getContext, onDestroy, onMount } from "svelte";
+    import AtomicButton from "$lib/components/atomic/AtomicButton.svelte";
+    import SvgIcon from "$lib/icons/SvgIcon.svelte";
+    import type { Config } from "$lib/schemas";
+    import { applyFocus } from "$lib/utils";
+    import { userAccountService } from "$lib/stores";
+    import { get } from "svelte/store";
+    import { doc, getDoc } from "firebase/firestore";
+    import { userCollection } from "$lib/collections";
 
     const dispatchEvent = createEventDispatcher();
 
-	interface SelectedComponentTypes {
-		selectedComponentTypes: string[] | undefined;
-	}
+    interface SelectedComponentTypes {
+        selectedComponentTypes: string[] | undefined;
+    }
 
-	export let data: Config & SelectedComponentTypes;
+    export let data: Config & SelectedComponentTypes;
 
     const display = getContext("display");
 
@@ -231,43 +231,45 @@
         </div>
     </div>
 
-	<div
-		class=" w-full flex py-1 px-3 justify-between items-center md:border-t-2 border-neutral-200 dark:border-neutral-700"
-	>
-		<div
-			class="dark:text-white text-black text-opacity-80 py-0.5 px-2 dark:border {data.selectedComponentTypes?.includes(data.type) ?? false
-				? 'dark:text-opacity-100 dark:border-white dark:border-opacity-10 dark:bg-white dark:bg-opacity-10'
-				: 'dark:text-opacity-70 dark:border-transparent'}"
-		>
-			{data.type}
-		</div>
-		<div class="flex items-center {display === 'editor' ? 'gap-x-1' : ''}">
-			<span class="text-black dark:text-opacity-70 dark:text-white">{profileOwner}</span>
-			{#if display == 'editor'}
-				<div class="ml-1">
-					{#if userCanModify(data.access)}
-						<slot name="toggle-accessibility" />
-					{:else if data.public}
-						<div class="relative group">
-							<SvgIcon display={true} iconPath={'public'} />
-							<div
-								class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-							>
-								Public
-							</div>
-						</div>
-					{:else}
-						<div class="relative group">
-							<SvgIcon display={true} iconPath={'private'} />
-							<div
-								class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-							>
-								Private
-							</div>
-						</div>
-					{/if}
-				</div>
-			{/if}
-		</div>
-	</div>
+    <div
+        class=" w-full flex py-1 px-3 justify-between items-center md:border-t-2 border-neutral-200 dark:border-neutral-700"
+    >
+        <div
+            class="dark:text-white text-black text-opacity-80 py-0.5 px-2 dark:border {data.selectedComponentTypes?.includes(
+                data.type
+            ) ?? false
+                ? 'dark:text-opacity-100 dark:border-white dark:border-opacity-10 dark:bg-white dark:bg-opacity-10'
+                : 'dark:text-opacity-70 dark:border-transparent'}"
+        >
+            {data.type}
+        </div>
+        <div class="flex items-center {display === 'editor' ? 'gap-x-1' : ''}">
+            <span class="text-black dark:text-opacity-70 dark:text-white">{profileOwner}</span>
+            {#if display == "editor"}
+                <div class="ml-1">
+                    {#if userCanModify(data.access)}
+                        <slot name="toggle-accessibility" />
+                    {:else if data.public}
+                        <div class="relative group">
+                            <SvgIcon display={true} iconPath={"public"} />
+                            <div
+                                class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                            >
+                                Public
+                            </div>
+                        </div>
+                    {:else}
+                        <div class="relative group">
+                            <SvgIcon display={true} iconPath={"private"} />
+                            <div
+                                class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                            >
+                                Private
+                            </div>
+                        </div>
+                    {/if}
+                </div>
+            {/if}
+        </div>
+    </div>
 </button>
