@@ -390,6 +390,10 @@
             });
             saveCloudConfigToLocalFolder(linkedConfig!);
         }
+
+        if (event.data.messageType == "selectedComponentTypes"){
+            selectedComponentTypes = event.data.selectedComponentTypes;
+        }
     }
 
     async function getLinkedConfig(id: string) {
@@ -404,8 +408,10 @@
             if (!profileLink) {
                 return configLink;
             }
-            profileLink.configType = "profile";
-            configLink = profileLink;
+            configLink = {
+                ...profileLink,
+                configType : "profile",
+            };
         }
         return configLink;
     }
