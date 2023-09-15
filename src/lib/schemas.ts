@@ -29,11 +29,14 @@ export type ProfileLink = z.infer<typeof ProfileLinkSchema>;
 
 export const ConfigSchema = z.object({
     id: z.string().optional(),
+    localId: z.string().optional(),
+    cloudId: z.string().optional(),
     owner: z.string().nullable(),
     access: z.array(z.string()),
     createdAt: z.date().nullable().optional(),
     public: z.boolean().default(false),
     name: z.string(),
+    fileName: z.string().optional(),
     description: z.string(),
     type: z.string(),
     version: z

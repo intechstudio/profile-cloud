@@ -16,6 +16,7 @@
 
     let deleteConfirmFlag = false;
     let overwriteApplyFlag = false;
+    let uploadOverwriteFlag = false;
 
     let nameInputField = {
         element: null as HTMLInputElement | null,
@@ -110,19 +111,38 @@
                                 class="bg-red-600 rounded px-1 py-0.5 text-xs">confirm</button
                             >
                         {/if}
-                        <button
-                            class="flex relative group"
-                            on:click|stopPropagation={() => {
-                                dispatchEvent("save-to-cloud");
-                            }}
-                        >
-                            <SvgIcon class="w-5" iconPath="move_to_cloud_02" />
-                            <div
-                                class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                        {#if uploadOverwriteFlag == false}
+                            <button
+                                class="flex relative group"
+                                on:click|stopPropagation={() => {
+                                    if (data.cloudId){
+                                        uploadOverwriteFlag = true;
+                                    } else {
+                                        dispatchEvent("save-to-cloud");
+                                    }
+                                }}
                             >
-                                Upload
-                            </div>
-                        </button>
+                                <SvgIcon class="w-5" iconPath="move_to_cloud_02" />
+                                <div
+                                    class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                >
+                                    Upload
+                                </div>
+                            </button>
+                        {:else}
+                            <button
+                                use:applyFocus
+                                on:blur={() => {
+                                    console.log("good bye");
+                                    uploadOverwriteFlag = false;
+                                }}
+                                on:click|stopPropagation={() => {
+                                    dispatchEvent("save-to-cloud");
+                                    uploadOverwriteFlag = false;
+                                }}
+                                class="bg-red-600 rounded px-1 py-0.5 text-xs">confirm</button
+                            >
+                        {/if}
                         {#if overwriteApplyFlag == false}
                             <button
                                 class="flex relative group"

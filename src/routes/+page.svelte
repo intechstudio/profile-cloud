@@ -68,7 +68,6 @@
     //let myProfiles: any[] = [];
     let cloudConfigs: any[] = [];
     let localConfigs: any[] = [];
-    let filteredLocalConfigs: any[] = [];
     let filteredConfigs: any[] = [];
 
     let linkConfigs: any[] = [];
@@ -173,7 +172,6 @@
         const input = searchbarValue;
         const arrayOfSearchTerms = input.trim().toLowerCase().split(" ");
 
-        console.log({ list: getMergedConfigList(), configTypeSelector, arrayOfSearchTerms });
         filteredConfigs = getMergedConfigList().filter((config) => {
             const data = config.data;
             if (
@@ -186,11 +184,11 @@
             const currentProfileSearchable =
                 data.name.toLowerCase() + " " + data.type.toLowerCase();
 
-            arrayOfSearchTerms.forEach((searchTerm) => {
+            for(const searchTerm of arrayOfSearchTerms){
                 if (currentProfileSearchable.indexOf(searchTerm) === -1) {
                     return false;
                 }
-            });
+            }
             return true;
         });
         sortProfileCloud(sortField, sortAsc);
@@ -198,7 +196,6 @@
 
     function getMergedConfigList(): any[] {
         const arr1 = localConfigs
-            //TODO: .filter((p) => p.folder == "local")
             .map((config: any) => {
                 return {
                     data: config,
@@ -228,15 +225,8 @@
         selectedCloudConfigIndex = undefined;
         isSearchSortingShows = false;
         searchbarValue = "";
+        sortField = "name";
         provideSelectedConfigForOptionalUploadingToOneOreMoreModules();
-    }
-
-    $: configTypeSelector, localConfigs, filterLocalConfigs();
-
-    function filterLocalConfigs() {
-        filteredLocalConfigs = localConfigs.filter(
-            (config) => config.configType == configTypeSelector
-        );
     }
 
     function sortProfileCloud(field: string, asc: boolean) {
@@ -401,17 +391,8 @@
         let configLink = await getDoc(docRef)
             .then((res) => res.data())
             .catch((err) => console.log(err));
-        if (!configLink) {
-            let profileLink = await getDoc(doc(profileLinksCollection, id))
-                .then((res) => res.data())
-                .catch((err) => console.log(err));
-            if (!profileLink) {
-                return configLink;
-            }
-            configLink = {
-                ...profileLink,
-                configType : "profile",
-            };
+        if (configLink){
+            configTypeSelector = configLink?.configType
         }
         return configLink;
     }
@@ -460,9 +441,7 @@
         }).catch((err) => {
             return { ok: false, data: {} };
         });
-        if (result.ok) {
-            localConfigs = await getListOfLocalConfigs();
-        }
+        localConfigs = await getListOfLocalConfigs();
     }
 
     async function createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor() {
@@ -585,7 +564,7 @@
     }
 
     async function saveLocalConfigToCloud(config: Config) {
-        const newConfigRef = doc(configsCollection);
+        const newConfigRef = config.cloudId ? doc(configsCollection, config.cloudId) : doc(configsCollection);
         const userData = get(userAccountService)?.account;
         if (!userData) {
             loginToProfileCloud();
@@ -598,6 +577,9 @@
 
         // reassign, else config to delete id is overwritten!
         const configToSave = { ...config };
+        delete configToSave.localId;
+        delete configToSave.cloudId;
+        delete configToSave.fileName;
 
         configToSave.owner = userData.uid;
         configToSave.access = [userData.uid];
@@ -616,6 +598,7 @@
             .then(async () => {
                 await deleteLocalConfig(config);
                 cloudConfigs = await getCloudConfigs();
+                localConfigs = await getListOfLocalConfigs();
             })
             .catch((error) => {
                 // profile is not saved to cloud
@@ -624,7 +607,7 @@
     }
 
     async function deleteCloudConfig(config: Config) {
-        const configRef = doc(configsCollection, config.id!);
+        const configRef = doc(configsCollection, config.id ?? config.cloudId);
         await deleteDoc(configRef)
             .then(async (res) => {
                 cloudConfigs = await getCloudConfigs();
@@ -650,22 +633,12 @@
                     where("access", "array-contains", get(userAccountService)?.account?.uid || "")
                 )
             );
-            qOldProfile = query(
-                profilesCollection,
-                or(
-                    where("public", "==", true),
-                    where("access", "array-contains", get(userAccountService)?.account?.uid || "")
-                )
-            );
         } else {
             q = query(configsCollection, where("public", "==", true));
-            qOldProfile = query(profilesCollection, where("public", "==", true));
         }
 
         // assign the returned documents to a variable, so it's easy to pass it to Grid Editor
-        const configs = await getDocs(q).then((res) => res.docs);
-        const profiles = await getDocs(qOldProfile).then((res) => res.docs);
-        return [...configs, ...profiles];
+        return await getDocs(q).then((res) => res.docs);
     }
 
     async function loginToProfileCloud() {
@@ -715,7 +688,7 @@
 
         await setDoc(newConfigLinkRef, parsedConfigLink.data)
             .then(async (res) => {
-                const configLinkUrl = "grid-editor://?profile-link=" + newConfigLinkRef.id;
+                const configLinkUrl = "grid-editor://?config-link=" + newConfigLinkRef.id;
 
                 await parentIframeCommunication({
                     windowPostMessageName: "createCloudConfigLink",
@@ -748,7 +721,6 @@
 
     function filterShowHide() {
         isSearchSortingShows = !isSearchSortingShows;
-        animateFade = true;
     }
 
     function useSearchSuggestion(suggestionText: string) {
@@ -807,14 +779,14 @@
                                 <ul class="flex">
                                     <li>
                                         <button
-                                            class="block px-2 py-1"
+                                            class="block px-2 py-1 {configTypeSelector === 'profile' ? 'bg-emerald-600' : ''}"
                                             on:click={() => (configTypeSelector = "profile")}
                                             >Profiles</button
                                         >
                                     </li>
                                     <li>
                                         <button
-                                            class="block px-2 py-1"
+                                            class="block px-2 py-1 {configTypeSelector === 'preset' ? 'bg-emerald-600' : ''}"
                                             on:click={() => (configTypeSelector = "preset")}
                                             >Presets</button
                                         >
@@ -978,6 +950,13 @@
 
                                                 <option
                                                     class="text-white bg-secondary py-1 border-none"
+                                                    value="date"
+                                                >
+                                                    date
+                                                </option>
+
+                                                <option
+                                                    class="text-white bg-secondary py-1 border-none"
                                                     value="module"
                                                 >
                                                     module
@@ -1030,7 +1009,7 @@
                                 <div
                                     class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
                                 >
-                                    {#each filteredConfigs as config, index (config.data.id ?? config.data.name)}
+                                    {#each filteredConfigs as config, index (config.data.localId ?? config.data.id)}
                                         {@const data = config.data}
                                         <div in:slide>
                                             {#if config.location === "cloud"}
@@ -1277,7 +1256,7 @@
                                                         const { newDescription } = e.detail;
                                                         textEditLocalConfig({
                                                             description: newDescription,
-                                                            data
+                                                            config: data
                                                         });
                                                         submitAnalytics({
                                                             eventName: "Local Profile",
