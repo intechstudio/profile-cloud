@@ -115,7 +115,7 @@
                             <button
                                 class="flex relative group"
                                 on:click|stopPropagation={() => {
-                                    if (data.cloudId){
+                                    if (data.cloudId) {
                                         uploadOverwriteFlag = true;
                                     } else {
                                         dispatchEvent("save-to-cloud");

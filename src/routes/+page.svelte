@@ -184,7 +184,7 @@
             const currentProfileSearchable =
                 data.name.toLowerCase() + " " + data.type.toLowerCase();
 
-            for(const searchTerm of arrayOfSearchTerms){
+            for (const searchTerm of arrayOfSearchTerms) {
                 if (currentProfileSearchable.indexOf(searchTerm) === -1) {
                     return false;
                 }
@@ -195,13 +195,12 @@
     }
 
     function getMergedConfigList(): any[] {
-        const arr1 = localConfigs
-            .map((config: any) => {
-                return {
-                    data: config,
-                    location: "local"
-                };
-            });
+        const arr1 = localConfigs.map((config: any) => {
+            return {
+                data: config,
+                location: "local"
+            };
+        });
         const arr2 = cloudConfigs.map((config) => {
             return {
                 data: config.data(),
@@ -381,7 +380,7 @@
             saveCloudConfigToLocalFolder(linkedConfig!);
         }
 
-        if (event.data.messageType == "selectedComponentTypes"){
+        if (event.data.messageType == "selectedComponentTypes") {
             selectedComponentTypes = event.data.selectedComponentTypes;
         }
     }
@@ -391,8 +390,8 @@
         let configLink = await getDoc(docRef)
             .then((res) => res.data())
             .catch((err) => console.log(err));
-        if (configLink){
-            configTypeSelector = configLink?.configType
+        if (configLink) {
+            configTypeSelector = configLink?.configType;
         }
         return configLink;
     }
@@ -564,7 +563,9 @@
     }
 
     async function saveLocalConfigToCloud(config: Config) {
-        const newConfigRef = config.cloudId ? doc(configsCollection, config.cloudId) : doc(configsCollection);
+        const newConfigRef = config.cloudId
+            ? doc(configsCollection, config.cloudId)
+            : doc(configsCollection);
         const userData = get(userAccountService)?.account;
         if (!userData) {
             loginToProfileCloud();
@@ -779,14 +780,18 @@
                                 <ul class="flex">
                                     <li>
                                         <button
-                                            class="block px-2 py-1 {configTypeSelector === 'profile' ? 'bg-emerald-600' : ''}"
+                                            class="block px-2 py-1 {configTypeSelector === 'profile'
+                                                ? 'bg-emerald-600'
+                                                : ''}"
                                             on:click={() => (configTypeSelector = "profile")}
                                             >Profiles</button
                                         >
                                     </li>
                                     <li>
                                         <button
-                                            class="block px-2 py-1 {configTypeSelector === 'preset' ? 'bg-emerald-600' : ''}"
+                                            class="block px-2 py-1 {configTypeSelector === 'preset'
+                                                ? 'bg-emerald-600'
+                                                : ''}"
                                             on:click={() => (configTypeSelector = "preset")}
                                             >Presets</button
                                         >
