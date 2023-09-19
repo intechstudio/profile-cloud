@@ -89,6 +89,7 @@
 
     let sortAsc = true;
     let sortField = "name";
+    let isEditorVersionCompatible = true;
 
     let compareNameAscending = (a: any, b: any) => {
         return a.data.name
@@ -731,13 +732,15 @@
     onMount(async () => {
         window.addEventListener("message", editorMessageListener);
 
-        await profileCloudMounted();
-
+        let editorVersionResponse = await profileCloudMounted();
         console.log("onmount");
-
-        localConfigs = await getListOfLocalConfigs();
-
-        cloudConfigs = await getCloudConfigs();
+        if (editorVersionResponse.data) {
+            isEditorVersionCompatible = true;
+            localConfigs = await getListOfLocalConfigs();
+            cloudConfigs = await getCloudConfigs();
+        } else {
+            isEditorVersionCompatible = false;
+        }
     });
 
     onDestroy(() => {
@@ -771,8 +774,15 @@
                     </p>
                 </div>
             </DisplayOnWeb>
-
-            {#if display == "editor"}
+            {#if display == "editor" && !isEditorVersionCompatible}
+                <div class="flex justify-center items-center h-screen px-4">
+                    <p class="text-center text-lg">
+                        Your Editor is not compatible with the current Profile Cloud version. Please
+                        update your Editor to the latest version!
+                    </p>
+                </div>
+            {/if}
+            {#if display == "editor" && isEditorVersionCompatible}
                 <div class="flex flex-grow h-screen relative z-0 overflow-hidden">
                     <Splitpanes horizontal={true} theme="modern-theme">
                         <Pane minSize={28}>
