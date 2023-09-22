@@ -2,20 +2,21 @@
     import { applyFocus } from "$lib/utils";
     import SvgIcon from "$lib/icons/SvgIcon.svelte";
     import { createEventDispatcher, getContext } from "svelte";
-    import type { Profile } from "$lib/schemas";
+    import type { Config } from "$lib/schemas";
 
     const dispatchEvent = createEventDispatcher();
 
-    interface SelectedModuleType {
-        selectedModuleType: string;
+    interface SelectedComponentTypes {
+        selectedComponentTypes: string[];
     }
 
-    export let data: Profile & SelectedModuleType;
+    export let data: Config & SelectedComponentTypes;
 
     const display = getContext("display");
 
     let deleteConfirmFlag = false;
     let overwriteApplyFlag = false;
+    let uploadOverwriteFlag = false;
 
     let nameInputField = {
         element: null as HTMLInputElement | null,
@@ -110,19 +111,38 @@
                                 class="bg-red-600 rounded px-1 py-0.5 text-xs">confirm</button
                             >
                         {/if}
-                        <button
-                            class="flex relative group"
-                            on:click|stopPropagation={() => {
-                                dispatchEvent("save-to-cloud");
-                            }}
-                        >
-                            <SvgIcon class="w-5" iconPath="move_to_cloud_02" />
-                            <div
-                                class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                        {#if uploadOverwriteFlag == false}
+                            <button
+                                class="flex relative group"
+                                on:click|stopPropagation={() => {
+                                    if (data.cloudId) {
+                                        uploadOverwriteFlag = true;
+                                    } else {
+                                        dispatchEvent("save-to-cloud");
+                                    }
+                                }}
                             >
-                                Upload
-                            </div>
-                        </button>
+                                <SvgIcon class="w-5" iconPath="move_to_cloud_02" />
+                                <div
+                                    class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                >
+                                    Upload
+                                </div>
+                            </button>
+                        {:else}
+                            <button
+                                use:applyFocus
+                                on:blur={() => {
+                                    console.log("good bye");
+                                    uploadOverwriteFlag = false;
+                                }}
+                                on:click|stopPropagation={() => {
+                                    dispatchEvent("save-to-cloud");
+                                    uploadOverwriteFlag = false;
+                                }}
+                                class="bg-red-600 rounded px-1 py-0.5 text-xs">confirm</button
+                            >
+                        {/if}
                         {#if overwriteApplyFlag == false}
                             <button
                                 class="flex relative group"
@@ -194,13 +214,16 @@
                     />
                 </div>
                 <div
-                    class="flex justify-between pt-2 dark:text-white text-black text-opacity-80 {data.type ===
-                    data.selectedModuleType
+                    class="flex justify-between pt-2 dark:text-white text-black text-opacity-80 {data.selectedComponentTypes.includes(
+                        data.type
+                    )
                         ? 'dark:text-opacity-100'
                         : 'dark:text-opacity-70'}"
                 >
                     <div
-                        class="dark:border py-0.5 px-2 {data.type === data.selectedModuleType
+                        class="dark:border py-0.5 px-2 {data.selectedComponentTypes.includes(
+                            data.type
+                        )
                             ? 'dark:border-white dark:border-opacity-10 dark:bg-white dark:bg-opacity-10'
                             : 'dark:border-transparent'}"
                     >
@@ -212,5 +235,5 @@
                 </div>
             </div>
         </div>
-    </div></button
->
+    </div>
+</button>
