@@ -40,7 +40,7 @@
     import { PUBLIC_VERSION_STRING } from "$env/static/public";
     import { firestore } from "$lib/firebase";
     import { parentIframeCommunication } from "$lib/utils";
-
+    
     const display = getContext("display");
 
     let searchSuggestions = [
@@ -595,13 +595,13 @@
             console.log(parsedConfig.error);
             return;
         }
-
+        
         await setDoc(newConfigRef, parsedConfig.data)
-            .then(async () => {
-                await deleteLocalConfig(config);
-                cloudConfigs = await getCloudConfigs();
-                localConfigs = await getListOfLocalConfigs();
-            })
+.then(async () => {
+        await deleteLocalConfig(config);
+        cloudConfigs = await getCloudConfigs();
+        localConfigs = await getListOfLocalConfigs();
+})
             .catch((error) => {
                 // profile is not saved to cloud
                 console.error("Config save to cloud was unsuccessful", error);
@@ -782,7 +782,8 @@
                     </p>
                 </div>
             {/if}
-            {#if display == "editor" && isEditorVersionCompatible}
+            {#if display == "editor"}
+                {#if isEditorVersionCompatible}
                 <div class="flex flex-grow h-screen relative z-0 overflow-hidden">
                     <Splitpanes horizontal={true} theme="modern-theme">
                         <Pane minSize={28}>
@@ -1461,6 +1462,7 @@
                         </Pane>
                     </Splitpanes>
                 </div>
+            {/if}
             {:else}
                 <div class="flex-col py-4 h-full">
                     <div class="flex justify-end">
