@@ -40,7 +40,7 @@
     import { PUBLIC_VERSION_STRING } from "$env/static/public";
     import { firestore } from "$lib/firebase";
     import { parentIframeCommunication } from "$lib/utils";
-    
+
     const display = getContext("display");
 
     let searchSuggestions = [
@@ -595,13 +595,13 @@
             console.log(parsedConfig.error);
             return;
         }
-        
+
         await setDoc(newConfigRef, parsedConfig.data)
-.then(async () => {
-        await deleteLocalConfig(config);
-        cloudConfigs = await getCloudConfigs();
-        localConfigs = await getListOfLocalConfigs();
-})
+            .then(async () => {
+                await deleteLocalConfig(config);
+                cloudConfigs = await getCloudConfigs();
+                localConfigs = await getListOfLocalConfigs();
+            })
             .catch((error) => {
                 // profile is not saved to cloud
                 console.error("Config save to cloud was unsuccessful", error);
@@ -784,83 +784,85 @@
             {/if}
             {#if display == "editor"}
                 {#if isEditorVersionCompatible}
-                <div class="flex flex-grow h-screen relative z-0 overflow-hidden">
-                    <Splitpanes horizontal={true} theme="modern-theme">
-                        <Pane minSize={28}>
-                            <div class="flex flex-col pb-4 h-full">
-                                <ul class="flex">
-                                    <li>
-                                        <button
-                                            class="block px-2 py-1 {configTypeSelector === 'profile'
-                                                ? 'bg-emerald-600'
-                                                : ''}"
-                                            on:click={() => (configTypeSelector = "profile")}
-                                            >Profiles</button
-                                        >
-                                    </li>
-                                    <li>
-                                        <button
-                                            class="block px-2 py-1 {configTypeSelector === 'preset'
-                                                ? 'bg-emerald-600'
-                                                : ''}"
-                                            on:click={() => (configTypeSelector = "preset")}
-                                            >Presets</button
-                                        >
-                                    </li>
-                                </ul>
-                                <div class="py-4 flex items-center justify-between">
-                                    <div class="flex flex-col">
-                                        <div>Profile Cloud</div>
-                                        <div class="text-white text-opacity-60">
-                                            Public {configTypeSelector}s from others and save yours
-                                            as private or public here.
+                    <div class="flex flex-grow h-screen relative z-0 overflow-hidden">
+                        <Splitpanes horizontal={true} theme="modern-theme">
+                            <Pane minSize={28}>
+                                <div class="flex flex-col pb-4 h-full">
+                                    <ul class="flex">
+                                        <li>
+                                            <button
+                                                class="block px-2 py-1 {configTypeSelector ===
+                                                'profile'
+                                                    ? 'bg-emerald-600'
+                                                    : ''}"
+                                                on:click={() => (configTypeSelector = "profile")}
+                                                >Profiles</button
+                                            >
+                                        </li>
+                                        <li>
+                                            <button
+                                                class="block px-2 py-1 {configTypeSelector ===
+                                                'preset'
+                                                    ? 'bg-emerald-600'
+                                                    : ''}"
+                                                on:click={() => (configTypeSelector = "preset")}
+                                                >Presets</button
+                                            >
+                                        </li>
+                                    </ul>
+                                    <div class="py-4 flex items-center justify-between">
+                                        <div class="flex flex-col">
+                                            <div>Profile Cloud</div>
+                                            <div class="text-white text-opacity-60">
+                                                Public {configTypeSelector}s from others and save
+                                                yours as private or public here.
+                                            </div>
                                         </div>
+                                        <button
+                                            on:click={() => {
+                                                createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor();
+                                                provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                                    {}
+                                                );
+                                                submitAnalytics({
+                                                    eventName: "Local Config",
+                                                    payload: {
+                                                        task: "Save config"
+                                                    }
+                                                });
+                                            }}
+                                            class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
+                                            >save local {configTypeSelector}</button
+                                        >
                                     </div>
-                                    <button
-                                        on:click={() => {
-                                            createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor();
-                                            provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
-                                                {}
-                                            );
-                                            submitAnalytics({
-                                                eventName: "Local Config",
-                                                payload: {
-                                                    task: "Save config"
-                                                }
-                                            });
-                                        }}
-                                        class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
-                                        >save local {configTypeSelector}</button
-                                    >
-                                </div>
-                                <div class="flex justify-end">
-                                    <button
-                                        on:click={() => {
-                                            filterShowHide();
-                                        }}
-                                        class="text-white text-left font-xs"
-                                    >
-                                        {#if isSearchSortingShows}
-                                            Hide Filters
-                                        {:else}
-                                            Show Filters
-                                        {/if}
-                                    </button>
-                                </div>
-                                {#if isSearchSortingShows == true}
-                                    <div>
-                                        <div class="flex flex-col gap-1 px-3 pt-3">
-                                            <div class="relative">
-                                                <svg
-                                                    class="absolute left-3 bottom-[28%]"
-                                                    width="14"
-                                                    height="14"
-                                                    viewBox="0 0 18 18"
-                                                    fill="none"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                >
-                                                    <path
-                                                        d="M13.2095 11.6374C14.2989 10.1509 14.7868 8.30791 14.5756
+                                    <div class="flex justify-end">
+                                        <button
+                                            on:click={() => {
+                                                filterShowHide();
+                                            }}
+                                            class="text-white text-left font-xs"
+                                        >
+                                            {#if isSearchSortingShows}
+                                                Hide Filters
+                                            {:else}
+                                                Show Filters
+                                            {/if}
+                                        </button>
+                                    </div>
+                                    {#if isSearchSortingShows == true}
+                                        <div>
+                                            <div class="flex flex-col gap-1 px-3 pt-3">
+                                                <div class="relative">
+                                                    <svg
+                                                        class="absolute left-3 bottom-[28%]"
+                                                        width="14"
+                                                        height="14"
+                                                        viewBox="0 0 18 18"
+                                                        fill="none"
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                    >
+                                                        <path
+                                                            d="M13.2095 11.6374C14.2989 10.1509 14.7868 8.30791 14.5756
                                             6.47715C14.3645 4.64639 13.4699 2.96286 12.0708 1.76338C10.6717
                                             0.563893 8.87126 -0.0630888 7.02973 0.0078685C5.1882 0.0788258
                                             3.44137 0.84249 2.13872 2.14608C0.83606 3.44967 0.0736462 5.19704
@@ -882,587 +884,607 @@
                                             4.09802 2.93707 2.93763C4.09745 1.77725 5.67126 1.12536 7.31229
                                             1.12536C8.95332 1.12536 10.5271 1.77725 11.6875 2.93763C12.8479
                                             4.09802 13.4998 5.67183 13.4998 7.31286V7.31286Z"
-                                                        fill="#CDCDCD"
-                                                    />
-                                                </svg>
+                                                            fill="#CDCDCD"
+                                                        />
+                                                    </svg>
 
-                                                {#if searchbarValue != ""}
-                                                    <button
-                                                        class="absolute right-2 bottom-[25%]"
-                                                        on:click={() => (searchbarValue = "")}
+                                                    {#if searchbarValue != ""}
+                                                        <button
+                                                            class="absolute right-2 bottom-[25%]"
+                                                            on:click={() => (searchbarValue = "")}
+                                                        >
+                                                            <svg
+                                                                width="28"
+                                                                height="28"
+                                                                viewBox="0 0 39 39"
+                                                                fill="none"
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                            >
+                                                                <path
+                                                                    d="M24.25 32.9102L14.75 23.4102M24.25 23.4102L14.75 32.9102"
+                                                                    stroke="#FFF"
+                                                                    stroke-width="2"
+                                                                    stroke-linecap="round"
+                                                                />
+                                                            </svg>
+                                                        </button>
+                                                    {/if}
+
+                                                    <input
+                                                        type="text"
+                                                        bind:value={searchbarValue}
+                                                        on:keyup={() => updateSearchFilter()}
+                                                        on:input={() => updateSearchFilter()}
+                                                        on:change={() => updateSearchFilter()}
+                                                        class="w-full py-2 px-12 bg-primary-700 text-white
+                                        placeholder-gray-400 text-md focus:outline-none"
+                                                        placeholder="Find {configTypeSelector}..."
+                                                    />
+                                                </div>
+
+                                                <div class="flex flex-row gap-1 py-1 flex-wrap">
+                                                    {#each searchSuggestions as suggestion}
+                                                        <button
+                                                            on:click={() =>
+                                                                useSearchSuggestion(
+                                                                    suggestion.value
+                                                                )}
+                                                            class="border hover:border-primary-500 text-xs text-primary-100 rounded-md
+                                        py-0.5 px-1 h-min {searchbarValue.toLowerCase() ==
+                                                            suggestion.value.toLowerCase()
+                                                                ? 'border-primary-100'
+                                                                : 'border-primary-700'}"
+                                                        >
+                                                            {suggestion.value}
+                                                        </button>
+                                                    {/each}
+                                                </div>
+                                            </div>
+
+                                            <div
+                                                class="flex gap-2 items-center justify-between flex-wrap p-3"
+                                            >
+                                                <label
+                                                    for="sorting select"
+                                                    class="uppercase text-gray-500 py-1 text-xs"
+                                                >
+                                                    sort by
+                                                </label>
+
+                                                <select
+                                                    class="bg-secondary border-none flex-grow text-white p-1 focus:outline-none"
+                                                    id="sortingSelectBox"
+                                                    on:change={(e) => {
+                                                        sortField = e.target.value;
+                                                        sortProfileCloud(sortField, sortAsc);
+                                                    }}
+                                                    name="sorting select"
+                                                >
+                                                    <option
+                                                        selected
+                                                        class="text-white bg-secondary py-1 border-none"
+                                                        value="name"
                                                     >
+                                                        name
+                                                    </option>
+
+                                                    <option
+                                                        class="text-white bg-secondary py-1 border-none"
+                                                        value="date"
+                                                    >
+                                                        date
+                                                    </option>
+
+                                                    <option
+                                                        class="text-white bg-secondary py-1 border-none"
+                                                        value="module"
+                                                    >
+                                                        module
+                                                    </option>
+                                                </select>
+
+                                                <button
+                                                    on:click={() => {
+                                                        sortAsc = !sortAsc;
+                                                        sortProfileCloud(sortField, sortAsc);
+                                                    }}
+                                                >
+                                                    {#if sortAsc == false}
                                                         <svg
-                                                            width="28"
-                                                            height="28"
-                                                            viewBox="0 0 39 39"
+                                                            width="20"
+                                                            height="20"
+                                                            viewBox="0 0 24 24"
                                                             fill="none"
                                                             xmlns="http://www.w3.org/2000/svg"
                                                         >
                                                             <path
-                                                                d="M24.25 32.9102L14.75 23.4102M24.25 23.4102L14.75 32.9102"
-                                                                stroke="#FFF"
+                                                                d="M11 11H15M11 15H18M11 19H21M9 7L6 4L3 7M6 6V20"
+                                                                stroke="white"
                                                                 stroke-width="2"
                                                                 stroke-linecap="round"
+                                                                stroke-linejoin="round"
                                                             />
                                                         </svg>
-                                                    </button>
-                                                {/if}
-
-                                                <input
-                                                    type="text"
-                                                    bind:value={searchbarValue}
-                                                    on:keyup={() => updateSearchFilter()}
-                                                    on:input={() => updateSearchFilter()}
-                                                    on:change={() => updateSearchFilter()}
-                                                    class="w-full py-2 px-12 bg-primary-700 text-white
-                                        placeholder-gray-400 text-md focus:outline-none"
-                                                    placeholder="Find {configTypeSelector}..."
-                                                />
-                                            </div>
-
-                                            <div class="flex flex-row gap-1 py-1 flex-wrap">
-                                                {#each searchSuggestions as suggestion}
-                                                    <button
-                                                        on:click={() =>
-                                                            useSearchSuggestion(suggestion.value)}
-                                                        class="border hover:border-primary-500 text-xs text-primary-100 rounded-md
-                                        py-0.5 px-1 h-min {searchbarValue.toLowerCase() ==
-                                                        suggestion.value.toLowerCase()
-                                                            ? 'border-primary-100'
-                                                            : 'border-primary-700'}"
-                                                    >
-                                                        {suggestion.value}
-                                                    </button>
-                                                {/each}
-                                            </div>
-                                        </div>
-
-                                        <div
-                                            class="flex gap-2 items-center justify-between flex-wrap p-3"
-                                        >
-                                            <label
-                                                for="sorting select"
-                                                class="uppercase text-gray-500 py-1 text-xs"
-                                            >
-                                                sort by
-                                            </label>
-
-                                            <select
-                                                class="bg-secondary border-none flex-grow text-white p-1 focus:outline-none"
-                                                id="sortingSelectBox"
-                                                on:change={(e) => {
-                                                    sortField = e.target.value;
-                                                    sortProfileCloud(sortField, sortAsc);
-                                                }}
-                                                name="sorting select"
-                                            >
-                                                <option
-                                                    selected
-                                                    class="text-white bg-secondary py-1 border-none"
-                                                    value="name"
-                                                >
-                                                    name
-                                                </option>
-
-                                                <option
-                                                    class="text-white bg-secondary py-1 border-none"
-                                                    value="date"
-                                                >
-                                                    date
-                                                </option>
-
-                                                <option
-                                                    class="text-white bg-secondary py-1 border-none"
-                                                    value="module"
-                                                >
-                                                    module
-                                                </option>
-                                            </select>
-
-                                            <button
-                                                on:click={() => {
-                                                    sortAsc = !sortAsc;
-                                                    sortProfileCloud(sortField, sortAsc);
-                                                }}
-                                            >
-                                                {#if sortAsc == false}
-                                                    <svg
-                                                        width="20"
-                                                        height="20"
-                                                        viewBox="0 0 24 24"
-                                                        fill="none"
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                    >
-                                                        <path
-                                                            d="M11 11H15M11 15H18M11 19H21M9 7L6 4L3 7M6 6V20"
-                                                            stroke="white"
-                                                            stroke-width="2"
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                        />
-                                                    </svg>
-                                                {:else}
-                                                    <svg
-                                                        width="20"
-                                                        height="20"
-                                                        viewBox="0 0 24 24"
-                                                        fill="none"
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                    >
-                                                        <path
-                                                            d="M11 5H21M11 9H18M11 13H15M3 17L6 20L9 17M6 18V4"
-                                                            stroke="white"
-                                                            stroke-width="2"
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                        />
-                                                    </svg>
-                                                {/if}
-                                            </button>
-                                        </div>
-                                    </div>
-                                {/if}
-                                <div
-                                    class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
-                                >
-                                    {#each filteredConfigs as config, index (config.data.localId ?? config.data.id)}
-                                        {@const data = config.data}
-                                        <div in:slide>
-                                            {#if config.location === "cloud"}
-                                                <CloudProfileCard
-                                                    on:click={() => {
-                                                        if (selectedCloudConfigIndex == index) {
-                                                            return;
-                                                        }
-                                                        // reset the selection on the local profiles
-                                                        selectedLocalConfigIndex = undefined;
-                                                        provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
-                                                            data
-                                                        );
-                                                        selectedCloudConfigIndex = index;
-                                                    }}
-                                                    on:focusout={(e) => {
-                                                        selectedCloudConfigIndex = undefined;
-                                                    }}
-                                                    on:delete-cloud={async () => {
-                                                        selectedCloudConfigIndex = undefined;
-                                                        deleteCloudConfig(data);
-                                                        provideSelectedConfigForOptionalUploadingToOneOreMoreModules();
-                                                        submitAnalytics({
-                                                            eventName: "Profile Cloud",
-                                                            payload: {
-                                                                task: "Delete",
-                                                                profileName: data.name,
-                                                                public: data.public
-                                                            }
-                                                        });
-                                                    }}
-                                                    on:description-change={(e) => {
-                                                        const { newDescription } = e.detail;
-                                                        textEditCloudConfig({
-                                                            description: newDescription,
-                                                            config: data
-                                                        });
-                                                        submitAnalytics({
-                                                            eventName: "Profile Cloud",
-                                                            payload: {
-                                                                task: "Edit description",
-                                                                oldDescription: data.description,
-                                                                newDescription: newDescription
-                                                            }
-                                                        });
-                                                    }}
-                                                    on:name-change={(e) => {
-                                                        const { newName } = e.detail;
-
-                                                        textEditCloudConfig({
-                                                            name: newName,
-                                                            config: data
-                                                        });
-                                                        submitAnalytics({
-                                                            eventName: "Profile Cloud",
-                                                            payload: {
-                                                                task: "Edit name",
-                                                                oldProfileName: data.name,
-                                                                newProfileName: newName
-                                                            }
-                                                        });
-                                                    }}
-                                                    class={index === selectedCloudConfigIndex
-                                                        ? "border-emerald-500"
-                                                        : "border-white/10"}
-                                                    data={{
-                                                        ...data,
-                                                        selectedComponentTypes:
-                                                            selectedComponentTypes
-                                                    }}
-                                                >
-                                                    <svelte:fragment slot="link-button">
-                                                        <button
-                                                            class="relative group flex"
-                                                            on:click|stopPropagation={() => {
-                                                                createCloudConfigLink(data);
-                                                                provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
-                                                                    {}
-                                                                );
-                                                                submitAnalytics({
-                                                                    eventName: "Profile Link",
-                                                                    payload: {
-                                                                        task: "Create",
-                                                                        profileName: data.name
-                                                                    }
-                                                                });
-                                                            }}
+                                                    {:else}
+                                                        <svg
+                                                            width="20"
+                                                            height="20"
+                                                            viewBox="0 0 24 24"
+                                                            fill="none"
+                                                            xmlns="http://www.w3.org/2000/svg"
                                                         >
-                                                            <SvgIcon class="w-4" iconPath="link" />
-                                                            <div
-                                                                class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                                            >
-                                                                Link
-                                                            </div>
-                                                            {#if linkFlag == data.id}
-                                                                <div
-                                                                    transition:fade={{
-                                                                        duration: 100
-                                                                    }}
-                                                                    class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
-                                                                >
-                                                                    Copied to clipboard!
-                                                                </div>
-                                                            {/if}
-                                                        </button>
-                                                    </svelte:fragment>
-                                                    <svelte:fragment slot="import-button">
-                                                        <button
-                                                            on:click|stopPropagation={async () => {
-                                                                saveCloudConfigToLocalFolder(data);
-                                                                provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
-                                                                    {}
-                                                                );
-                                                                submitAnalytics({
-                                                                    eventName: "Profile Cloud",
-                                                                    payload: {
-                                                                        task: "Import to local",
-                                                                        profileName: data.name
-                                                                    }
-                                                                });
-                                                            }}
-                                                            class="flex items-center group relative"
-                                                        >
-                                                            {#if importFlag == data.id}
-                                                                loading...
-                                                            {/if}
-                                                            <SvgIcon
-                                                                class="w-4"
-                                                                iconPath="import"
+                                                            <path
+                                                                d="M11 5H21M11 9H18M11 13H15M3 17L6 20L9 17M6 18V4"
+                                                                stroke="white"
+                                                                stroke-width="2"
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
                                                             />
-                                                            <div
-                                                                class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                                            >
-                                                                Import
-                                                            </div>
-                                                        </button>
-                                                    </svelte:fragment>
-                                                    <span slot="toggle-accessibility">
-                                                        <ToggleSwitch
-                                                            checkbox={data.public}
-                                                            on:toggle={(e) => {
-                                                                submitAnalytics({
-                                                                    eventName: "Profile Cloud",
-                                                                    payload: {
-                                                                        task: "Set visibility",
-                                                                        profileName: data.name,
-                                                                        visibility: e.detail
-                                                                    }
-                                                                });
-                                                                changeCloudConfigVisibility(
-                                                                    data,
-                                                                    e.detail
-                                                                );
-                                                            }}
-                                                        >
-                                                            <div class="relative group" slot="on">
-                                                                <SvgIcon
-                                                                    display={true}
-                                                                    iconPath={"public"}
-                                                                    class="mr-1"
-                                                                />
-                                                                <div
-                                                                    class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                                                >
-                                                                    Public
-                                                                </div>
-                                                            </div>
-                                                            <div class="relative group" slot="off">
-                                                                <SvgIcon
-                                                                    display={true}
-                                                                    iconPath={"private"}
-                                                                    class="mr-1 text-opacity-70"
-                                                                />
-                                                                <div
-                                                                    class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                                                >
-                                                                    Private
-                                                                </div>
-                                                            </div>
-                                                        </ToggleSwitch>
-                                                    </span>
-                                                </CloudProfileCard>
-                                            {:else if config.location === "local"}
-                                                <LocalProfileCard
-                                                    on:click={() => {
-                                                        if (selectedLocalConfigIndex == index) {
-                                                            return;
-                                                        }
-                                                        // reset the selected cloud config index
-                                                        selectedCloudConfigIndex = undefined;
-                                                        provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
-                                                            data
-                                                        );
-                                                        selectedLocalConfigIndex = index;
-                                                    }}
-                                                    on:focusout={(e) => {
-                                                        selectedLocalConfigIndex = undefined;
-                                                    }}
-                                                    on:save-to-cloud={() => {
-                                                        saveLocalConfigToCloud(data);
-                                                        provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
-                                                            {}
-                                                        );
-                                                        submitAnalytics({
-                                                            eventName: "Local Profile",
-                                                            payload: {
-                                                                task: "Save to cloud",
-                                                                ...data
-                                                            }
-                                                        });
-                                                    }}
-                                                    on:delete-local={async () => {
-                                                        deleteLocalConfig(data);
-                                                        provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
-                                                            {}
-                                                        );
-                                                        submitAnalytics({
-                                                            eventName: "Local Profile",
-                                                            payload: {
-                                                                task: "Delete",
-                                                                ...data
-                                                            }
-                                                        });
-                                                    }}
-                                                    on:split-profile={() => {
-                                                        //splitLocalProfile(profile);
-                                                    }}
-                                                    on:name-change={(e) => {
-                                                        const { newName } = e.detail;
-                                                        textEditLocalConfig({
-                                                            name: newName,
-                                                            config: data
-                                                        });
-                                                        submitAnalytics({
-                                                            eventName: "Local Config",
-                                                            payload: {
-                                                                task: "Edit name",
-                                                                oldName: data.name,
-                                                                newName: newName
-                                                            }
-                                                        });
-                                                    }}
-                                                    on:description-change={(e) => {
-                                                        const { newDescription } = e.detail;
-                                                        textEditLocalConfig({
-                                                            description: newDescription,
-                                                            config: data
-                                                        });
-                                                        submitAnalytics({
-                                                            eventName: "Local Profile",
-                                                            payload: {
-                                                                task: "Edit description",
-                                                                oldDescription: data.description,
-                                                                newDescription: newDescription
-                                                            }
-                                                        });
-                                                    }}
-                                                    on:overwrite-profile={() => {
-                                                        overwriteLocalConfig(data);
-                                                        provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
-                                                            {}
-                                                        );
-                                                        submitAnalytics({
-                                                            eventName: "Local Profile",
-                                                            payload: {
-                                                                task: "Overwrite",
-                                                                ...data
-                                                            }
-                                                        });
-                                                    }}
-                                                    class={index == selectedLocalConfigIndex
-                                                        ? "border-emerald-500"
-                                                        : "border-white/10"}
-                                                    data={{
-                                                        ...data,
-                                                        selectedComponentTypes:
-                                                            selectedComponentTypes
-                                                    }}
-                                                />
-                                            {/if}
-                                        </div>
-                                    {/each}
-                                </div>
-                                <div>
-                                    {#if $userAccountService.account}
-                                        <div
-                                            class="{!usernameInput.exists
-                                                ? 'pb-2'
-                                                : ''} flex items-center justify-between"
-                                        >
-                                            <div class="group w-full flex flex-col text-left py-4">
-                                                {#if usernameInput.exists == false}
-                                                    <div class="pb-2">
-                                                        Before using the cloud, enter a username
-                                                        which will be displayed with your public
-                                                        profiles.
-                                                    </div>
-                                                {:else}
-                                                    <div>
-                                                        Profile Cloud - {usernameInput.element
-                                                            ?.value}
-                                                    </div>
-                                                {/if}
-                                                <div
-                                                    class="group-hover:block font-medium hidden absolute mt-7 bottom-2 left-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                                >
-                                                    {PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING}
-                                                </div>
-                                                <div class="flex items-center">
-                                                    <input
-                                                        id="display-name"
-                                                        bind:this={usernameInput.element}
-                                                        on:input={(event) => {
-                                                            checkIfUsernameAvailable(
-                                                                event.target?.value
-                                                            );
-                                                        }}
-                                                        on:keydown={(event) => {
-                                                            if (event.key == "Enter") {
-                                                                usernameInput.active = false;
-                                                                setUserName(
-                                                                    usernameInput.element?.value
-                                                                );
-                                                                submitAnalytics({
-                                                                    eventName: "Set Username",
-                                                                    payload: {
-                                                                        handler: "Enter key",
-                                                                        username:
-                                                                            usernameInput.element
-                                                                                ?.value
-                                                                    }
-                                                                });
-                                                            }
-                                                        }}
-                                                        readonly={usernameInput.exists}
-                                                        placeholder="Username"
-                                                        class="{!usernameInput.exists
-                                                            ? 'border-amber-500 focus:border-emerald-500 animate-pulse dark:bg-secondary focus:animate-none'
-                                                            : 'border-transparent bg-transparent text-white text-opacity-80 hidden'}  w-full border focus:outline-none"
-                                                        value={usernameInput.element?.value || ""}
-                                                    />
-                                                    {#if usernameInput.exists == false}
-                                                        <button
-                                                            on:click={() => {
-                                                                usernameInput.active = false;
-                                                                setUserName(
-                                                                    usernameInput.element?.value
-                                                                );
-                                                                submitAnalytics({
-                                                                    eventName: "Set Username",
-                                                                    payload: {
-                                                                        handler: "Button",
-                                                                        username:
-                                                                            usernameInput.element
-                                                                                ?.value
-                                                                    }
-                                                                });
-                                                            }}
-                                                            class="mx-2 relative group"
-                                                        >
-                                                            <SvgIcon
-                                                                iconPath={"save_as_02"}
-                                                                class="w-5"
-                                                            />
-                                                            <div
-                                                                class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                                            >
-                                                                Save
-                                                            </div>
-                                                        </button>
+                                                        </svg>
                                                     {/if}
-                                                </div>
-                                                {#if usernameInput.exists == false}
-                                                    <div
-                                                        class={usernameInput.valid
-                                                            ? "text-emerald-500"
-                                                            : "text-amber-500"}
-                                                    >
-                                                        {usernameSelectionFeedback(usernameInput)}
-                                                    </div>
-                                                {/if}
-                                            </div>
-                                            {#if usernameInput.exists == true}
-                                                <button
-                                                    on:click={() => {
-                                                        logoutFromProfileCloud();
-                                                        submitAnalytics({
-                                                            eventName: "Authentication",
-                                                            payload: {
-                                                                task: "Logout attempt"
-                                                            }
-                                                        });
-                                                    }}
-                                                    class="ml-1 relative group rounded px-1 text-xs border dark:border-white dark:border-opacity-10 dark:hover:bg-neutral-700 font-medium"
-                                                >
-                                                    <SvgIcon iconPath={"log_out"} class="w-5" />
-                                                    <div
-                                                        class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                                    >
-                                                        Logout
-                                                    </div>
                                                 </button>
-                                            {/if}
-                                        </div>
-                                    {:else}
-                                        <div class="pt-4">
-                                            <div
-                                                class="rounded-md border border-amber-500 p-4 bg-secondary/90"
-                                            >
-                                                <div class="pb-1 text-white">
-                                                    login to save and browse your profiles
-                                                </div>
-                                                <div class="pt-1">
-                                                    <button
-                                                        on:click={() => {
-                                                            loginToProfileCloud();
-                                                            submitAnalytics({
-                                                                eventName: "Authentication",
-                                                                payload: {
-                                                                    task: "Login attempt"
-                                                                }
-                                                            });
-                                                        }}
-                                                        class="rounded px-4 py-1 border dark:border-emerald-500 dark:hover:bg-emerald-700 font-medium"
-                                                    >
-                                                        login
-                                                    </button>
-                                                </div>
                                             </div>
                                         </div>
                                     {/if}
+                                    <div
+                                        class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
+                                    >
+                                        {#each filteredConfigs as config, index (config.data.localId ?? config.data.id)}
+                                            {@const data = config.data}
+                                            <div in:slide>
+                                                {#if config.location === "cloud"}
+                                                    <CloudProfileCard
+                                                        on:click={() => {
+                                                            if (selectedCloudConfigIndex == index) {
+                                                                return;
+                                                            }
+                                                            // reset the selection on the local profiles
+                                                            selectedLocalConfigIndex = undefined;
+                                                            provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                                                data
+                                                            );
+                                                            selectedCloudConfigIndex = index;
+                                                        }}
+                                                        on:focusout={(e) => {
+                                                            selectedCloudConfigIndex = undefined;
+                                                        }}
+                                                        on:delete-cloud={async () => {
+                                                            selectedCloudConfigIndex = undefined;
+                                                            deleteCloudConfig(data);
+                                                            provideSelectedConfigForOptionalUploadingToOneOreMoreModules();
+                                                            submitAnalytics({
+                                                                eventName: "Profile Cloud",
+                                                                payload: {
+                                                                    task: "Delete",
+                                                                    profileName: data.name,
+                                                                    public: data.public
+                                                                }
+                                                            });
+                                                        }}
+                                                        on:description-change={(e) => {
+                                                            const { newDescription } = e.detail;
+                                                            textEditCloudConfig({
+                                                                description: newDescription,
+                                                                config: data
+                                                            });
+                                                            submitAnalytics({
+                                                                eventName: "Profile Cloud",
+                                                                payload: {
+                                                                    task: "Edit description",
+                                                                    oldDescription:
+                                                                        data.description,
+                                                                    newDescription: newDescription
+                                                                }
+                                                            });
+                                                        }}
+                                                        on:name-change={(e) => {
+                                                            const { newName } = e.detail;
+
+                                                            textEditCloudConfig({
+                                                                name: newName,
+                                                                config: data
+                                                            });
+                                                            submitAnalytics({
+                                                                eventName: "Profile Cloud",
+                                                                payload: {
+                                                                    task: "Edit name",
+                                                                    oldProfileName: data.name,
+                                                                    newProfileName: newName
+                                                                }
+                                                            });
+                                                        }}
+                                                        class={index === selectedCloudConfigIndex
+                                                            ? "border-emerald-500"
+                                                            : "border-white/10"}
+                                                        data={{
+                                                            ...data,
+                                                            selectedComponentTypes:
+                                                                selectedComponentTypes
+                                                        }}
+                                                    >
+                                                        <svelte:fragment slot="link-button">
+                                                            <button
+                                                                class="relative group flex"
+                                                                on:click|stopPropagation={() => {
+                                                                    createCloudConfigLink(data);
+                                                                    provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                                                        {}
+                                                                    );
+                                                                    submitAnalytics({
+                                                                        eventName: "Profile Link",
+                                                                        payload: {
+                                                                            task: "Create",
+                                                                            profileName: data.name
+                                                                        }
+                                                                    });
+                                                                }}
+                                                            >
+                                                                <SvgIcon
+                                                                    class="w-4"
+                                                                    iconPath="link"
+                                                                />
+                                                                <div
+                                                                    class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                                >
+                                                                    Link
+                                                                </div>
+                                                                {#if linkFlag == data.id}
+                                                                    <div
+                                                                        transition:fade={{
+                                                                            duration: 100
+                                                                        }}
+                                                                        class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
+                                                                    >
+                                                                        Copied to clipboard!
+                                                                    </div>
+                                                                {/if}
+                                                            </button>
+                                                        </svelte:fragment>
+                                                        <svelte:fragment slot="import-button">
+                                                            <button
+                                                                on:click|stopPropagation={async () => {
+                                                                    saveCloudConfigToLocalFolder(
+                                                                        data
+                                                                    );
+                                                                    provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                                                        {}
+                                                                    );
+                                                                    submitAnalytics({
+                                                                        eventName: "Profile Cloud",
+                                                                        payload: {
+                                                                            task: "Import to local",
+                                                                            profileName: data.name
+                                                                        }
+                                                                    });
+                                                                }}
+                                                                class="flex items-center group relative"
+                                                            >
+                                                                {#if importFlag == data.id}
+                                                                    loading...
+                                                                {/if}
+                                                                <SvgIcon
+                                                                    class="w-4"
+                                                                    iconPath="import"
+                                                                />
+                                                                <div
+                                                                    class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                                >
+                                                                    Import
+                                                                </div>
+                                                            </button>
+                                                        </svelte:fragment>
+                                                        <span slot="toggle-accessibility">
+                                                            <ToggleSwitch
+                                                                checkbox={data.public}
+                                                                on:toggle={(e) => {
+                                                                    submitAnalytics({
+                                                                        eventName: "Profile Cloud",
+                                                                        payload: {
+                                                                            task: "Set visibility",
+                                                                            profileName: data.name,
+                                                                            visibility: e.detail
+                                                                        }
+                                                                    });
+                                                                    changeCloudConfigVisibility(
+                                                                        data,
+                                                                        e.detail
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <div
+                                                                    class="relative group"
+                                                                    slot="on"
+                                                                >
+                                                                    <SvgIcon
+                                                                        display={true}
+                                                                        iconPath={"public"}
+                                                                        class="mr-1"
+                                                                    />
+                                                                    <div
+                                                                        class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                                    >
+                                                                        Public
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    class="relative group"
+                                                                    slot="off"
+                                                                >
+                                                                    <SvgIcon
+                                                                        display={true}
+                                                                        iconPath={"private"}
+                                                                        class="mr-1 text-opacity-70"
+                                                                    />
+                                                                    <div
+                                                                        class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                                    >
+                                                                        Private
+                                                                    </div>
+                                                                </div>
+                                                            </ToggleSwitch>
+                                                        </span>
+                                                    </CloudProfileCard>
+                                                {:else if config.location === "local"}
+                                                    <LocalProfileCard
+                                                        on:click={() => {
+                                                            if (selectedLocalConfigIndex == index) {
+                                                                return;
+                                                            }
+                                                            // reset the selected cloud config index
+                                                            selectedCloudConfigIndex = undefined;
+                                                            provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                                                data
+                                                            );
+                                                            selectedLocalConfigIndex = index;
+                                                        }}
+                                                        on:focusout={(e) => {
+                                                            selectedLocalConfigIndex = undefined;
+                                                        }}
+                                                        on:save-to-cloud={() => {
+                                                            saveLocalConfigToCloud(data);
+                                                            provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                                                {}
+                                                            );
+                                                            submitAnalytics({
+                                                                eventName: "Local Profile",
+                                                                payload: {
+                                                                    task: "Save to cloud",
+                                                                    ...data
+                                                                }
+                                                            });
+                                                        }}
+                                                        on:delete-local={async () => {
+                                                            deleteLocalConfig(data);
+                                                            provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                                                {}
+                                                            );
+                                                            submitAnalytics({
+                                                                eventName: "Local Profile",
+                                                                payload: {
+                                                                    task: "Delete",
+                                                                    ...data
+                                                                }
+                                                            });
+                                                        }}
+                                                        on:split-profile={() => {
+                                                            //splitLocalProfile(profile);
+                                                        }}
+                                                        on:name-change={(e) => {
+                                                            const { newName } = e.detail;
+                                                            textEditLocalConfig({
+                                                                name: newName,
+                                                                config: data
+                                                            });
+                                                            submitAnalytics({
+                                                                eventName: "Local Config",
+                                                                payload: {
+                                                                    task: "Edit name",
+                                                                    oldName: data.name,
+                                                                    newName: newName
+                                                                }
+                                                            });
+                                                        }}
+                                                        on:description-change={(e) => {
+                                                            const { newDescription } = e.detail;
+                                                            textEditLocalConfig({
+                                                                description: newDescription,
+                                                                config: data
+                                                            });
+                                                            submitAnalytics({
+                                                                eventName: "Local Profile",
+                                                                payload: {
+                                                                    task: "Edit description",
+                                                                    oldDescription:
+                                                                        data.description,
+                                                                    newDescription: newDescription
+                                                                }
+                                                            });
+                                                        }}
+                                                        on:overwrite-profile={() => {
+                                                            overwriteLocalConfig(data);
+                                                            provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                                                {}
+                                                            );
+                                                            submitAnalytics({
+                                                                eventName: "Local Profile",
+                                                                payload: {
+                                                                    task: "Overwrite",
+                                                                    ...data
+                                                                }
+                                                            });
+                                                        }}
+                                                        class={index == selectedLocalConfigIndex
+                                                            ? "border-emerald-500"
+                                                            : "border-white/10"}
+                                                        data={{
+                                                            ...data,
+                                                            selectedComponentTypes:
+                                                                selectedComponentTypes
+                                                        }}
+                                                    />
+                                                {/if}
+                                            </div>
+                                        {/each}
+                                    </div>
+                                    <div>
+                                        {#if $userAccountService.account}
+                                            <div
+                                                class="{!usernameInput.exists
+                                                    ? 'pb-2'
+                                                    : ''} flex items-center justify-between"
+                                            >
+                                                <div
+                                                    class="group w-full flex flex-col text-left py-4"
+                                                >
+                                                    {#if usernameInput.exists == false}
+                                                        <div class="pb-2">
+                                                            Before using the cloud, enter a username
+                                                            which will be displayed with your public
+                                                            profiles.
+                                                        </div>
+                                                    {:else}
+                                                        <div>
+                                                            Profile Cloud - {usernameInput.element
+                                                                ?.value}
+                                                        </div>
+                                                    {/if}
+                                                    <div
+                                                        class="group-hover:block font-medium hidden absolute mt-7 bottom-2 left-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                    >
+                                                        {PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING}
+                                                    </div>
+                                                    <div class="flex items-center">
+                                                        <input
+                                                            id="display-name"
+                                                            bind:this={usernameInput.element}
+                                                            on:input={(event) => {
+                                                                checkIfUsernameAvailable(
+                                                                    event.target?.value
+                                                                );
+                                                            }}
+                                                            on:keydown={(event) => {
+                                                                if (event.key == "Enter") {
+                                                                    usernameInput.active = false;
+                                                                    setUserName(
+                                                                        usernameInput.element?.value
+                                                                    );
+                                                                    submitAnalytics({
+                                                                        eventName: "Set Username",
+                                                                        payload: {
+                                                                            handler: "Enter key",
+                                                                            username:
+                                                                                usernameInput
+                                                                                    .element?.value
+                                                                        }
+                                                                    });
+                                                                }
+                                                            }}
+                                                            readonly={usernameInput.exists}
+                                                            placeholder="Username"
+                                                            class="{!usernameInput.exists
+                                                                ? 'border-amber-500 focus:border-emerald-500 animate-pulse dark:bg-secondary focus:animate-none'
+                                                                : 'border-transparent bg-transparent text-white text-opacity-80 hidden'}  w-full border focus:outline-none"
+                                                            value={usernameInput.element?.value ||
+                                                                ""}
+                                                        />
+                                                        {#if usernameInput.exists == false}
+                                                            <button
+                                                                on:click={() => {
+                                                                    usernameInput.active = false;
+                                                                    setUserName(
+                                                                        usernameInput.element?.value
+                                                                    );
+                                                                    submitAnalytics({
+                                                                        eventName: "Set Username",
+                                                                        payload: {
+                                                                            handler: "Button",
+                                                                            username:
+                                                                                usernameInput
+                                                                                    .element?.value
+                                                                        }
+                                                                    });
+                                                                }}
+                                                                class="mx-2 relative group"
+                                                            >
+                                                                <SvgIcon
+                                                                    iconPath={"save_as_02"}
+                                                                    class="w-5"
+                                                                />
+                                                                <div
+                                                                    class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                                >
+                                                                    Save
+                                                                </div>
+                                                            </button>
+                                                        {/if}
+                                                    </div>
+                                                    {#if usernameInput.exists == false}
+                                                        <div
+                                                            class={usernameInput.valid
+                                                                ? "text-emerald-500"
+                                                                : "text-amber-500"}
+                                                        >
+                                                            {usernameSelectionFeedback(
+                                                                usernameInput
+                                                            )}
+                                                        </div>
+                                                    {/if}
+                                                </div>
+                                                {#if usernameInput.exists == true}
+                                                    <button
+                                                        on:click={() => {
+                                                            logoutFromProfileCloud();
+                                                            submitAnalytics({
+                                                                eventName: "Authentication",
+                                                                payload: {
+                                                                    task: "Logout attempt"
+                                                                }
+                                                            });
+                                                        }}
+                                                        class="ml-1 relative group rounded px-1 text-xs border dark:border-white dark:border-opacity-10 dark:hover:bg-neutral-700 font-medium"
+                                                    >
+                                                        <SvgIcon iconPath={"log_out"} class="w-5" />
+                                                        <div
+                                                            class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                        >
+                                                            Logout
+                                                        </div>
+                                                    </button>
+                                                {/if}
+                                            </div>
+                                        {:else}
+                                            <div class="pt-4">
+                                                <div
+                                                    class="rounded-md border border-amber-500 p-4 bg-secondary/90"
+                                                >
+                                                    <div class="pb-1 text-white">
+                                                        login to save and browse your profiles
+                                                    </div>
+                                                    <div class="pt-1">
+                                                        <button
+                                                            on:click={() => {
+                                                                loginToProfileCloud();
+                                                                submitAnalytics({
+                                                                    eventName: "Authentication",
+                                                                    payload: {
+                                                                        task: "Login attempt"
+                                                                    }
+                                                                });
+                                                            }}
+                                                            class="rounded px-4 py-1 border dark:border-emerald-500 dark:hover:bg-emerald-700 font-medium"
+                                                        >
+                                                            login
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {/if}
+                                    </div>
                                 </div>
-                            </div>
-                        </Pane>
-                    </Splitpanes>
-                </div>
-            {/if}
+                            </Pane>
+                        </Splitpanes>
+                    </div>
+                {/if}
             {:else}
                 <div class="flex-col py-4 h-full">
                     <div class="flex justify-end">
