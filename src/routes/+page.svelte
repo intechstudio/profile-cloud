@@ -4,15 +4,12 @@
     import { getContext, onDestroy, onMount } from "svelte";
     import DisplayOnWeb from "$lib/components/DisplayOnWeb.svelte";
     import { userAccountService } from "$lib/stores";
-    import UserAccount from "$lib/components/UserAccount.svelte";
-    import CloudProfileCard from "./CloudProfileCard.svelte";
     import { doc, getDoc, setDoc, writeBatch } from "firebase/firestore";
     import { configLinksCollection, userCollection, usernameCollection } from "$lib/collections";
-    import LocalProfileCard from "./LocalProfileCard.svelte";
     import SvgIcon from "$lib/icons/SvgIcon.svelte";
     import { get } from "svelte/store";
-    import { ConfigSchema, type Config, LocalConfigSchema, BaseConfigSchema } from "$lib/schemas";
-    import type { CloudConfig, LocalConfig } from "$lib/schemas";
+    import { type Config, LocalConfigSchema, BaseConfigSchema } from "$lib/schemas";
+    import type { CloudConfig } from "$lib/schemas";
     import { fade, slide } from "svelte/transition";
     import ToggleSwitch from "$lib/components/atomic/ToggleSwitch.svelte";
     import { PUBLIC_APP_ENV } from "$env/static/public";
@@ -259,11 +256,11 @@
         }
     }
 
-    async function provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+    async function provideSelectedConfigForEditor(
         config?: Config | {}
     ) {
         await parentIframeCommunication({
-            windowPostMessageName: "provideSelectedConfigForOptionalUploadingToOneOreMoreModules",
+            windowPostMessageName: "provideSelectedConfigForEditor",
             dataForParent: { config: config ?? {} }
         });
     }
@@ -517,7 +514,7 @@
                                         <button
                                             on:click={() => {
                                                 createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor();
-                                                provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                                provideSelectedConfigForEditor(
                                                     {}
                                                 );
                                                 submitAnalytics({
@@ -528,7 +525,7 @@
                                                 });
                                             }}
                                             class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
-                                            >save local {configTypeSelector}</button
+                                            >save {configTypeSelector}</button
                                         >
                                     </div>
                                     <div class="flex justify-end">
@@ -727,7 +724,7 @@
                                                         if (selectedConfigIndex == index) {
                                                             return;
                                                         }
-                                                        provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                                        provideSelectedConfigForEditor(
                                                             config
                                                         );
                                                         selectedConfigIndex = index;
@@ -738,7 +735,7 @@
                                                     on:delete-config={async () => {
                                                         selectedConfigIndex = undefined;
                                                         configManager?.deleteConfig(config);
-                                                        provideSelectedConfigForOptionalUploadingToOneOreMoreModules();
+                                                        provideSelectedConfigForEditor({});
                                                         submitAnalytics({
                                                             eventName: "Profile Cloud",
                                                             payload: {
@@ -797,7 +794,7 @@
                                                             class="relative group flex"
                                                             on:click|stopPropagation={() => {
                                                                 createCloudConfigLink(config);
-                                                                provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                                                provideSelectedConfigForEditor(
                                                                     {}
                                                                 );
                                                                 submitAnalytics({
@@ -831,11 +828,15 @@
                                                         {#if config.syncStatus != "synced" || !config.isEditable}
                                                             <button
                                                                 on:click|stopPropagation={async () => {
+                                                                    if (config.isEditable && config.syncStatus === "local" && !($userAccountService.account)) {
+                                                                        loginToProfileCloud();
+                                                                        return;
+                                                                    }
                                                                     configManager?.saveConfig(
                                                                         config,
                                                                         true
                                                                     );
-                                                                    provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
+                                                                    provideSelectedConfigForEditor(
                                                                         {}
                                                                     );
                                                                     submitAnalytics({
@@ -1299,9 +1300,6 @@
                         {#each filteredConfigs as config, index (config.id)}
                             <ConfigCard
                                 on:click={() => {
-                                    provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
-                                        config
-                                    );
                                     selectedConfigIndex = index;
                                 }}
                                 isSelected={index === selectedConfigIndex}

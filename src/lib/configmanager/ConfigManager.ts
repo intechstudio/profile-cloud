@@ -101,7 +101,6 @@ export function createConfigManager(observer: {
         });
 
         //Remove config where cloud and local config does not exist
-        console.log({ appConfigIdToConfigMap, configIdToAppConfigIdMap, removedConfigIds });
         appConfigIdToConfigMap.forEach((value, key) => {
             if (!value.cloud && !value.local) {
                 appConfigIdToConfigMap.delete(key);
@@ -122,7 +121,7 @@ export function createConfigManager(observer: {
                 syncStatus = "local";
                 latestConfig = value.local!;
             } else {
-                latestConfig = value.local!;
+                latestConfig = value.cloud!;
                 syncStatus = "synced";
             }
             mergedConfigs.push({
@@ -230,7 +229,8 @@ export function createConfigManager(observer: {
                     ...config,
                     id: appConfigs?.local?.id,
                     cloudId: cloudId,
-                    fileName: appConfigs?.local?.fileName
+                    fileName: appConfigs?.local?.fileName,
+                    owner: currentOwnerId,
                 }
             });
         }
