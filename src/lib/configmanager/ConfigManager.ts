@@ -230,7 +230,7 @@ export function createConfigManager(observer: {
                     id: appConfigs?.local?.id,
                     cloudId: cloudId,
                     fileName: appConfigs?.local?.fileName,
-                    owner: currentOwnerId,
+                    owner: currentOwnerId
                 }
             });
         }

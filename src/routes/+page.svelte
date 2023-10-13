@@ -132,7 +132,7 @@
 
     function resetPageState() {
         selectedConfigIndex = undefined;
-        provideSelectedConfigForOptionalUploadingToOneOreMoreModules();
+        provideSelectedConfigForEditor({});
     }
 
     async function submitAnalytics({ eventName, payload }: { eventName: string; payload: any }) {
@@ -256,9 +256,7 @@
         }
     }
 
-    async function provideSelectedConfigForEditor(
-        config?: Config | {}
-    ) {
+    async function provideSelectedConfigForEditor(config?: Config | {}) {
         await parentIframeCommunication({
             windowPostMessageName: "provideSelectedConfigForEditor",
             dataForParent: { config: config ?? {} }
@@ -514,9 +512,7 @@
                                         <button
                                             on:click={() => {
                                                 createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor();
-                                                provideSelectedConfigForEditor(
-                                                    {}
-                                                );
+                                                provideSelectedConfigForEditor({});
                                                 submitAnalytics({
                                                     eventName: "Local Config",
                                                     payload: {
@@ -724,9 +720,7 @@
                                                         if (selectedConfigIndex == index) {
                                                             return;
                                                         }
-                                                        provideSelectedConfigForEditor(
-                                                            config
-                                                        );
+                                                        provideSelectedConfigForEditor(config);
                                                         selectedConfigIndex = index;
                                                     }}
                                                     on:focusout={(e) => {
@@ -794,9 +788,7 @@
                                                             class="relative group flex"
                                                             on:click|stopPropagation={() => {
                                                                 createCloudConfigLink(config);
-                                                                provideSelectedConfigForEditor(
-                                                                    {}
-                                                                );
+                                                                provideSelectedConfigForEditor({});
                                                                 submitAnalytics({
                                                                     eventName: "Profile Link",
                                                                     payload: {
@@ -828,7 +820,12 @@
                                                         {#if config.syncStatus != "synced" || !config.isEditable}
                                                             <button
                                                                 on:click|stopPropagation={async () => {
-                                                                    if (config.isEditable && config.syncStatus === "local" && !($userAccountService.account)) {
+                                                                    if (
+                                                                        config.isEditable &&
+                                                                        config.syncStatus ===
+                                                                            "local" &&
+                                                                        !$userAccountService.account
+                                                                    ) {
                                                                         loginToProfileCloud();
                                                                         return;
                                                                     }

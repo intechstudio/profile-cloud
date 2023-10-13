@@ -1,12 +1,8 @@
 <script lang="ts">
-    import type { EditorReturnType } from "$lib/types";
     import { createEventDispatcher, getContext, onDestroy, onMount } from "svelte";
-    import AtomicButton from "$lib/components/atomic/AtomicButton.svelte";
     import SvgIcon from "$lib/icons/SvgIcon.svelte";
     import type { Config } from "$lib/schemas";
     import { applyFocus } from "$lib/utils";
-    import { userAccountService } from "$lib/stores";
-    import { get } from "svelte/store";
     import { doc, getDoc } from "firebase/firestore";
     import { userCollection } from "$lib/collections";
 
