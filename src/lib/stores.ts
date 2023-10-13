@@ -38,19 +38,12 @@ function createUserAccountService() {
             signOut(firebaseAuth);
             return;
         }
-
-        if (credential.providerId == "google.com") {
-            cred = GoogleAuthProvider.credential(credential.idToken);
-        } else if (credential.providerId == "oidc") {
-            const provider = new OAuthProvider(
-                PUBLIC_APP_ENV === "production" ? "oidc.is-auth" : "oidc.is-auth-dev"
-            );
-            cred = provider.credential({
-                idToken: credential.idToken
-            });
-        } else if (credential.providerId == "password") {
-            cred = EmailAuthProvider.credential(credential.email!, credential.password!);
-        }
+        const provider = new OAuthProvider(
+            PUBLIC_APP_ENV === "production" ? "oidc.is-auth" : "oidc.is-auth-dev"
+        );
+        cred = provider.credential({
+            idToken: credential.idToken
+        });
 
         if (!cred) return;
 
@@ -75,6 +68,7 @@ function createUserAccountService() {
 
     // we must unsubscribe on store unsubscription from this as well!
     const authChangeUnsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
+        console.log({user});
         if (user !== null || user !== undefined) {
             set({ account: user });
             // User is signed in, see docs for a list of available properties

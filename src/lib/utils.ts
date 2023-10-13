@@ -6,11 +6,9 @@ export function applyFocus(el: HTMLElement) {
 
 export async function parentIframeCommunication({
     windowPostMessageName,
-    channelPostMessage,
     dataForParent
 }: {
     windowPostMessageName: string;
-    channelPostMessage: any;
     dataForParent: any;
 }): Promise<EditorReturnType> {
     return new Promise((resolve, reject) => {
@@ -28,6 +26,6 @@ export async function parentIframeCommunication({
             }
         };
         // send the data to the editor
-        messageChannel.port1.postMessage({ ...channelPostMessage, ...dataForParent });
+        messageChannel.port1.postMessage(dataForParent);
     });
 }
