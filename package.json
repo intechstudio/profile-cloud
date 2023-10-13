@@ -38,6 +38,7 @@
         "audit": "^0.0.6",
         "firebase": "^9.18.0",
         "fix": "^0.0.6",
+        "semver-parser": "^4.1.4",
         "svelte-splitpanes": "^0.7.13",
         "zod": "^3.21.4"
     }

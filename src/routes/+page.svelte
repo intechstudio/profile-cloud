@@ -19,6 +19,7 @@
     import { PUBLIC_VERSION_STRING } from "$env/static/public";
     import { firestore } from "$lib/firebase";
     import { parentIframeCommunication } from "$lib/utils";
+    import { compareSemVer } from "semver-parser";
     import {
         updateLocalConfigs,
         type ConfigManager,
@@ -121,14 +122,12 @@
 
     $: sortField, sortAsc, sortProfileCloud();
     function sortProfileCloud() {
-        console.log({ sortField, sortAsc });
         if (sortField) {
             configs.sort(compareFieldsMap.get(sortField));
         }
         if (sortAsc) {
             configs.reverse();
         }
-        console.log({ configs });
         updateSearchFilter();
     }
 
@@ -275,16 +274,66 @@
             dataForParent: { configType: configTypeSelector }
         });
         if (configResponse.ok) {
-            configManager?.saveConfig(BaseConfigSchema.parse(configResponse.data));
+            configManager?.saveConfig(BaseConfigSchema.parse(configResponse.data), true);
         }
     }
 
-    async function splitLocalConfig(config: Config) {
-        const result = await parentIframeCommunication({
-            windowPostMessageName: "splitLocalConfig",
-            dataForParent: { configToSplit: config }
-        });
-        if (result.ok) {
+    async function splitConfig(config: Config) {
+        if (config.configType !== "profile") return;
+
+        for (let configElement of config.configs) {
+            let name = `${config.name} - Element ${configElement.controlElementNumber}`;
+            let description = "";
+            let type = "";
+            if (config.type == "BU16") {
+                type = "button";
+            }
+
+            if (config.type == "PO16") {
+                type = "potentiometer";
+            }
+
+            if (config.type == "EN16") {
+                type = "encoder";
+            }
+
+            if (config.type == "EF44") {
+                if ([0, 1, 2, 3].includes(configElement.controlElementNumber)) {
+                    type = "encoder";
+                }
+                if ([4, 5, 6, 7].includes(configElement.controlElementNumber)) {
+                    type = "fader";
+                }
+            }
+
+            if (config.type == "PBF4") {
+                if ([0, 1, 2, 3].includes(configElement.controlElementNumber)) {
+                    type = "potentiometer";
+                }
+                if ([4, 5, 6, 7].includes(configElement.controlElementNumber)) {
+                    type = "fader";
+                }
+                if ([8, 9, 10, 11].includes(configElement.controlElementNumber)) {
+                    type = "button";
+                }
+            }
+
+            if (configElement.controlElementNumber === 255) {
+                type = "system";
+            }
+
+            let preset = {
+                name: name,
+                description: description,
+                type: type,
+                configType: "preset",
+                version: config.version,
+                configs: {
+                    ...configElement
+                },
+                id: "" //ID will be generated on save
+            };
+            configManager?.saveConfig(BaseConfigSchema.parse(preset), true);
         }
     }
 
@@ -345,6 +394,24 @@
         });
     }
 
+    async function overwriteConfigWithEditorConfig(config: Config) {
+        const configResponse = await parentIframeCommunication({
+            windowPostMessageName: "getCurrenConfigurationFromEditor",
+            dataForParent: { configType: configTypeSelector }
+        });
+        if (configResponse.ok) {
+            let editorConfig = BaseConfigSchema.parse(configResponse.data);
+            let newConfig = {
+                ...config,
+                configs: editorConfig.configs,
+                type: editorConfig.type,
+                version: editorConfig.version,
+                configType: editorConfig.configType
+            };
+            configManager?.saveConfig(newConfig, false);
+        }
+    }
+
     function filterShowHide() {
         isSearchSortingShows = !isSearchSortingShows;
     }
@@ -368,7 +435,10 @@
         });
 
         let editorVersionResponse = await profileCloudMounted();
-        if (editorVersionResponse.data) {
+        if (
+            editorVersionResponse.data &&
+            compareSemVer(editorVersionResponse.data, "1.2.45") >= 0
+        ) {
             isEditorVersionCompatible = true;
         } else {
             isEditorVersionCompatible = false;
@@ -384,14 +454,6 @@
 </script>
 
 <section class="w-full h-full flex-grow bg-neutral-100 dark:bg-primary">
-    {#if false}
-        <DisplayOnWeb>
-            <div class="p-4 w-full md:w-1/2 lg:md:w-1/3">
-                <UserAccount />
-            </div>
-        </DisplayOnWeb>
-    {/if}
-
     <div class="w-full h-full bg-neutral-100 dark:bg-primary/100">
         <div class="px-4 container mx-auto flex flex-col max-w-screen-xl h-full">
             <DisplayOnWeb>
@@ -693,7 +755,7 @@
                                                             ...config,
                                                             description: newDescription
                                                         };
-                                                        configManager?.saveConfig(newConfig);
+                                                        configManager?.saveConfig(newConfig, false);
                                                         submitAnalytics({
                                                             eventName: "Profile Cloud",
                                                             payload: {
@@ -710,7 +772,7 @@
                                                             ...config,
                                                             name: newName
                                                         };
-                                                        configManager?.saveConfig(newConfig);
+                                                        configManager?.saveConfig(newConfig, false);
                                                         submitAnalytics({
                                                             eventName: "Profile Cloud",
                                                             payload: {
@@ -719,6 +781,9 @@
                                                                 newProfileName: newName
                                                             }
                                                         });
+                                                    }}
+                                                    on:overwrite-profile={() => {
+                                                        overwriteConfigWithEditorConfig(config);
                                                     }}
                                                     isSelected={index === selectedConfigIndex}
                                                     data={{
@@ -767,7 +832,8 @@
                                                             <button
                                                                 on:click|stopPropagation={async () => {
                                                                     configManager?.saveConfig(
-                                                                        config
+                                                                        config,
+                                                                        true
                                                                     );
                                                                     provideSelectedConfigForOptionalUploadingToOneOreMoreModules(
                                                                         {}
@@ -800,6 +866,34 @@
                                                                           "cloud"
                                                                         ? "Download"
                                                                         : "Upload"}
+                                                                </div>
+                                                            </button>
+                                                        {/if}
+                                                    </svelte:fragment>
+                                                    <svelte:fragment slot="split-config-button">
+                                                        {#if config.configType === "profile"}
+                                                            <button
+                                                                on:click|stopPropagation={async () => {
+                                                                    splitConfig(config);
+                                                                    configTypeSelector = "preset";
+                                                                    submitAnalytics({
+                                                                        eventName: "Profile Cloud",
+                                                                        payload: {
+                                                                            task: "Split config",
+                                                                            profileName: config.name
+                                                                        }
+                                                                    });
+                                                                }}
+                                                                class="flex items-center group relative"
+                                                            >
+                                                                <SvgIcon
+                                                                    class="w-4"
+                                                                    iconPath="split_config"
+                                                                />
+                                                                <div
+                                                                    class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                                                >
+                                                                    Split
                                                                 </div>
                                                             </button>
                                                         {/if}

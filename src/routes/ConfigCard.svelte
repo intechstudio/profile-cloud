@@ -23,6 +23,7 @@
     const display = getContext("display");
 
     let deleteConfirmFlag = false;
+    let overwriteApplyFlag = false;
 
     let configOwner: string = "";
     onMount(() => {
@@ -129,9 +130,37 @@
                             class="bg-red-600 rounded px-1 py-0.5 text-xs">confirm</button
                         >
                     {/if}
+                    {#if overwriteApplyFlag == false}
+                        <button
+                            class="flex relative group"
+                            on:click|stopPropagation={() => {
+                                overwriteApplyFlag = true;
+                            }}
+                        >
+                            <SvgIcon class="w-5" iconPath="overwrite_profile" />
+                            <div
+                                class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                            >
+                                Overwrite
+                            </div>
+                        </button>
+                    {:else}
+                        <button
+                            use:applyFocus
+                            on:blur={() => {
+                                overwriteApplyFlag = false;
+                            }}
+                            on:click|stopPropagation={() => {
+                                dispatchEvent("overwrite-profile");
+                                overwriteApplyFlag = false;
+                            }}
+                            class="bg-emerald-600 rounded px-1 py-0.5 text-xs">apply</button
+                        >
+                    {/if}
                 {/if}
                 <slot name="link-button" />
                 <slot name="sync-config-button" />
+                <slot name="split-config-button" />
             </div>
         </div>
         <div class="dark:text-white pt-2 text-black text-opacity-80 dark:text-opacity-70">

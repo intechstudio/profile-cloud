@@ -24,7 +24,7 @@ import { parentIframeCommunication } from "$lib/utils";
 export interface ConfigManager {
     cancel(): void;
     deleteConfig(config: Config): Promise<void>;
-    saveConfig(config: BaseConfig): Promise<void>;
+    saveConfig(config: BaseConfig, createMissingConfigs: boolean): Promise<void>;
     importLinkedConfig(linkId: string): Promise<CloudConfig | null | undefined>;
     changeCloudVisibility(config: Config, visibility: boolean): Promise<void>;
 }
@@ -184,22 +184,25 @@ export function createConfigManager(observer: {
         let cloudConfig = appConfigs.cloud;
 
         if (localConfig) {
+            configIdToAppConfigIdMap.delete(localConfig.id);
             await parentIframeCommunication({
                 windowPostMessageName: "deleteLocalConfig",
                 dataForParent: { config: localConfig }
             });
         }
         if (cloudConfig) {
+            configIdToAppConfigIdMap.delete(cloudConfig.id);
             const configRef = doc(configsCollection, cloudConfig.id);
-            await deleteDoc(configRef);
+            deleteDoc(configRef);
         }
     }
 
-    async function saveConfig(config: BaseConfig) {
+    async function saveConfig(config: BaseConfig, createMissingConfigs: boolean) {
         let appConfigs = appConfigIdToConfigMap.get(config.id);
+        config.modifiedAt = new Date();
 
         let cloudId = appConfigs?.cloud?.id;
-        if (currentOwnerId != null) {
+        if (currentOwnerId != null && (createMissingConfigs || cloudId)) {
             cloudId = cloudId ?? doc(configsCollection).id;
             let configRef = doc(configsCollection, cloudId);
 
@@ -216,26 +219,25 @@ export function createConfigManager(observer: {
                 localConfigs.find((e) => e.id === appConfigs!.local!.id)!.cloudId = cloudId;
             }
 
-            await setDoc(configRef, configToSave);
+            setDoc(configRef, configToSave);
             cloudId = configRef.id;
         }
 
-        let savingConfig = {
-            ...config,
-            id: appConfigs?.local?.id,
-            cloudId: cloudId,
-            fileName: appConfigs?.local?.fileName
-        };
-        console.log({ savingConfig });
-
-        await parentIframeCommunication({
-            windowPostMessageName: "configImportCommunication",
-            dataForParent: savingConfig
-        });
+        if (createMissingConfigs || appConfigs?.local) {
+            await parentIframeCommunication({
+                windowPostMessageName: "configImportCommunication",
+                dataForParent: {
+                    ...config,
+                    id: appConfigs?.local?.id,
+                    cloudId: cloudId,
+                    fileName: appConfigs?.local?.fileName
+                }
+            });
+        }
     }
 
     async function changeCloudVisibility(config: Config, visibility: boolean) {
-        await updateDoc(doc(configsCollection, appConfigIdToConfigMap.get(config.id)!.cloud!.id), {
+        updateDoc(doc(configsCollection, appConfigIdToConfigMap.get(config.id)!.cloud!.id), {
             public: visibility
         });
     }
@@ -249,7 +251,7 @@ export function createConfigManager(observer: {
                 return undefined;
             });
         if (configLink) {
-            await saveConfig(configLink);
+            await saveConfig(configLink, true);
         }
         return configLink;
     }

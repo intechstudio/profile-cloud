@@ -15,7 +15,8 @@ export const BaseConfigSchema = z.object({
         })
         .optional(),
     configType: z.enum(["profile", "preset"]),
-    configs: z.any()
+    configs: z.any(),
+    owner: z.string().optional()
 });
 
 export type BaseConfig = z.infer<typeof BaseConfigSchema>;
@@ -37,7 +38,6 @@ export type LocalConfig = z.infer<typeof LocalConfigSchema>;
 
 export const CloudConfigSchema = BaseConfigSchema.extend({
     access: z.array(z.string()),
-    owner: z.string().nullable(),
     modifiedAt: z.preprocess((val) => {
         if (!val) return new Date();
         if (val instanceof String) return new Date(val as string);
