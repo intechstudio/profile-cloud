@@ -252,7 +252,7 @@ export function createConfigManager(observer: {
                 return undefined;
             });
 
-        if (configLink) {            
+        if (configLink) {
             configLink.name = `Copy of ${configLink.name}`;
             configLink.owner = undefined;
             await saveConfig(configLink, true);

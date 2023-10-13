@@ -830,15 +830,19 @@
                                                                         return;
                                                                     }
                                                                     let configToSave = config;
-                                                                    console.log("TEST", {configToSave});
-                                                                    if (!configToSave.isEditable){
+                                                                    console.log("TEST", {
+                                                                        configToSave
+                                                                    });
+                                                                    if (!configToSave.isEditable) {
                                                                         configToSave = {
                                                                             ...configToSave,
                                                                             name: `Copy of ${configToSave.name}`,
                                                                             owner: undefined,
-                                                                            id: "",
+                                                                            id: ""
                                                                         };
-                                                                        console.log({configToSave})
+                                                                        console.log({
+                                                                            configToSave
+                                                                        });
                                                                     }
                                                                     configManager?.saveConfig(
                                                                         configToSave,
@@ -858,7 +862,9 @@
                                                                 class="flex items-center group relative"
                                                             >
                                                                 <SvgIcon
-                                                                    class="{!config.isEditable ? 'w-4' : 'w-5 -m-0.5'}"
+                                                                    class={!config.isEditable
+                                                                        ? "w-4"
+                                                                        : "w-5 -m-0.5"}
                                                                     iconPath={!config.isEditable
                                                                         ? "import"
                                                                         : config.syncStatus ===
