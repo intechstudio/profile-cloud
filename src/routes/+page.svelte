@@ -273,7 +273,7 @@
         }
     }
 
-    async function splitConfig(config: Config) {
+    function splitConfig(config: Config) {
         if (config.configType !== "profile") return;
 
         for (let configElement of config.configs) {
@@ -829,8 +829,19 @@
                                                                         loginToProfileCloud();
                                                                         return;
                                                                     }
+                                                                    let configToSave = config;
+                                                                    console.log("TEST", {configToSave});
+                                                                    if (!configToSave.isEditable){
+                                                                        configToSave = {
+                                                                            ...configToSave,
+                                                                            name: `Copy of ${configToSave.name}`,
+                                                                            owner: undefined,
+                                                                            id: "",
+                                                                        };
+                                                                        console.log({configToSave})
+                                                                    }
                                                                     configManager?.saveConfig(
-                                                                        config,
+                                                                        configToSave,
                                                                         true
                                                                     );
                                                                     provideSelectedConfigForEditor(
@@ -847,7 +858,7 @@
                                                                 class="flex items-center group relative"
                                                             >
                                                                 <SvgIcon
-                                                                    class="w-4"
+                                                                    class="{!config.isEditable ? 'w-4' : 'w-5 -m-0.5'}"
                                                                     iconPath={!config.isEditable
                                                                         ? "import"
                                                                         : config.syncStatus ===
@@ -885,7 +896,7 @@
                                                                 class="flex items-center group relative"
                                                             >
                                                                 <SvgIcon
-                                                                    class="w-4"
+                                                                    class="w-5 -m-0.5"
                                                                     iconPath="split_config"
                                                                 />
                                                                 <div

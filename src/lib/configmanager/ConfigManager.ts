@@ -121,7 +121,7 @@ export function createConfigManager(observer: {
                 syncStatus = "local";
                 latestConfig = value.local!;
             } else {
-                latestConfig = value.cloud!;
+                latestConfig = value.local!;
                 syncStatus = "synced";
             }
             mergedConfigs.push({
@@ -194,6 +194,7 @@ export function createConfigManager(observer: {
             const configRef = doc(configsCollection, cloudConfig.id);
             deleteDoc(configRef);
         }
+        appConfigIdToConfigMap.delete(config.id);
     }
 
     async function saveConfig(config: BaseConfig, createMissingConfigs: boolean) {
@@ -208,7 +209,7 @@ export function createConfigManager(observer: {
             const configToSave = CloudConfigSchema.parse({
                 ...config,
                 id: configRef.id,
-                public: false,
+                public: appConfigs?.cloud?.public ?? false,
                 owner: currentOwnerId,
                 access: [currentOwnerId]
             });
@@ -250,7 +251,10 @@ export function createConfigManager(observer: {
                 console.log(err);
                 return undefined;
             });
-        if (configLink) {
+
+        if (configLink) {            
+            configLink.name = `Copy of ${configLink.name}`;
+            configLink.owner = undefined;
             await saveConfig(configLink, true);
         }
         return configLink;
