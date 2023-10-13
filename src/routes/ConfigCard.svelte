@@ -62,19 +62,17 @@
             dispatchEvent("focusout", {});
         }
     }}
-    class="{isSelected ? 'border-emerald-500' : 'border-white/10'} flex flex-col justify-between items-start text-left w-full bg-white rounded border shadow dark:bg-secondary"
+    class="{isSelected
+        ? 'border-emerald-500'
+        : 'border-white/10'} flex flex-col justify-between items-start text-left w-full bg-white rounded border shadow dark:bg-secondary"
 >
     <div class="px-3 pt-3 w-full">
         <div class="w-full flex items-center justify-between">
             <input
                 bind:this={nameInputField.element}
                 class="w-full mr-1 font-bold border bg-white dark:bg-transparent dark:hover:bg-neutral-800 focus:outline-none
-                    {(!data.isEditable || !isSelected)
-                        ? 'pointer-events-none'
-                        : ''} 
-                    {nameInputField.doubleClicked
-                        ? 'border-emerald-500'
-                        : 'border-transparent'}"
+                    {!data.isEditable || !isSelected ? 'pointer-events-none' : ''} 
+                    {nameInputField.doubleClicked ? 'border-emerald-500' : 'border-transparent'}"
                 readonly={!nameInputField.doubleClicked}
                 on:keydown={(e) => {
                     if (e.key == "Enter" && !e.shiftKey) {
@@ -142,12 +140,12 @@
                 bind:this={descriptionTextarea.element}
                 class="overflow-none w-full border bg-neutral-100 dark:bg-primary dark:hover:bg-neutral-800 focus:outline-none
                     {(!data.isEditable || !isSelected) && display === 'editor'
-                        ? 'pointer-events-none'
-                        : ''} 
+                    ? 'pointer-events-none'
+                    : ''} 
                     {descriptionTextarea.doubleClicked
-                        ? 'border-emerald-500'
-                        : 'border-transparent'}"
-                readonly={!descriptionTextarea.doubleClicked || display !== 'editor'}
+                    ? 'border-emerald-500'
+                    : 'border-transparent'}"
+                readonly={!descriptionTextarea.doubleClicked || display !== "editor"}
                 on:keydown={(e) => {
                     if (e.key == "Enter" && !e.shiftKey) {
                         descriptionTextarea.element?.blur();
@@ -185,10 +183,10 @@
         class=" w-full flex py-1 px-3 justify-between items-center md:border-t-2 border-neutral-200 dark:border-neutral-700"
     >
         <div
-            class="dark:text-white text-black text-opacity-80 py-0.5 px-2 dark:border 
+            class="dark:text-white text-black text-opacity-80 py-0.5 px-2 dark:border
                 {data.selectedComponentTypes?.includes(data.type) ?? false
-                    ? 'dark:text-opacity-100 dark:border-white dark:border-opacity-10 dark:bg-white dark:bg-opacity-10'
-                    : 'dark:text-opacity-70 dark:border-transparent'}"
+                ? 'dark:text-opacity-100 dark:border-white dark:border-opacity-10 dark:bg-white dark:bg-opacity-10'
+                : 'dark:text-opacity-70 dark:border-transparent'}"
         >
             {data.type}
         </div>

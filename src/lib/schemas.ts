@@ -23,15 +23,15 @@ export type BaseConfig = z.infer<typeof BaseConfigSchema>;
 export const ConfigSchema = BaseConfigSchema.extend({
     isEditable: z.boolean(),
     syncStatus: z.enum(["synced", "cloud", "local"]),
-    public: z.boolean().optional(),
-})
+    public: z.boolean().optional()
+});
 
 export type Config = z.infer<typeof ConfigSchema>;
 
 export const LocalConfigSchema = BaseConfigSchema.extend({
     cloudId: z.string().optional(),
-    fileName: z.string(),
-})
+    fileName: z.string()
+});
 
 export type LocalConfig = z.infer<typeof LocalConfigSchema>;
 
@@ -44,7 +44,7 @@ export const CloudConfigSchema = BaseConfigSchema.extend({
         if (val instanceof Timestamp) return val.toDate();
         return val;
     }, z.date().default(new Date())),
-    public: z.boolean().default(false),
-})
+    public: z.boolean().default(false)
+});
 
-export type CloudConfig = z.infer<typeof CloudConfigSchema>; 
+export type CloudConfig = z.infer<typeof CloudConfigSchema>;
