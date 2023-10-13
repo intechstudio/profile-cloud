@@ -1,42 +1,10 @@
+import { Timestamp } from "firebase/firestore";
 import { z } from "zod";
 
-export const ProfileSchema = z.object({
-    id: z.string().optional(),
-    owner: z.string().nullable(),
-    access: z.array(z.string()),
-    createdAt: z.date().nullable().optional(),
-    public: z.boolean().default(false),
+export const BaseConfigSchema = z.object({
+    id: z.string(),
+    modifiedAt: z.coerce.date().default(new Date()),
     name: z.string(),
-    description: z.string(),
-    type: z.string(),
-    version: z
-        .object({
-            major: z.string(),
-            minor: z.string(),
-            patch: z.string()
-        })
-        .optional(),
-    isGridProfile: z.boolean(),
-    configs: z.any()
-});
-
-export const ProfileLinkSchema = ProfileSchema.extend({
-    linked: z.boolean().default(true)
-});
-
-export type Profile = z.infer<typeof ProfileSchema>;
-export type ProfileLink = z.infer<typeof ProfileLinkSchema>;
-
-export const ConfigSchema = z.object({
-    id: z.string().optional(),
-    localId: z.string().optional(),
-    cloudId: z.string().optional(),
-    owner: z.string().nullable(),
-    access: z.array(z.string()),
-    createdAt: z.date().nullable().optional(),
-    public: z.boolean().default(false),
-    name: z.string(),
-    fileName: z.string().optional(),
     description: z.string(),
     type: z.string(),
     version: z
@@ -47,12 +15,36 @@ export const ConfigSchema = z.object({
         })
         .optional(),
     configType: z.enum(["profile", "preset"]),
-    configs: z.any()
+    configs: z.any(),
+    owner: z.string().optional()
 });
 
-export const ConfigLinkSchema = ConfigSchema.extend({
-    linked: z.boolean().default(true)
+export type BaseConfig = z.infer<typeof BaseConfigSchema>;
+
+export const ConfigSchema = BaseConfigSchema.extend({
+    isEditable: z.boolean(),
+    syncStatus: z.enum(["synced", "cloud", "local"]),
+    public: z.boolean().optional()
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
-export type ConfigLink = z.infer<typeof ConfigLinkSchema>;
+
+export const LocalConfigSchema = BaseConfigSchema.extend({
+    cloudId: z.string().optional(),
+    fileName: z.string()
+});
+
+export type LocalConfig = z.infer<typeof LocalConfigSchema>;
+
+export const CloudConfigSchema = BaseConfigSchema.extend({
+    access: z.array(z.string()),
+    modifiedAt: z.preprocess((val) => {
+        if (!val) return new Date();
+        if (val instanceof String) return new Date(val as string);
+        if (val instanceof Timestamp) return val.toDate();
+        return val;
+    }, z.date().default(new Date())),
+    public: z.boolean().default(false)
+});
+
+export type CloudConfig = z.infer<typeof CloudConfigSchema>;

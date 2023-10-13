@@ -1,12 +1,8 @@
 <script lang="ts">
-    import type { EditorReturnType } from "$lib/types";
     import { createEventDispatcher, getContext, onDestroy, onMount } from "svelte";
-    import AtomicButton from "$lib/components/atomic/AtomicButton.svelte";
     import SvgIcon from "$lib/icons/SvgIcon.svelte";
     import type { Config } from "$lib/schemas";
     import { applyFocus } from "$lib/utils";
-    import { userAccountService } from "$lib/stores";
-    import { get } from "svelte/store";
     import { doc, getDoc } from "firebase/firestore";
     import { userCollection } from "$lib/collections";
 
@@ -18,66 +14,14 @@
 
     export let data: Config & SelectedComponentTypes;
 
+    export let isSelected: boolean;
+
     const display = getContext("display");
 
-    const profileImportDownloadHandler = () => {
-        if (display === "web") {
-            return downloadProfile();
-        }
-        if (display === "editor") {
-            return importProfile();
-        }
-    };
-
-    function downloadProfile() {
-        const element = document.createElement("a");
-        var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
-        element.href = dataStr;
-        element.download = `${data.name}.json`;
-        document.body.appendChild(element); // Required for this to work in FireFox
-        element.click();
-    }
-
-    let importResult = "imported!";
-
-    async function importProfile() {
-        const result: EditorReturnType = await new Promise((resolve, reject) => {
-            // create a message channel to communicate with the editor in this scope
-            const messageChannel = new MessageChannel();
-            // let editor know that it should listen for messages on this channel
-            window.parent.postMessage("profileImportCommunication", "*", [messageChannel.port2]);
-            // we listen for messages on this channel
-            messageChannel.port1.onmessage = ({ data }) => {
-                messageChannel.port1.close();
-                if (data.ok) {
-                    resolve(data);
-                } else {
-                    reject(data);
-                }
-            };
-            // send the data to the editor
-            messageChannel.port1.postMessage({ channelMessageType: "IMPORT_PROFILE", ...data });
-        });
-
-        if (result.ok) {
-            importResult = "ok";
-        } else {
-            // do something else
-        }
-    }
-
     let deleteConfirmFlag = false;
+    let overwriteApplyFlag = false;
 
-    function userCanModify(access: string[]) {
-        const uid = get(userAccountService)?.account?.uid;
-        if (uid) {
-            return access.includes(uid);
-        } else {
-            return false;
-        }
-    }
-
-    let profileOwner: string = "";
+    let configOwner: string = "";
     onMount(() => {
         if (data.owner) {
             const userRef = doc(userCollection, data.owner);
@@ -85,11 +29,10 @@
                 .then((res) => res.data()?.username)
                 .then((username) => {
                     if (username) {
-                        profileOwner = "@" + username;
+                        configOwner = "@" + username;
                     }
                 });
         }
-        // we assume editor is listening for this message
     });
 
     onDestroy(() => {});
@@ -116,17 +59,17 @@
             dispatchEvent("focusout", {});
         }
     }}
-    class="{$$props.class} flex flex-col justify-between items-start text-left w-full bg-white rounded border shadow dark:bg-secondary"
+    class="{isSelected
+        ? 'border-emerald-500'
+        : 'border-white/10'} flex flex-col justify-between items-start text-left w-full bg-white rounded border shadow dark:bg-secondary"
 >
     <div class="px-3 pt-3 w-full">
         <div class="w-full flex items-center justify-between">
             <input
                 bind:this={nameInputField.element}
-                class="{!userCanModify(data.access)
-                    ? 'pointer-events-none'
-                    : ''} w-full mr-1 font-bold border bg-white dark:bg-transparent dark:hover:bg-neutral-800 focus:outline-none {nameInputField.doubleClicked
-                    ? 'border-emerald-500'
-                    : 'border-transparent'}"
+                class="w-full mr-1 font-bold border bg-white dark:bg-transparent dark:hover:bg-neutral-800 focus:outline-none
+                    {!data.isEditable || !isSelected ? 'pointer-events-none' : ''} 
+                    {nameInputField.doubleClicked ? 'border-emerald-500' : 'border-transparent'}"
                 readonly={!nameInputField.doubleClicked}
                 on:keydown={(e) => {
                     if (e.key == "Enter" && !e.shiftKey) {
@@ -155,7 +98,7 @@
                 value={data.name}
             />
             <div class="relative flex items-center gap-x-1">
-                {#if userCanModify(data.access)}
+                {#if data.isEditable}
                     {#if deleteConfirmFlag == false}
                         <button
                             class="flex group relative"
@@ -177,27 +120,57 @@
                                 deleteConfirmFlag = false;
                             }}
                             on:click|stopPropagation={() => {
-                                dispatchEvent("delete-cloud");
+                                dispatchEvent("delete-config");
                                 deleteConfirmFlag = false;
                             }}
                             class="bg-red-600 rounded px-1 py-0.5 text-xs">confirm</button
                         >
                     {/if}
+                    {#if overwriteApplyFlag == false}
+                        <button
+                            class="flex relative group"
+                            on:click|stopPropagation={() => {
+                                overwriteApplyFlag = true;
+                            }}
+                        >
+                            <SvgIcon class="w-5" iconPath="overwrite_profile" />
+                            <div
+                                class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                            >
+                                Overwrite
+                            </div>
+                        </button>
+                    {:else}
+                        <button
+                            use:applyFocus
+                            on:blur={() => {
+                                overwriteApplyFlag = false;
+                            }}
+                            on:click|stopPropagation={() => {
+                                dispatchEvent("overwrite-profile");
+                                overwriteApplyFlag = false;
+                            }}
+                            class="bg-emerald-600 rounded px-1 py-0.5 text-xs">apply</button
+                        >
+                    {/if}
                 {/if}
                 <slot name="link-button" />
-                <slot name="import-button" />
+                <slot name="sync-config-button" />
+                <slot name="split-config-button" />
             </div>
         </div>
         <div class="dark:text-white pt-2 text-black text-opacity-80 dark:text-opacity-70">
             <textarea
                 rows={2}
                 bind:this={descriptionTextarea.element}
-                class="{!userCanModify(data.access)
+                class="overflow-none w-full border bg-neutral-100 dark:bg-primary dark:hover:bg-neutral-800 focus:outline-none
+                    {(!data.isEditable || !isSelected) && display === 'editor'
                     ? 'pointer-events-none'
-                    : ''} overflow-none w-full border bg-neutral-100 dark:bg-primary dark:hover:bg-neutral-800 focus:outline-none {descriptionTextarea.doubleClicked
+                    : ''} 
+                    {descriptionTextarea.doubleClicked
                     ? 'border-emerald-500'
                     : 'border-transparent'}"
-                readonly={!descriptionTextarea.doubleClicked}
+                readonly={!descriptionTextarea.doubleClicked || display !== "editor"}
                 on:keydown={(e) => {
                     if (e.key == "Enter" && !e.shiftKey) {
                         descriptionTextarea.element?.blur();
@@ -235,19 +208,18 @@
         class=" w-full flex py-1 px-3 justify-between items-center md:border-t-2 border-neutral-200 dark:border-neutral-700"
     >
         <div
-            class="dark:text-white text-black text-opacity-80 py-0.5 px-2 dark:border {data.selectedComponentTypes?.includes(
-                data.type
-            ) ?? false
+            class="dark:text-white text-black text-opacity-80 py-0.5 px-2 dark:border
+                {data.selectedComponentTypes?.includes(data.type) ?? false
                 ? 'dark:text-opacity-100 dark:border-white dark:border-opacity-10 dark:bg-white dark:bg-opacity-10'
                 : 'dark:text-opacity-70 dark:border-transparent'}"
         >
             {data.type}
         </div>
         <div class="flex items-center {display === 'editor' ? 'gap-x-1' : ''}">
-            <span class="text-black dark:text-opacity-70 dark:text-white">{profileOwner}</span>
+            <span class="text-black dark:text-opacity-70 dark:text-white">{configOwner}</span>
             {#if display == "editor"}
                 <div class="ml-1">
-                    {#if userCanModify(data.access)}
+                    {#if data.isEditable && data.public !== undefined}
                         <slot name="toggle-accessibility" />
                     {:else if data.public}
                         <div class="relative group">
@@ -258,7 +230,7 @@
                                 Public
                             </div>
                         </div>
-                    {:else}
+                    {:else if data.public === false}
                         <div class="relative group">
                             <SvgIcon display={true} iconPath={"private"} />
                             <div
