@@ -19,7 +19,7 @@ export const scheduledFirestoreExport = functions
                 // Leave collectionIds empty to export all collections
                 // or set to a list of collection IDs to export,
                 // collectionIds: ['users', 'posts']
-                collectionIds: [],
+                collectionIds: []
             })
             .then((responses) => {
                 const response = responses[0];
@@ -30,4 +30,3 @@ export const scheduledFirestoreExport = functions
                 throw new Error("Export operation failed");
             });
     });
-

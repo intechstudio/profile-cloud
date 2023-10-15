@@ -12,7 +12,7 @@ export const readAllProfiles = functions.https.onRequest((req, res) => {
             res.json(data);
         })
         .catch((err) => {
-            res.json({message: "error", error: err});
+            res.json({ message: "error", error: err });
         });
 });
 
@@ -23,12 +23,12 @@ export const readSingleProfile = functions.https.onRequest((req, res) => {
         .then((snapshot) => {
             const data = snapshot.docs.map((doc) => doc.data());
             if (data.length === 0) {
-                res.json({message: "no profile found"});
+                res.json({ message: "no profile found" });
             }
             // return single item
             res.json(data[0]);
         })
         .catch((err) => {
-            res.json({message: "error", error: err});
+            res.json({ message: "error", error: err });
         });
 });
