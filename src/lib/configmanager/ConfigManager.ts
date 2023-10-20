@@ -45,7 +45,7 @@ export function createConfigManager(observer: {
     >();
     let configIdToAppConfigIdMap = new Map<string, string>();
 
-    let cloudConfigs: CloudConfig[] = [];
+    let cloudConfigs: CloudConfig[] | undefined = undefined;
     let localConfigs: LocalConfig[] = latestLocalConfigs;
 
     let currentOwnerId: string | null | undefined = undefined;
@@ -71,7 +71,7 @@ export function createConfigManager(observer: {
             appConfigs.local = config;
         });
 
-        cloudConfigs.forEach((config) => {
+        cloudConfigs?.forEach((config) => {
             foundConfigIds.add(config.id);
             if (!configIdToAppConfigIdMap.get(config.id)) {
                 configIdToAppConfigIdMap.set(config.id, config.id);

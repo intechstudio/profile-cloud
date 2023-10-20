@@ -25,8 +25,8 @@
     import ConfigCard from "./ConfigCard.svelte";
 
     enum SortFieldType {
-        name = "name",
         date = "date",
+        name = "name",
         module = "module"
     }
 
@@ -421,10 +421,17 @@
         configManager = createConfigManager({
             next: (newConfigs) => {
                 newConfigs.sort((a, b) => {
+                    if (a.isEditable != b.isEditable){
+                        return (a.isEditable ? 0 : 1) - (b.isEditable ? 0 : 1);
+                    }
                     let ai = configs.findIndex((e) => e.id === a.id);
                     let bi = configs.findIndex((e) => e.id === b.id);
+                    if (ai === -1 && bi === -1){
+                        return (b.modifiedAt?.getTime() ?? 0) - (a.modifiedAt?.getTime() ?? 0)
+                    }
                     return ai - bi;
                 });
+                console.log(newConfigs);
                 configs = newConfigs;
             }
         });
@@ -647,13 +654,13 @@
                                                     name="sorting select"
                                                 >
                                                     <option
+                                                        selected
                                                         class="text-white bg-secondary py-1 border-none"
                                                         value="date"
                                                     >
                                                         date
                                                     </option>
                                                     <option
-                                                        selected
                                                         class="text-white bg-secondary py-1 border-none"
                                                         value="name"
                                                     >
@@ -1249,11 +1256,11 @@
                                     <option
                                         class="text-white bg-secondary py-1 border-none"
                                         value="date"
+                                        selected
                                     >
                                         date
                                     </option>
                                     <option
-                                        selected
                                         class="bg-white dark:bg-secondary py-1 border-none"
                                         value="name"
                                     >
