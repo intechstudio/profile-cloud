@@ -14,6 +14,14 @@
 
     const dispatch = createEventDispatcher();
 
+    let filterBoxWidth: number;
+    let compactMode: boolean = true;
+
+    $: {
+        console.log(filterBoxWidth);
+        compactMode = filterBoxWidth < 400;
+    }
+
     let searchSuggestions: string[] = [
         "BU16",
         "EF44",
@@ -104,18 +112,22 @@
 
 {#if display === "editor"}
     <container class={$$props.class} class:hidden={!visible}>
-        <div class="flex flex-col gap-1">
-            <div class="relative">
-                <svg
-                    class="absolute left-3 bottom-[28%]"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 18 18"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <path
-                        d="M13.2095 11.6374C14.2989 10.1509 14.7868 8.30791 14.5756
+        <div
+            class="w-full grid {compactMode ? 'grid-cols-1' : 'grid-cols-[auto_1fr]'} grid gap-x-2"
+            bind:clientWidth={filterBoxWidth}
+        >
+            <div id="searchbar" class="flex flex-col w-full">
+                <div class="relative w-full">
+                    <svg
+                        class="absolute left-3 bottom-[28%]"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 18 18"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                            d="M13.2095 11.6374C14.2989 10.1509 14.7868 8.30791 14.5756
                                 6.47715C14.3645 4.64639 13.4699 2.96286 12.0708 1.76338C10.6717
                                 0.563893 8.87126 -0.0630888 7.02973 0.0078685C5.1882 0.0788258
                                 3.44137 0.84249 2.13872 2.14608C0.83606 3.44967 0.0736462 5.19704
@@ -137,114 +149,125 @@
                                 4.09802 2.93707 2.93763C4.09745 1.77725 5.67126 1.12536 7.31229
                                 1.12536C8.95332 1.12536 10.5271 1.77725 11.6875 2.93763C12.8479
                                 4.09802 13.4998 5.67183 13.4998 7.31286V7.31286Z"
-                        fill="#CDCDCD"
-                    />
-                </svg>
+                            fill="#CDCDCD"
+                        />
+                    </svg>
 
-                {#if searchbarValue != ""}
-                    <button
-                        class="absolute right-2 bottom-[25%]"
-                        on:click={() => (searchbarValue = "")}
-                    >
-                        <svg
-                            width="28"
-                            height="28"
-                            viewBox="0 0 39 39"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
+                    {#if searchbarValue != ""}
+                        <button
+                            class="absolute right-2 bottom-[25%]"
+                            on:click={() => (searchbarValue = "")}
                         >
-                            <path
-                                d="M24.25 32.9102L14.75 23.4102M24.25 23.4102L14.75 32.9102"
-                                stroke="#FFF"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                            />
-                        </svg>
-                    </button>
-                {/if}
+                            <svg
+                                width="28"
+                                height="28"
+                                viewBox="0 0 39 39"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    d="M24.25 32.9102L14.75 23.4102M24.25 23.4102L14.75 32.9102"
+                                    stroke="#FFF"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                />
+                            </svg>
+                        </button>
+                    {/if}
 
-                <input
-                    type="text"
-                    bind:value={searchbarValue}
-                    class="w-full py-2 px-12 bg-white dark:bg-primary-700
+                    <input
+                        type="text"
+                        bind:value={searchbarValue}
+                        class="flex w-full py-2 px-12 bg-white dark:bg-primary-700
                 dark:placeholder-gray-400 text-md focus:outline-none"
-                    placeholder="Find..."
-                />
+                        placeholder="Find..."
+                    />
+                </div>
+                <div class="flex flex-row gap-1 py-1 flex-wrap">
+                    {#each searchSuggestions as suggestion}
+                        <button
+                            on:click={() => handleSuggestionClicked(suggestion)}
+                            class="border hover:border-primary-500 text-xs text-primary-100 rounded-md
+                                    py-0.5 px-1 h-min {searchbarValue.toLowerCase() ==
+                            suggestion.toLowerCase()
+                                ? 'border-primary-100'
+                                : 'border-primary-700'}"
+                        >
+                            {suggestion}
+                        </button>
+                    {/each}
+                </div>
             </div>
-
-            <div class="flex flex-row gap-1 py-1 flex-wrap">
-                {#each searchSuggestions as suggestion}
-                    <button
-                        on:click={() => handleSuggestionClicked(suggestion)}
-                        class="border hover:border-primary-500 text-xs text-primary-100 rounded-md
-                            py-0.5 px-1 h-min {searchbarValue.toLowerCase() ==
-                        suggestion.toLowerCase()
-                            ? 'border-primary-100'
-                            : 'border-primary-700'}"
+            <div class="flex flex-grow items-start">
+                <div class="flex flex-grow {compactMode ? 'items-center' : 'pt-1.5'}">
+                    <label
+                        id="sort-label"
+                        for="sorting select"
+                        class="uppercase text-gray-500 py-1 pr-2 min-w-fit text-xs"
                     >
-                        {suggestion}
-                    </button>
-                {/each}
+                        sort by
+                    </label>
+                    <div class="flex flex-row flex-grow flex-nowrap">
+                        <select
+                            class="bg-secondary border-none flex text-white p-1 focus:outline-none min-w-fit"
+                            class:flex-grow={compactMode}
+                            id="sort-select-box"
+                            name="sorting select"
+                            bind:value={sortField}
+                        >
+                            {#each Object.values(SortFieldType) as sortType}
+                                <option
+                                    class="text-white bg-secondary py-1 border-none"
+                                    value={sortType}
+                                >
+                                    {sortType}
+                                </option>
+                            {/each}
+                        </select>
+
+                        <button
+                            id="sort-order-button"
+                            on:click={() => {
+                                sortAsc = !sortAsc;
+                            }}
+                        >
+                            {#if sortAsc == false}
+                                <svg
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <path
+                                        d="M11 11H15M11 15H18M11 19H21M9 7L6 4L3 7M6 6V20"
+                                        stroke="white"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                    />
+                                </svg>
+                            {:else}
+                                <svg
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <path
+                                        d="M11 5H21M11 9H18M11 13H15M3 17L6 20L9 17M6 18V4"
+                                        stroke="white"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                    />
+                                </svg>
+                            {/if}
+                        </button>
+                    </div>
+                </div>
             </div>
-        </div>
-
-        <div class="flex gap-2 items-center justify-between flex-wrap">
-            <label for="sorting select" class="uppercase text-gray-500 py-1 text-xs">
-                sort by
-            </label>
-
-            <select
-                class="bg-secondary border-none flex-grow text-white p-1 focus:outline-none"
-                id="sortingSelectBox"
-                name="sorting select"
-                bind:value={sortField}
-            >
-                {#each Object.values(SortFieldType) as sortType}
-                    <option class="text-white bg-secondary py-1 border-none" value={sortType}>
-                        {sortType}
-                    </option>
-                {/each}
-            </select>
-
-            <button
-                on:click={() => {
-                    sortAsc = !sortAsc;
-                }}
-            >
-                {#if sortAsc == false}
-                    <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <path
-                            d="M11 11H15M11 15H18M11 19H21M9 7L6 4L3 7M6 6V20"
-                            stroke="white"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        />
-                    </svg>
-                {:else}
-                    <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <path
-                            d="M11 5H21M11 9H18M11 13H15M3 17L6 20L9 17M6 18V4"
-                            stroke="white"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        />
-                    </svg>
-                {/if}
-            </button>
         </div>
     </container>
 {:else}

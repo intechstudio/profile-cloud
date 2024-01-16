@@ -244,42 +244,42 @@
 </script>
 
 <div class="flex flex-grow h-screen relative z-0 overflow-hidden">
-    <div class="flex flex-col pb-4 h-full">
-        <div class="py-4 flex items-center justify-between">
-            <div class="flex flex-col">
+    <div class="flex flex-col pb-4 h-full w-full">
+        <div class="pt-4 flex flex-col items-center justify-between">
+            <div class="flex flex-row pb-2 w-full gap-2">
+                <select
+                    class="bg-secondary border-none flex-grow text-white p-1 focus:outline-none"
+                    name="sorting select"
+                    bind:value={configTypeSelector}
+                >
+                    <option class="text-white bg-secondary py-1 border-none" value={"profile"}>
+                        Profile
+                    </option>
+                    <option class="text-white bg-secondary py-1 border-none" value={"preset"}>
+                        Preset
+                    </option>
+                </select>
+                <button
+                    on:click={() => {
+                        createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor("preset");
+                        provideSelectedConfigForEditor({});
+                        submitAnalytics({
+                            eventName: "Local Config",
+                            payload: {
+                                task: "Save config"
+                            }
+                        });
+                    }}
+                    class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
+                    >Save</button
+                >
+            </div>
+            <div class="flex flex-col self-start">
                 <div>Profile Cloud</div>
                 <div class="text-white text-opacity-60">
                     Public Profiles and Presets from others, save yours as private or public here.
                 </div>
             </div>
-            <button
-                on:click={() => {
-                    createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor("preset");
-                    provideSelectedConfigForEditor({});
-                    submitAnalytics({
-                        eventName: "Local Config",
-                        payload: {
-                            task: "Save config"
-                        }
-                    });
-                }}
-                class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
-                >Save Preset</button
-            >
-            <button
-                on:click={() => {
-                    createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor("profile");
-                    provideSelectedConfigForEditor({});
-                    submitAnalytics({
-                        eventName: "Local Config",
-                        payload: {
-                            task: "Save config"
-                        }
-                    });
-                }}
-                class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
-                >Save Profile</button
-            >
         </div>
         <div class="flex justify-end">
             <button
