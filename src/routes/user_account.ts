@@ -43,5 +43,4 @@ export interface UserNameInput {
     exists: boolean;
     valid: boolean;
     active: boolean;
-  }
-  
+}
