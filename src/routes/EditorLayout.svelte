@@ -41,7 +41,7 @@
 
     let selectedComponentTypes: string[] = [];
 
-    let configTypeSelector = "profile";
+    let configTypeSelector: "profile" | "preset" = "profile";
 
     let isSearchSortingShows = false;
 
@@ -275,7 +275,7 @@
                     <button
                         on:click={() => {
                             createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor(
-                                "preset"
+                                configTypeSelector
                             );
                             provideSelectedConfigForEditor({});
                             submitAnalytics({
