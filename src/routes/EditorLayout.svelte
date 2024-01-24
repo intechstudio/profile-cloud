@@ -43,7 +43,7 @@
 
     let configTypeSelector: "profile" | "preset" = "profile";
 
-    let isSearchSortingShows = false;
+    let isSearchSortingShows = true;
 
     async function editorMessageListener(event: MessageEvent) {
         if (event.data.messageType == "localConfigs") {

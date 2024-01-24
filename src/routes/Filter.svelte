@@ -23,16 +23,18 @@
     }
 
     let searchSuggestions: string[] = [
+        "Profile",
+        "Preset",
         "BU16",
         "EF44",
         "EN16",
         "PBF4",
         "PO16",
-        "button",
-        "encoder",
-        "potentiometer",
-        "fader",
-        "system"
+        "Button",
+        "Encoder",
+        "Potentiometer",
+        "Fader",
+        "System"
     ];
 
     enum SortFieldType {
@@ -55,11 +57,12 @@
         const arrayOfSearchTerms = searchString.trim().toLowerCase().split(" ");
 
         const filtered = array.filter((config) => {
-            const currentProfileSearchable =
-                config.name.toLowerCase() + " " + config.type.toLowerCase();
+            const currentProfileSearchable = String(
+                `${config.name} ${config.type} ${config.configType}`
+            ).toLocaleLowerCase();
 
             for (const searchTerm of arrayOfSearchTerms) {
-                if (currentProfileSearchable.indexOf(searchTerm) === -1) {
+                if (currentProfileSearchable.indexOf(searchTerm.toLocaleLowerCase()) === -1) {
                     return false;
                 }
             }
