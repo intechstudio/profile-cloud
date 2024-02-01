@@ -45,7 +45,20 @@
 
     let isSearchSortingShows = true;
 
+    function updateFontSize(size: string) {
+        const main = document.querySelector("#main") as HTMLElement;
+        if (!main) {
+            console.error("Element with id 'main' not found.");
+            return;
+        }
+
+        main.style.fontSize = size;
+    }
+
     async function editorMessageListener(event: MessageEvent) {
+        if (event.data.messageType == "updateFontSize") {
+            updateFontSize(event.data.fontSize);
+        }
         if (event.data.messageType == "localConfigs") {
             const localConfigs = (event.data.configs as any[]).map((config) =>
                 LocalConfigSchema.parse(config)
@@ -243,7 +256,7 @@
     });
 </script>
 
-<div class="flex flex-grow h-screen relative z-0 overflow-hidden">
+<div id="main" class="flex flex-grow h-screen relative z-0 overflow-hidden">
     <div class="flex flex-col pb-4 h-full w-full">
         <div class="pt-4 flex flex-col gap-2 items-center justify-between pb-2">
             <div class="flex flex-col self-start">
