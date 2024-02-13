@@ -11,7 +11,8 @@ import {
     setDoc,
     updateDoc
 } from "firebase/firestore";
-import { configLinksCollection, configsCollection } from "$lib/collections";
+import { v4 as uuidv4 } from "uuid";
+import { configsCollection } from "$lib/collections";
 import {
     type CloudConfig,
     type Config,
@@ -244,17 +245,24 @@ export function createConfigManager(observer: {
     }
 
     async function importLinkedConfig(linkId: string) {
-        const docRef = doc(configLinksCollection, linkId);
+        const docRef = doc(configsCollection, linkId);
         let configLink = await getDoc(docRef)
             .then((res) => CloudConfigSchema.parse(res.data()))
             .catch((err) => {
-                console.log(err);
+                parentIframeCommunication({
+                    windowPostMessageName: "sendLogMessage",
+                    dataForParent: {
+                        type: "fail",
+                        message: "Error importing config link!"
+                    }
+                });
                 return undefined;
             });
 
         if (configLink) {
             configLink.name = `Copy of ${configLink.name}`;
             configLink.owner = undefined;
+            configLink.id = uuidv4();
             await saveConfig(configLink, true);
         }
         return configLink;

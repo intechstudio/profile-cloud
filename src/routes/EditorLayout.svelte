@@ -172,39 +172,22 @@
     }
 
     async function createCloudConfigLink(config: Config) {
-        const newConfigLinkRef = doc(configLinksCollection);
         const userData = get(userAccountService)?.account;
         if (!userData) {
             loginToProfileCloud();
             return;
         }
+        const configLinkUrl = "grid-editor://?config-link=" + config.id;
 
-        const configLink: CloudConfig = {
-            ...config,
-            owner: userData.uid,
-            access: [userData.uid],
-            public: true,
-            id: newConfigLinkRef.id
-        };
-
-        await setDoc(newConfigLinkRef, configLink)
-            .then(async (res) => {
-                const configLinkUrl = "grid-editor://?config-link=" + newConfigLinkRef.id;
-
-                await parentIframeCommunication({
-                    windowPostMessageName: "createCloudConfigLink",
-                    dataForParent: { configLinkUrl }
-                }).then((res) => {
-                    linkFlag = config.id;
-                    setTimeout(() => {
-                        linkFlag = undefined;
-                    }, 1750);
-                });
-            })
-            .catch(() => {
-                // config is not saved to cloud
-                console.error("Config link save to cloud was unsuccessful");
-            });
+        await parentIframeCommunication({
+            windowPostMessageName: "createCloudConfigLink",
+            dataForParent: { configLinkUrl }
+        }).then((res) => {
+            linkFlag = config.id;
+            setTimeout(() => {
+                linkFlag = undefined;
+            }, 1750);
+        });
     }
 
     async function overwriteConfigWithEditorConfig(config: Config) {
