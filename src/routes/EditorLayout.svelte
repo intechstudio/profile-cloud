@@ -75,12 +75,9 @@
 
             if (linkedConfig) {
                 submitAnalytics({
-                    eventName: "Config Link",
+                    eventName: "Cloud Action",
                     payload: {
-                        task: "Import",
-                        owner: linkedConfig?.owner,
-                        profileName: linkedConfig?.name,
-                        profileType: linkedConfig?.type
+                        click: "Config Link Import"
                     }
                 });
                 configTypeSelector = linkedConfig?.configType;
@@ -172,39 +169,17 @@
     }
 
     async function createCloudConfigLink(config: Config) {
-        const newConfigLinkRef = doc(configLinksCollection);
-        const userData = get(userAccountService)?.account;
-        if (!userData) {
-            loginToProfileCloud();
-            return;
-        }
+        const configLinkUrl = "grid-editor://?config-link=" + config.id;
 
-        const configLink: CloudConfig = {
-            ...config,
-            owner: userData.uid,
-            access: [userData.uid],
-            public: true,
-            id: newConfigLinkRef.id
-        };
-
-        await setDoc(newConfigLinkRef, configLink)
-            .then(async (res) => {
-                const configLinkUrl = "grid-editor://?config-link=" + newConfigLinkRef.id;
-
-                await parentIframeCommunication({
-                    windowPostMessageName: "createCloudConfigLink",
-                    dataForParent: { configLinkUrl }
-                }).then((res) => {
-                    linkFlag = config.id;
-                    setTimeout(() => {
-                        linkFlag = undefined;
-                    }, 1750);
-                });
-            })
-            .catch(() => {
-                // config is not saved to cloud
-                console.error("Config link save to cloud was unsuccessful");
-            });
+        await parentIframeCommunication({
+            windowPostMessageName: "createCloudConfigLink",
+            dataForParent: { configLinkUrl }
+        }).then((res) => {
+            linkFlag = config.id;
+            setTimeout(() => {
+                linkFlag = undefined;
+            }, 1750);
+        });
     }
 
     async function overwriteConfigWithEditorConfig(config: Config) {
@@ -292,9 +267,9 @@
                             );
                             provideSelectedConfigForEditor({});
                             submitAnalytics({
-                                eventName: "Local Config",
+                                eventName: "Cloud Action",
                                 payload: {
-                                    task: "Save config"
+                                    click: "New config from editor"
                                 }
                             });
                         }}
@@ -348,11 +323,9 @@
                             configManager?.deleteConfig(config);
                             provideSelectedConfigForEditor({});
                             submitAnalytics({
-                                eventName: "Profile Cloud",
+                                eventName: "Cloud Action",
                                 payload: {
-                                    task: "Delete",
-                                    profileName: config.name,
-                                    public: config.public
+                                    click: "Config delete"
                                 }
                             });
                         }}
@@ -365,11 +338,9 @@
                             };
                             configManager?.saveConfig(newConfig, false);
                             submitAnalytics({
-                                eventName: "Profile Cloud",
+                                eventName: "Cloud Action",
                                 payload: {
-                                    task: "Edit description",
-                                    oldDescription,
-                                    newDescription: newDescription
+                                    click: "Edit config description"
                                 }
                             });
                         }}
@@ -382,11 +353,9 @@
                             };
                             configManager?.saveConfig(newConfig, false);
                             submitAnalytics({
-                                eventName: "Profile Cloud",
+                                eventName: "Cloud Action",
                                 payload: {
-                                    task: "Edit name",
-                                    oldConfigName,
-                                    newProfileName: newName
+                                    click: "Edit config name"
                                 }
                             });
                         }}
@@ -400,37 +369,38 @@
                         }}
                     >
                         <svelte:fragment slot="link-button">
-                            <button
-                                class="relative group flex"
-                                on:click|stopPropagation={() => {
-                                    createCloudConfigLink(config);
-                                    provideSelectedConfigForEditor({});
-                                    submitAnalytics({
-                                        eventName: "Profile Link",
-                                        payload: {
-                                            task: "Create",
-                                            profileName: config.name
-                                        }
-                                    });
-                                }}
-                            >
-                                <SvgIcon class="w-4" iconPath="link" />
-                                <div
-                                    class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                            {#if config.syncStatus != "local"}
+                                <button
+                                    class="relative group flex"
+                                    on:click|stopPropagation={() => {
+                                        createCloudConfigLink(config);
+                                        provideSelectedConfigForEditor({});
+                                        submitAnalytics({
+                                            eventName: "Cloud Action",
+                                            payload: {
+                                                click: "Create config link"
+                                            }
+                                        });
+                                    }}
                                 >
-                                    Link
-                                </div>
-                                {#if linkFlag == config.id}
+                                    <SvgIcon class="w-4" iconPath="link" />
                                     <div
-                                        transition:fade={{
-                                            duration: 100
-                                        }}
-                                        class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
+                                        class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
                                     >
-                                        Copied to clipboard!
+                                        Link
                                     </div>
-                                {/if}
-                            </button>
+                                    {#if linkFlag == config.id}
+                                        <div
+                                            transition:fade={{
+                                                duration: 100
+                                            }}
+                                            class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
+                                        >
+                                            Copied to clipboard!
+                                        </div>
+                                    {/if}
+                                </button>
+                            {/if}
                         </svelte:fragment>
                         <svelte:fragment slot="sync-config-button">
                             {#if config.syncStatus != "synced" || !config.isEditable}
@@ -445,9 +415,6 @@
                                             return;
                                         }
                                         let configToSave = config;
-                                        console.log("TEST", {
-                                            configToSave
-                                        });
                                         if (!configToSave.isEditable) {
                                             configToSave = {
                                                 ...configToSave,
@@ -462,10 +429,9 @@
                                         configManager?.saveConfig(configToSave, true);
                                         provideSelectedConfigForEditor({});
                                         submitAnalytics({
-                                            eventName: "Profile Cloud",
+                                            eventName: "Cloud Action",
                                             payload: {
-                                                task: "Sync config",
-                                                profileName: config.name
+                                                click: "Sync config"
                                             }
                                         });
                                     }}
@@ -498,10 +464,9 @@
                                         splitConfig(config);
                                         configTypeSelector = "preset";
                                         submitAnalytics({
-                                            eventName: "Profile Cloud",
+                                            eventName: "Cloud Action",
                                             payload: {
-                                                task: "Split config",
-                                                profileName: config.name
+                                                click: "Split config"
                                             }
                                         });
                                     }}
@@ -521,11 +486,9 @@
                                 checkbox={config.public}
                                 on:toggle={(e) => {
                                     submitAnalytics({
-                                        eventName: "Profile Cloud",
+                                        eventName: "Cloud Action",
                                         payload: {
-                                            task: "Set visibility",
-                                            profileName: config.name,
-                                            visibility: e.detail
+                                            click: "Set config visibility"
                                         }
                                     });
                                     configManager?.changeCloudVisibility(config, e.detail);

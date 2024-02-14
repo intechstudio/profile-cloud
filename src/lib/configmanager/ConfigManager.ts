@@ -11,7 +11,8 @@ import {
     setDoc,
     updateDoc
 } from "firebase/firestore";
-import { configLinksCollection, configsCollection } from "$lib/collections";
+import { v4 as uuidv4 } from "uuid";
+import { configsCollection } from "$lib/collections";
 import {
     type CloudConfig,
     type Config,
@@ -202,7 +203,12 @@ export function createConfigManager(observer: {
         config.modifiedAt = new Date();
 
         let cloudId = appConfigs?.cloud?.id;
+        let configCreated = false;
+        let configError = false;
         if (currentOwnerId != null && (createMissingConfigs || cloudId)) {
+            if (createMissingConfigs || !cloudId) {
+                configCreated = true;
+            }
             cloudId = cloudId ?? doc(configsCollection).id;
             let configRef = doc(configsCollection, cloudId);
 
@@ -233,6 +239,29 @@ export function createConfigManager(observer: {
                     fileName: appConfigs?.local?.fileName,
                     owner: currentOwnerId
                 }
+            })
+                .then((result) => {
+                    configCreated = true;
+                })
+                .catch((e) => {
+                    configError = true;
+                });
+        }
+        if (configCreated) {
+            parentIframeCommunication({
+                windowPostMessageName: "sendLogMessage",
+                dataForParent: {
+                    type: "success",
+                    message: `Config ${config.name} imported successfully`
+                }
+            });
+        } else if (configError) {
+            parentIframeCommunication({
+                windowPostMessageName: "sendLogMessage",
+                dataForParent: {
+                    type: "fail",
+                    message: `Config ${config.name} import failed`
+                }
             });
         }
     }
@@ -244,17 +273,24 @@ export function createConfigManager(observer: {
     }
 
     async function importLinkedConfig(linkId: string) {
-        const docRef = doc(configLinksCollection, linkId);
+        const docRef = doc(configsCollection, linkId);
         let configLink = await getDoc(docRef)
             .then((res) => CloudConfigSchema.parse(res.data()))
             .catch((err) => {
-                console.log(err);
+                parentIframeCommunication({
+                    windowPostMessageName: "sendLogMessage",
+                    dataForParent: {
+                        type: "fail",
+                        message: "Error importing config link!"
+                    }
+                });
                 return undefined;
             });
 
         if (configLink) {
             configLink.name = `Copy of ${configLink.name}`;
             configLink.owner = undefined;
+            configLink.id = uuidv4();
             await saveConfig(configLink, true);
         }
         return configLink;

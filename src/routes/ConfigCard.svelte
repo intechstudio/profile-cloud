@@ -157,6 +157,7 @@
                 <slot name="link-button" />
                 <slot name="sync-config-button" />
                 <slot name="split-config-button" />
+                <slot name="import-config-browser-button" />
             </div>
         </div>
         <div class="dark:text-white pt-2 text-black text-opacity-80 dark:text-opacity-70">
