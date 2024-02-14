@@ -203,7 +203,12 @@ export function createConfigManager(observer: {
         config.modifiedAt = new Date();
 
         let cloudId = appConfigs?.cloud?.id;
+        let configCreated = false;
+        let configError = false;
         if (currentOwnerId != null && (createMissingConfigs || cloudId)) {
+            if (createMissingConfigs || !cloudId) {
+                configCreated = true;
+            }
             cloudId = cloudId ?? doc(configsCollection).id;
             let configRef = doc(configsCollection, cloudId);
 
@@ -233,6 +238,29 @@ export function createConfigManager(observer: {
                     cloudId: cloudId,
                     fileName: appConfigs?.local?.fileName,
                     owner: currentOwnerId
+                }
+            })
+                .then((result) => {
+                    configCreated = true;
+                })
+                .catch((e) => {
+                    configError = true;
+                });
+        }
+        if (configCreated) {
+            parentIframeCommunication({
+                windowPostMessageName: "sendLogMessage",
+                dataForParent: {
+                    type: "success",
+                    message: `Config ${config.name} imported successfully`
+                }
+            });
+        } else if (configError) {
+            parentIframeCommunication({
+                windowPostMessageName: "sendLogMessage",
+                dataForParent: {
+                    type: "fail",
+                    message: `Config ${config.name} import failed`
                 }
             });
         }

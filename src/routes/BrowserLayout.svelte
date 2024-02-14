@@ -66,6 +66,8 @@
             <ConfigCard
                 on:click={() => {
                     selectedConfigIndex = index;
+                    const configLinkUrl = "grid-editor://?config-link=" + config.id;
+                    window.open(configLinkUrl, "_self");
                 }}
                 isSelected={index === selectedConfigIndex}
                 data={{
