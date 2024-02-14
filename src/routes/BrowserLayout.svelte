@@ -66,15 +66,25 @@
             <ConfigCard
                 on:click={() => {
                     selectedConfigIndex = index;
-                    const configLinkUrl = "grid-editor://?config-link=" + config.id;
-                    window.open(configLinkUrl, "_self");
                 }}
                 isSelected={index === selectedConfigIndex}
                 data={{
                     ...config,
                     selectedComponentTypes: selectedComponentTypes
                 }}
-            />
+            >
+                <svelte:fragment slot="import-config-browser-button">
+                    <button
+                        on:click={() => {
+                            const configLinkUrl = "grid-editor://?config-link=" + config.id;
+                            window.open(configLinkUrl, "_self");
+                        }}
+                        class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
+                    >
+                        Import
+                    </button>
+                </svelte:fragment>
+            </ConfigCard>
         {/each}
     </div>
 </div>
