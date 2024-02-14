@@ -169,11 +169,6 @@
     }
 
     async function createCloudConfigLink(config: Config) {
-        const userData = get(userAccountService)?.account;
-        if (!userData) {
-            loginToProfileCloud();
-            return;
-        }
         const configLinkUrl = "grid-editor://?config-link=" + config.id;
 
         await parentIframeCommunication({
