@@ -1,4 +1,5 @@
 <script lang="ts">
+    import ConfigurationSave, { ConfigurationSaveType } from "./ConfigurationSave.svelte";
     import { onDestroy, onMount } from "svelte";
     import { userAccountService } from "$lib/stores";
     import { doc, setDoc } from "firebase/firestore";
@@ -44,6 +45,7 @@
     let configTypeSelector: "profile" | "preset" = "profile";
 
     let isSearchSortingShows = true;
+    let configurationSaveVisible = false;
 
     async function editorMessageListener(event: MessageEvent) {
         if (event.data.messageType == "localConfigs") {
@@ -87,12 +89,14 @@
     }
 
     async function createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor(
-        type: "profile" | "preset"
+        type: "profile" | "preset",
+        name: string
     ) {
         const configResponse = await parentIframeCommunication({
             windowPostMessageName: "getCurrenConfigurationFromEditor",
             dataForParent: { configType: type }
         });
+        configResponse.data.name = name;
         if (configResponse.ok) {
             filter.reset();
             configManager?.saveConfig(BaseConfigSchema.parse(configResponse.data), true);
@@ -212,10 +216,6 @@
         }
     }
 
-    function filterShowHide() {
-        isSearchSortingShows = !isSearchSortingShows;
-    }
-
     function handleFilter(e: any) {
         const { configs } = e.detail;
         filteredConfigs = configs;
@@ -241,25 +241,49 @@
         configManager?.cancel();
         configManager = undefined;
     });
+
+    function handleConfigurationSaverCloseClicked() {
+        configurationSaveVisible = false;
+    }
+
+    function handleConfigurationSaverSaveClicked(e: any) {
+        const { type, name } = e.detail;
+        switch (type) {
+            case ConfigurationSaveType.ELEMENT: {
+                createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor("preset", name);
+                break;
+            }
+            case ConfigurationSaveType.MODULE: {
+                createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor("profile", name);
+                break;
+            }
+        }
+
+        provideSelectedConfigForEditor({});
+        submitAnalytics({
+            eventName: "Local Config",
+            payload: {
+                task: "Save config"
+            }
+        });
+    }
+
+    function handleOpenconfigurationSave() {
+        configurationSaveVisible = true;
+    }
 </script>
 
 <div class="flex flex-grow h-screen relative z-0 overflow-hidden">
     <div class="flex flex-col pb-4 h-full w-full">
         <div class="pt-4 flex flex-col gap-2 items-center justify-between pb-2">
             <div class="flex flex-col self-start">
-                <div>What is Profile Cloud?</div>
+                <div>Profile Cloud</div>
                 <div class="text-white text-opacity-60">
-                    A cloud based store where you can save your local profiles and presets, see what
-                    others have created, or share yours with the community.
+                    Save your module or element configuration, see what others have created, or
+                    share yours with the community.
                 </div>
             </div>
-            <div class="flex flex-col self-start w-full">
-                <div>Save your Configuration</div>
-                <div class="text-white text-opacity-60 pb-2">
-                    Save your element configuration as presets, or the whole configuration of your
-                    module as profiles!
-                </div>
-                <div class="flex flex-row w-full gap-2">
+            <!-- <div class="flex flex-row w-full gap-2">
                     <select
                         class="bg-secondary border-none flex-grow text-white p-1 focus:outline-none"
                         name="sorting select"
@@ -288,32 +312,35 @@
                         class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
                         >Save</button
                     >
-                </div>
-            </div>
-        </div>
-        <div class="flex justify-end">
-            <button
-                on:click={() => {
-                    filterShowHide();
-                }}
-                class="text-white text-left font-xs"
-            >
-                {#if isSearchSortingShows}
-                    Hide Filters
-                {:else}
-                    Show Filters
-                {/if}
-            </button>
+                </div> -->
         </div>
 
-        <Filter
-            bind:this={filter}
-            visible={isSearchSortingShows}
-            {configs}
-            on:filter={handleFilter}
-            class="pb-3"
-            display={"editor"}
-        />
+        <div class="my-2">
+            {#if configurationSaveVisible}
+                <ConfigurationSave
+                    data={selectedComponentTypes}
+                    on:close={handleConfigurationSaverCloseClicked}
+                    on:save={handleConfigurationSaverSaveClicked}
+                />
+            {:else}
+                <Filter
+                    bind:this={filter}
+                    visible={isSearchSortingShows}
+                    {configs}
+                    on:filter={handleFilter}
+                    class="pb-3"
+                    display={"editor"}
+                >
+                    <button
+                        class="text-2xl px-8 dark:bg-primary-700 dark:hover:bg-secondary"
+                        on:click={handleOpenconfigurationSave}
+                    >
+                        +
+                    </button>
+                </Filter>
+            {/if}
+        </div>
+
         <div
             class="overflow-y-scroll h-full pr-2 lg:py-8 grid grid-flow-row auto-rows-min items-start gap-4"
         >
