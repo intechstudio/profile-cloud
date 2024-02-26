@@ -30,17 +30,16 @@
             }
 
             submitAnalytics({
-                eventName: "Authentication",
+                eventName: "Cloud Action",
                 payload: {
-                    task: "Login",
-                    username: username || userAccount.account.displayName
+                    click: "Login user"
                 }
             });
         } else {
             submitAnalytics({
-                eventName: "Authentication",
+                eventName: "Cloud Action",
                 payload: {
-                    task: "Logout"
+                    click: "Logout user"
                 }
             });
         }
@@ -109,10 +108,9 @@
                             usernameInput.active = false;
                             setUserName(usernameInput.element?.value);
                             submitAnalytics({
-                                eventName: "Set Username",
+                                eventName: "Cloud Action",
                                 payload: {
-                                    handler: "Enter key",
-                                    username: usernameInput.element?.value
+                                    click: "Set user name"
                                 }
                             });
                         }
@@ -130,10 +128,9 @@
                             usernameInput.active = false;
                             setUserName(usernameInput.element?.value);
                             submitAnalytics({
-                                eventName: "Set Username",
+                                eventName: "Cloud Action",
                                 payload: {
-                                    handler: "Button",
-                                    username: usernameInput.element?.value
+                                    click: "Change user name"
                                 }
                             });
                         }}
@@ -159,9 +156,9 @@
                 on:click={() => {
                     logoutFromProfileCloud();
                     submitAnalytics({
-                        eventName: "Authentication",
+                        eventName: "Cloud Action",
                         payload: {
-                            task: "Logout attempt"
+                            click: "Logout attempt"
                         }
                     });
                 }}
@@ -185,9 +182,9 @@
                     on:click={() => {
                         loginToProfileCloud();
                         submitAnalytics({
-                            eventName: "Authentication",
+                            eventName: "Cloud Action",
                             payload: {
-                                task: "Login attempt"
+                                click: "Login attempt"
                             }
                         });
                     }}

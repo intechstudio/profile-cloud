@@ -37,12 +37,11 @@
                     class="flex flex-col justify-between pt-8 text-opacity-80 text-black dark:text-opacity-80 dark:text-white"
                 >
                     <h1 class="text-3xl font-bold pb-2">profile list</h1>
-                    <h2 class="py-2">Profile Cloud is coming with Grid Editor version 1.2.35.</h2>
                     <p class="text-opacity-60 text-black dark:text-white dark:text-opacity-60">
                         <a
                             href="https://links.intech.studio/discord"
                             class="hover:underline text-blue-500">Join the discord channel</a
-                        > to get support and early access.
+                        > to get support.
                     </p>
                 </div>
             </DisplayOnWeb>
