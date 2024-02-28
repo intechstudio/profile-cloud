@@ -3,7 +3,7 @@
     import type { Config } from "$lib/schemas";
     import Filter from "./Filter.svelte";
     import { type ConfigManager, createConfigManager } from "$lib/configmanager/ConfigManager";
-    import ConfigCard from "./ConfigCard.svelte";
+    import ConfigCardBrowser from "./ConfigCardBrowser.svelte";
 
     let selectedConfigIndex: number | undefined = undefined;
 
@@ -63,7 +63,7 @@
         class="overflow-y-auto w-full h-full p-2 lg:py-8 grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 gap-4"
     >
         {#each filteredConfigs as config, index (config.id)}
-            <ConfigCard
+            <ConfigCardBrowser
                 on:click={() => {
                     selectedConfigIndex = index;
                 }}
@@ -84,7 +84,7 @@
                         Import
                     </button>
                 </svelte:fragment>
-            </ConfigCard>
+            </ConfigCardBrowser>
         {/each}
     </div>
 </div>
