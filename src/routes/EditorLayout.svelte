@@ -275,14 +275,7 @@
 
 <div class="flex flex-grow h-screen relative z-0 overflow-hidden">
     <div class="flex flex-col pb-4 h-full w-full">
-        <div class="pt-4 flex flex-col gap-2 items-center justify-between pb-2">
-            <div class="flex flex-col self-start">
-                <div>Profile Cloud</div>
-                <div class="text-white text-opacity-60">
-                    Save your module or element configuration, see what others have created, or
-                    share yours with the community.
-                </div>
-            </div>
+        <div class="flex flex-col gap-2 items-center justify-between pb-2">
             <!-- <div class="flex flex-row w-full gap-2">
                     <select
                         class="bg-secondary border-none flex-grow text-white p-1 focus:outline-none"
