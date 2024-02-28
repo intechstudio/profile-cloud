@@ -262,16 +262,8 @@
     }
 </script>
 
-<div id="main" class="flex flex-grow h-screen relative z-0 overflow-hidden -mx-4 p-4">
-    <div class="flex flex-col gap-2 h-full w-full">
-        <div class="flex flex-col">
-            <span class="text-white">Profile Cloud</span>
-            <span class="text-white text-opacity-60">
-                Save your configuration, see what others have created, or share yours with the
-                community.
-            </span>
-        </div>
-
+<div class="flex flex-grow h-screen relative z-0 -mx-4 px-4 overflow-hidden">
+    <div class="flex flex-col pb-4 py-4 h-full w-full">
         <div>
             {#if configurationSaveVisible}
                 <ConfigurationSave
@@ -298,7 +290,7 @@
             {/if}
         </div>
 
-        <div class="overflow-y-scroll grid grid-flow-row auto-rows-min pr-2 gap-4">
+        <div class="overflow-y-scroll grid grid-flow-row auto-rows-min pr-2 gap-4 flex-grow">
             {#each filteredConfigs as config, index (config.id)}
                 <div in:slide>
                     <ConfigCardEditor
@@ -310,7 +302,7 @@
                             selectedConfigIndex = index;
                         }}
                         on:focusout={(e) => {
-                            selectedConfigIndex = undefined;
+                            selectedConfigIndex = -1;
                         }}
                         data={{
                             ...config,
@@ -533,9 +525,9 @@
                     </span>
                 </ConfigCardDisplay>
             </div>
-            <!-- <div class="px-4 mb-2">
+            <div class="px-4 mb-2">
                 <UserLogin {usernameInput} />
-            </div> -->
+            </div>
         </div>
     </div>
 </div>
