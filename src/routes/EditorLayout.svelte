@@ -172,7 +172,18 @@
     }
 
     async function createCloudConfigLink(config: Config) {
-        const configLinkUrl = "grid-editor://?config-link=" + config.id;
+        const configCloudId = configManager?.getConfigCloudId(config);
+        if (!configCloudId) {
+            parentIframeCommunication({
+                windowPostMessageName: "sendLogMessage",
+                dataForParent: {
+                    type: "fail",
+                    message: `Upload config before linking!`
+                }
+            });
+            return;
+        }
+        const configLinkUrl = "grid-editor://?config-link=" + configCloudId;
 
         await parentIframeCommunication({
             windowPostMessageName: "createCloudConfigLink",
@@ -362,6 +373,7 @@
                                         on:description-change={(e) => {
                                             const { newDescription } = e.detail;
                                             let oldDescription = config.description;
+                                            if (oldDescription === newDescription) return;
                                             let newConfig = {
                                                 ...config,
                                                 description: newDescription
@@ -377,6 +389,7 @@
                                         on:name-change={(e) => {
                                             const { newName } = e.detail;
                                             let oldConfigName = config.name;
+                                            if (oldConfigName === newName) return;
                                             let newConfig = {
                                                 ...config,
                                                 name: newName

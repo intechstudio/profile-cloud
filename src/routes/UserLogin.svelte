@@ -176,7 +176,7 @@
 {:else}
     <div class="pt-4">
         <div
-            class="rounded-md border border-amber-500 p-4 bg-secondary/90 flex items-center justify-between"
+            class="rounded-md border border-amber-500 p-2 bg-secondary/90 flex items-center justify-between"
         >
             <div class="text-white">Login to save and browse your profiles</div>
             <button
@@ -196,3 +196,6 @@
         </div>
     </div>
 {/if}
+<div class="bottom-0 left-0 text-white text-opacity-40 absolute text-xs">
+    {PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING}
+</div>
