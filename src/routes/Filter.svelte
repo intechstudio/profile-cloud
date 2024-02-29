@@ -50,7 +50,7 @@
     $: {
         const filtered: Config[] = filterConfigs(searchbarValue, configs);
         const sorted: Config[] = sortConfigs(sortField, sortAsc, filtered);
-        dispatch("filter", { configs: sorted });
+        dispatch("filter", { configs: sorted, isFiltering: searchbarValue.trim().length != 0 });
     }
 
     function filterConfigs(searchString: string, array: Config[]): Config[] {
@@ -258,7 +258,7 @@
                 </button>
             </div>
         </div>
-        <div class="flex flex-row gap-1 py-1 flex-wrap">
+        <div class="flex flex-row gap-1 py-1 flex-wrap w-full {compactMode ? '' : 'col-span-2'}">
             {#each searchSuggestions as suggestion}
                 <button
                     on:click={() => handleSuggestionClicked(suggestion)}

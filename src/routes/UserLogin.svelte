@@ -175,24 +175,24 @@
     </div>
 {:else}
     <div class="pt-4">
-        <div class="rounded-md border border-amber-500 p-4 bg-secondary/90">
-            <div class="pb-1 text-white">login to save and browse your profiles</div>
-            <div class="pt-1">
-                <button
-                    on:click={() => {
-                        loginToProfileCloud();
-                        submitAnalytics({
-                            eventName: "Cloud Action",
-                            payload: {
-                                click: "Login attempt"
-                            }
-                        });
-                    }}
-                    class="rounded px-4 py-1 border dark:border-emerald-500 dark:hover:bg-emerald-700 font-medium"
-                >
-                    login
-                </button>
-            </div>
+        <div
+            class="rounded-md border border-amber-500 p-4 bg-secondary/90 flex items-center justify-between"
+        >
+            <div class="text-white">Login to save and browse your profiles</div>
+            <button
+                on:click={() => {
+                    loginToProfileCloud();
+                    submitAnalytics({
+                        eventName: "Cloud Action",
+                        payload: {
+                            click: "Login attempt"
+                        }
+                    });
+                }}
+                class="rounded px-4 py-1 border dark:border-emerald-500 dark:hover:bg-emerald-700 font-medium"
+            >
+                Login
+            </button>
         </div>
     </div>
 {/if}
