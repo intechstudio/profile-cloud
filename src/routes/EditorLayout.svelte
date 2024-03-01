@@ -262,8 +262,8 @@
     }
 </script>
 
-<div class="flex flex-grow h-screen relative z-0 -mx-4 px-4 overflow-hidden">
-    <div class="flex flex-col pb-4 py-4 h-full w-full">
+<div id="main" class="flex flex-grow h-screen relative z-0 -mx-4 px-4 overflow-hidden">
+    <div class="flex flex-col gap-2 pb-4 py-4 h-full w-full">
         <div>
             {#if configurationSaveVisible}
                 <ConfigurationSave
