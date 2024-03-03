@@ -92,10 +92,10 @@
         }
     }
 
-    async function provideSelectedConfigForEditor(config?: Config | {}) {
+    async function provideSelectedConfigForEditor(config?: Config | undefined) {
         await parentIframeCommunication({
             windowPostMessageName: "provideSelectedConfigForEditor",
-            dataForParent: { config: config ?? {} }
+            dataForParent: { config: config ?? undefined }
         });
     }
 
@@ -248,7 +248,7 @@
             }
         }
 
-        provideSelectedConfigForEditor({});
+        provideSelectedConfigForEditor(undefined);
         submitAnalytics({
             eventName: "Local Config",
             payload: {
@@ -322,7 +322,7 @@
                         selectedConfigIndex =
                             selectedConfigIndex - 1 < 0 ? 0 : selectedConfigIndex - 1;
                         configManager?.deleteConfig(config);
-                        provideSelectedConfigForEditor({});
+                        provideSelectedConfigForEditor(undefined);
                         submitAnalytics({
                             eventName: "Cloud Action",
                             payload: {
@@ -378,7 +378,7 @@
                                 class="relative group flex"
                                 on:click|stopPropagation={() => {
                                     createCloudConfigLink(config);
-                                    provideSelectedConfigForEditor({});
+                                    provideSelectedConfigForEditor(undefined);
                                     submitAnalytics({
                                         eventName: "Cloud Action",
                                         payload: {
@@ -432,7 +432,7 @@
                                         });
                                     }
                                     configManager?.saveConfig(configToSave, true);
-                                    provideSelectedConfigForEditor({});
+                                    provideSelectedConfigForEditor(undefined);
                                     submitAnalytics({
                                         eventName: "Cloud Action",
                                         payload: {
