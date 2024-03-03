@@ -303,6 +303,7 @@
                         }}
                         on:focusout={(e) => {
                             selectedConfigIndex = -1;
+                            provideSelectedConfigForEditor(undefined);
                         }}
                         data={{
                             ...config,
