@@ -295,15 +295,17 @@
                 <div in:slide>
                     <ConfigCardEditor
                         on:click={() => {
+                            /*
                             if (selectedConfigIndex == index) {
                                 return;
                             }
+                            */
                             provideSelectedConfigForEditor(config);
                             selectedConfigIndex = index;
                         }}
                         on:focusout={(e) => {
-                            selectedConfigIndex = -1;
-                            provideSelectedConfigForEditor(undefined);
+                            //selectedConfigIndex = -1;
+                            //provideSelectedConfigForEditor(undefined);
                         }}
                         data={{
                             ...config,
