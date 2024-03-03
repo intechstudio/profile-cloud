@@ -8,7 +8,7 @@
 
     export function reset() {
         searchbarValue = "";
-        sortAsc = false;
+        sortAsc = true;
         sortField = SortFieldType.date;
     }
 
@@ -43,7 +43,7 @@
     }
 
     let searchbarValue = "";
-    let sortAsc = false;
+    let sortAsc = true;
     let sortField: SortFieldType = SortFieldType.date;
 
     $: {

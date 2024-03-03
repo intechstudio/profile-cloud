@@ -23,6 +23,7 @@
     import { loginToProfileCloud } from "./user_account";
     import Filter from "./Filter.svelte";
     import ConfigCardDisplay from "./ConfigCardDisplay.svelte";
+    import { scrollToTop } from "./scroll-actions";
 
     let selectedConfigIndex: number = 0;
 
@@ -47,6 +48,8 @@
 
     let isSearchSortingShows = true;
     let configurationSaveVisible = false;
+
+    let configList: HTMLElement;
 
     function updateFontSize(size: string) {
         const main = document.querySelector("#main") as HTMLElement;
@@ -109,8 +112,12 @@
         });
         configResponse.data.name = name;
         if (configResponse.ok) {
-            filter.reset();
-            configManager?.saveConfig(BaseConfigSchema.parse(configResponse.data), true);
+            configManager
+                ?.saveConfig(BaseConfigSchema.parse(configResponse.data), true)
+                .then(() => {
+                    filter.reset();
+                    scrollToTop(configList);
+                });
         }
     }
 
@@ -290,7 +297,10 @@
             {/if}
         </div>
 
-        <div class="overflow-y-scroll grid grid-flow-row auto-rows-min pr-2 gap-4 flex-grow">
+        <div
+            class="overflow-y-scroll grid grid-flow-row auto-rows-min pr-2 gap-4 flex-grow"
+            bind:this={configList}
+        >
             {#each filteredConfigs as config, index (config.id)}
                 <div in:slide>
                     <ConfigCardEditor
