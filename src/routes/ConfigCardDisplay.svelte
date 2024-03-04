@@ -45,7 +45,7 @@
     };
 </script>
 
-<div class="flex flex-col gap-1 w-full h-full bg-secondary">
+<div class="flex flex-col gap-1 w-full h-full bg-secondary p-2">
     {#if typeof data.selectedConfig !== "undefined"}
         <div class="w-full flex flex-row gap-2 items-center justify-between">
             <div class="flex flex-col flex-grow">
@@ -177,7 +177,7 @@
             <textarea
                 rows={2}
                 bind:this={descriptionTextarea.element}
-                class="overflow-none w-full border bg-neutral-100 dark:bg-primary focus:outline-none
+                class="overflow-none w-full border resize-none bg-neutral-100 dark:bg-primary focus:outline-none
                     {descriptionTextarea.doubleClicked
                     ? 'border-emerald-500'
                     : 'border-transparent'}"

@@ -14,13 +14,6 @@
 
     const dispatch = createEventDispatcher();
 
-    let filterBoxWidth: number;
-    let compactMode: boolean = true;
-
-    $: {
-        compactMode = filterBoxWidth < 400;
-    }
-
     let searchSuggestions: string[] = [
         "Profile",
         "Preset",
@@ -114,10 +107,9 @@
 
 <container class={$$props.class} class:hidden={!visible}>
     <div
-        class="w-full grid {compactMode && display !== 'browser'
+        class="w-full grid {display !== 'browser'
             ? 'grid-cols-1'
             : 'grid-cols-[1fr_auto]'} grid gap-x-2 gap-y-2 items-center"
-        bind:clientWidth={filterBoxWidth}
     >
         <div class="flex flex-row w-full gap-2">
             <div id="searchbar" class="flex flex-col w-full">
@@ -201,7 +193,6 @@
             <div class="flex flex-row gap-1 flex-grow flex-nowrap">
                 <select
                     class="bg-white dark:bg-secondary border-none flex-grow p-1 focus:outline-none min-w-fit"
-                    class:flex-grow={compactMode}
                     id="sort-select-box"
                     name="sorting select"
                     bind:value={sortField}

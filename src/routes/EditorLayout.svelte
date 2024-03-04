@@ -24,6 +24,7 @@
     import Filter from "./Filter.svelte";
     import ConfigCardDisplay from "./ConfigCardDisplay.svelte";
     import { scrollToTop } from "./scroll-actions";
+    import { Pane, Splitpanes } from "svelte-splitpanes";
 
     let selectedConfigIndex: number = 0;
 
@@ -270,7 +271,7 @@
 </script>
 
 <div id="main" class="flex flex-grow h-screen relative z-0 -mx-4 px-4 overflow-hidden">
-    <div class="flex flex-col gap-2 pb-4 py-4 h-full w-full">
+    <div class="flex flex-col py-4 h-full w-full">
         <div>
             {#if configurationSaveVisible}
                 <ConfigurationSave
@@ -284,7 +285,6 @@
                     visible={isSearchSortingShows}
                     {configs}
                     on:filter={handleFilter}
-                    class="pb-3"
                     display={"editor"}
                 >
                     <button
@@ -297,250 +297,261 @@
             {/if}
         </div>
 
-        <div
-            class="overflow-y-scroll grid grid-flow-row auto-rows-min pr-2 gap-4 flex-grow"
-            bind:this={configList}
-        >
-            {#each filteredConfigs as config, index (config.id)}
-                <div in:slide>
-                    <ConfigCardEditor
-                        on:click={() => {
-                            /*
+        <div class="overflow-hidden flex flex-col h-full">
+            <Splitpanes
+                horizontal={true}
+                theme="modern-theme"
+                pushOtherPanes={false}
+                class="h-full w-full"
+            >
+                <Pane size={60}>
+                    <div class="flex flex-col overflow-hidden h-full py-3">
+                        <div
+                            class="overflow-y-scroll grid grid-flow-row auto-rows-min pr-2 gap-4 flex-grow"
+                            bind:this={configList}
+                        >
+                            {#each filteredConfigs as config, index (config.id)}
+                                <div in:slide>
+                                    <ConfigCardEditor
+                                        on:click={() => {
+                                            /*
                             if (selectedConfigIndex == index) {
                                 return;
                             }
                             */
-                            provideSelectedConfigForEditor(config);
-                            selectedConfigIndex = index;
-                        }}
-                        on:focusout={(e) => {
-                            //selectedConfigIndex = -1;
-                            //provideSelectedConfigForEditor(undefined);
-                        }}
-                        data={{
-                            ...config,
-                            selectedComponentTypes: selectedComponentTypes
-                        }}
-                        isSelected={index === selectedConfigIndex}
-                    />
-                </div>
-            {/each}
-        </div>
-
-        <div class="-m-4 mt-1 flex flex-col">
-            <div class="px-4 bg-secondary h-32 py-2">
-                <ConfigCardDisplay
-                    on:delete-config={async () => {
-                        const config = filteredConfigs[selectedConfigIndex];
-                        selectedConfigIndex =
-                            selectedConfigIndex - 1 < 0 ? 0 : selectedConfigIndex - 1;
-                        configManager?.deleteConfig(config);
-                        provideSelectedConfigForEditor(undefined);
-                        submitAnalytics({
-                            eventName: "Cloud Action",
-                            payload: {
-                                click: "Config delete"
-                            }
-                        });
-                    }}
-                    on:description-change={(e) => {
-                        const { newDescription } = e.detail;
-                        const config = filteredConfigs[selectedConfigIndex];
-                        let oldDescription = config.description;
-                        let newConfig = {
-                            ...config,
-                            description: newDescription
-                        };
-                        configManager?.saveConfig(newConfig, false);
-                        submitAnalytics({
-                            eventName: "Cloud Action",
-                            payload: {
-                                click: "Edit config description"
-                            }
-                        });
-                    }}
-                    on:name-change={(e) => {
-                        const { newName } = e.detail;
-                        const config = filteredConfigs[selectedConfigIndex];
-                        let oldConfigName = config.name;
-                        let newConfig = {
-                            ...config,
-                            name: newName
-                        };
-                        configManager?.saveConfig(newConfig, false);
-                        submitAnalytics({
-                            eventName: "Cloud Action",
-                            payload: {
-                                click: "Edit config name"
-                            }
-                        });
-                    }}
-                    on:overwrite-profile={() => {
-                        const config = filteredConfigs[selectedConfigIndex];
-                        overwriteConfigWithEditorConfig(config);
-                    }}
-                    data={{
-                        selectedConfig: filteredConfigs[selectedConfigIndex],
-                        selectedComponentTypes: selectedComponentTypes
-                    }}
-                >
-                    <svelte:fragment slot="link-button">
-                        {@const config = filteredConfigs[selectedConfigIndex]}
-                        {#if config?.syncStatus != "local"}
-                            <button
-                                class="relative group flex"
-                                on:click|stopPropagation={() => {
-                                    createCloudConfigLink(config);
-                                    provideSelectedConfigForEditor(undefined);
-                                    submitAnalytics({
-                                        eventName: "Cloud Action",
-                                        payload: {
-                                            click: "Create config link"
-                                        }
-                                    });
-                                }}
-                            >
-                                <SvgIcon class="w-4" iconPath="link" />
-                                <div
-                                    class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                >
-                                    Link
-                                </div>
-                                {#if linkFlag == config?.id}
-                                    <div
-                                        transition:fade={{
-                                            duration: 100
+                                            provideSelectedConfigForEditor(config);
+                                            selectedConfigIndex = index;
                                         }}
-                                        class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
-                                    >
-                                        Copied to clipboard!
-                                    </div>
-                                {/if}
-                            </button>
-                        {/if}
-                    </svelte:fragment>
-                    <svelte:fragment slot="sync-config-button">
-                        {@const config = filteredConfigs[selectedConfigIndex]}
-                        {#if config?.syncStatus != "synced" || !config?.isEditable}
-                            <button
-                                on:click|stopPropagation={async () => {
-                                    if (
-                                        config.isEditable &&
-                                        config.syncStatus === "local" &&
-                                        !$userAccountService.account
-                                    ) {
-                                        loginToProfileCloud();
-                                        return;
-                                    }
-                                    let configToSave = config;
-                                    if (!configToSave.isEditable) {
-                                        configToSave = {
-                                            ...configToSave,
-                                            name: `Copy of ${configToSave.name}`,
-                                            owner: undefined,
-                                            id: ""
-                                        };
-                                        console.log({
-                                            configToSave
-                                        });
-                                    }
-                                    configManager?.saveConfig(configToSave, true);
-                                    provideSelectedConfigForEditor(undefined);
-                                    submitAnalytics({
-                                        eventName: "Cloud Action",
-                                        payload: {
-                                            click: "Sync config"
-                                        }
-                                    });
-                                }}
-                                class="flex items-center group relative"
-                            >
-                                <SvgIcon
-                                    class={!config?.isEditable ? "w-4" : "w-5 -m-0.5"}
-                                    iconPath={!config?.isEditable
-                                        ? "import"
-                                        : config.syncStatus === "cloud"
-                                        ? "download_from_cloud"
-                                        : "move_to_cloud_02"}
-                                />
-                                <div
-                                    class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                >
-                                    {!config?.isEditable
-                                        ? "Import"
-                                        : config.syncStatus === "cloud"
-                                        ? "Download"
-                                        : "Upload"}
+                                        on:focusout={(e) => {
+                                            //selectedConfigIndex = -1;
+                                            //provideSelectedConfigForEditor(undefined);
+                                        }}
+                                        data={{
+                                            ...config,
+                                            selectedComponentTypes: selectedComponentTypes
+                                        }}
+                                        isSelected={index === selectedConfigIndex}
+                                    />
                                 </div>
-                            </button>
-                        {/if}
-                    </svelte:fragment>
-                    <svelte:fragment slot="split-config-button">
-                        {@const config = filteredConfigs[selectedConfigIndex]}
-                        {#if config?.configType === "profile"}
-                            <button
-                                on:click|stopPropagation={async () => {
-                                    splitConfig(config);
-                                    configTypeSelector = "preset";
-                                    submitAnalytics({
-                                        eventName: "Cloud Action",
-                                        payload: {
-                                            click: "Split config"
-                                        }
-                                    });
-                                }}
-                                class="flex items-center group relative"
-                            >
-                                <SvgIcon class="w-5 -m-0.5" iconPath="split_config" />
-                                <div
-                                    class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                >
-                                    Split
-                                </div>
-                            </button>
-                        {/if}
-                    </svelte:fragment>
-                    <span slot="toggle-accessibility">
-                        {@const config = filteredConfigs[selectedConfigIndex]}
-                        <ToggleSwitch
-                            checkbox={config?.public}
-                            on:toggle={(e) => {
+                            {/each}
+                        </div>
+                    </div>
+                </Pane>
+                <Pane size={40}>
+                    <div class="grid grid-rows-[1fr_auto] h-full w-full">
+                        <ConfigCardDisplay
+                            on:delete-config={async () => {
+                                const config = filteredConfigs[selectedConfigIndex];
+                                selectedConfigIndex =
+                                    selectedConfigIndex - 1 < 0 ? 0 : selectedConfigIndex - 1;
+                                configManager?.deleteConfig(config);
+                                provideSelectedConfigForEditor(undefined);
                                 submitAnalytics({
                                     eventName: "Cloud Action",
                                     payload: {
-                                        click: "Set config visibility"
+                                        click: "Config delete"
                                     }
                                 });
-                                configManager?.changeCloudVisibility(config, e.detail);
+                            }}
+                            on:description-change={(e) => {
+                                const { newDescription } = e.detail;
+                                const config = filteredConfigs[selectedConfigIndex];
+                                let oldDescription = config.description;
+                                let newConfig = {
+                                    ...config,
+                                    description: newDescription
+                                };
+                                configManager?.saveConfig(newConfig, false);
+                                submitAnalytics({
+                                    eventName: "Cloud Action",
+                                    payload: {
+                                        click: "Edit config description"
+                                    }
+                                });
+                            }}
+                            on:name-change={(e) => {
+                                const { newName } = e.detail;
+                                const config = filteredConfigs[selectedConfigIndex];
+                                let oldConfigName = config.name;
+                                let newConfig = {
+                                    ...config,
+                                    name: newName
+                                };
+                                configManager?.saveConfig(newConfig, false);
+                                submitAnalytics({
+                                    eventName: "Cloud Action",
+                                    payload: {
+                                        click: "Edit config name"
+                                    }
+                                });
+                            }}
+                            on:overwrite-profile={() => {
+                                const config = filteredConfigs[selectedConfigIndex];
+                                overwriteConfigWithEditorConfig(config);
+                            }}
+                            data={{
+                                selectedConfig: filteredConfigs[selectedConfigIndex],
+                                selectedComponentTypes: selectedComponentTypes
                             }}
                         >
-                            <div class="relative group" slot="on">
-                                <SvgIcon display={true} iconPath={"public"} class="mr-1" />
-                                <div
-                                    class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                            <svelte:fragment slot="link-button">
+                                {@const config = filteredConfigs[selectedConfigIndex]}
+                                {#if config?.syncStatus != "local"}
+                                    <button
+                                        class="relative group flex"
+                                        on:click|stopPropagation={() => {
+                                            createCloudConfigLink(config);
+                                            provideSelectedConfigForEditor(undefined);
+                                            submitAnalytics({
+                                                eventName: "Cloud Action",
+                                                payload: {
+                                                    click: "Create config link"
+                                                }
+                                            });
+                                        }}
+                                    >
+                                        <SvgIcon class="w-4" iconPath="link" />
+                                        <div
+                                            class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                        >
+                                            Link
+                                        </div>
+                                        {#if linkFlag == config?.id}
+                                            <div
+                                                transition:fade={{
+                                                    duration: 100
+                                                }}
+                                                class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
+                                            >
+                                                Copied to clipboard!
+                                            </div>
+                                        {/if}
+                                    </button>
+                                {/if}
+                            </svelte:fragment>
+                            <svelte:fragment slot="sync-config-button">
+                                {@const config = filteredConfigs[selectedConfigIndex]}
+                                {#if config?.syncStatus != "synced" || !config?.isEditable}
+                                    <button
+                                        on:click|stopPropagation={async () => {
+                                            if (
+                                                config.isEditable &&
+                                                config.syncStatus === "local" &&
+                                                !$userAccountService.account
+                                            ) {
+                                                loginToProfileCloud();
+                                                return;
+                                            }
+                                            let configToSave = config;
+                                            if (!configToSave.isEditable) {
+                                                configToSave = {
+                                                    ...configToSave,
+                                                    name: `Copy of ${configToSave.name}`,
+                                                    owner: undefined,
+                                                    id: ""
+                                                };
+                                                console.log({
+                                                    configToSave
+                                                });
+                                            }
+                                            configManager?.saveConfig(configToSave, true);
+                                            provideSelectedConfigForEditor(undefined);
+                                            submitAnalytics({
+                                                eventName: "Cloud Action",
+                                                payload: {
+                                                    click: "Sync config"
+                                                }
+                                            });
+                                        }}
+                                        class="flex items-center group relative"
+                                    >
+                                        <SvgIcon
+                                            class={!config?.isEditable ? "w-4" : "w-5 -m-0.5"}
+                                            iconPath={!config?.isEditable
+                                                ? "import"
+                                                : config.syncStatus === "cloud"
+                                                ? "download_from_cloud"
+                                                : "move_to_cloud_02"}
+                                        />
+                                        <div
+                                            class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                        >
+                                            {!config?.isEditable
+                                                ? "Import"
+                                                : config.syncStatus === "cloud"
+                                                ? "Download"
+                                                : "Upload"}
+                                        </div>
+                                    </button>
+                                {/if}
+                            </svelte:fragment>
+                            <svelte:fragment slot="split-config-button">
+                                {@const config = filteredConfigs[selectedConfigIndex]}
+                                {#if config?.configType === "profile"}
+                                    <button
+                                        on:click|stopPropagation={async () => {
+                                            splitConfig(config);
+                                            configTypeSelector = "preset";
+                                            submitAnalytics({
+                                                eventName: "Cloud Action",
+                                                payload: {
+                                                    click: "Split config"
+                                                }
+                                            });
+                                        }}
+                                        class="flex items-center group relative"
+                                    >
+                                        <SvgIcon class="w-5 -m-0.5" iconPath="split_config" />
+                                        <div
+                                            class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                        >
+                                            Split
+                                        </div>
+                                    </button>
+                                {/if}
+                            </svelte:fragment>
+                            <span slot="toggle-accessibility">
+                                {@const config = filteredConfigs[selectedConfigIndex]}
+                                <ToggleSwitch
+                                    checkbox={config?.public}
+                                    on:toggle={(e) => {
+                                        submitAnalytics({
+                                            eventName: "Cloud Action",
+                                            payload: {
+                                                click: "Set config visibility"
+                                            }
+                                        });
+                                        configManager?.changeCloudVisibility(config, e.detail);
+                                    }}
                                 >
-                                    Public
-                                </div>
-                            </div>
-                            <div class="relative group" slot="off">
-                                <SvgIcon
-                                    display={true}
-                                    iconPath={"private"}
-                                    class="mr-1 text-opacity-70"
-                                />
-                                <div
-                                    class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                >
-                                    Private
-                                </div>
-                            </div>
-                        </ToggleSwitch>
-                    </span>
-                </ConfigCardDisplay>
-            </div>
-            <div class="px-4 mb-2">
-                <UserLogin {usernameInput} />
-            </div>
+                                    <div class="relative group" slot="on">
+                                        <SvgIcon display={true} iconPath={"public"} class="mr-1" />
+                                        <div
+                                            class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                        >
+                                            Public
+                                        </div>
+                                    </div>
+                                    <div class="relative group" slot="off">
+                                        <SvgIcon
+                                            display={true}
+                                            iconPath={"private"}
+                                            class="mr-1 text-opacity-70"
+                                        />
+                                        <div
+                                            class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
+                                        >
+                                            Private
+                                        </div>
+                                    </div>
+                                </ToggleSwitch>
+                            </span>
+                        </ConfigCardDisplay>
+
+                        <UserLogin {usernameInput} />
+                    </div>
+                </Pane>
+            </Splitpanes>
         </div>
     </div>
 </div>

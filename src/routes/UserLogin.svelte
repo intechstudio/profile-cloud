@@ -174,7 +174,7 @@
         {/if}
     </div>
 {:else}
-    <div class="pt-4">
+    <div class="pt-2">
         <div class="rounded-md border border-amber-500 p-4 bg-secondary/90">
             <div class="pb-1 text-white">login to save and browse your profiles</div>
             <div class="pt-1">
