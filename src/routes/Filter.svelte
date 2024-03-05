@@ -8,19 +8,11 @@
 
     export function reset() {
         searchbarValue = "";
-        sortAsc = false;
+        sortAsc = true;
         sortField = SortFieldType.date;
     }
 
     const dispatch = createEventDispatcher();
-
-    let filterBoxWidth: number;
-    let compactMode: boolean = true;
-
-    $: {
-        console.log(filterBoxWidth);
-        compactMode = filterBoxWidth < 400;
-    }
 
     let searchSuggestions: string[] = [
         "Profile",
@@ -44,7 +36,7 @@
     }
 
     let searchbarValue = "";
-    let sortAsc = false;
+    let sortAsc = true;
     let sortField: SortFieldType = SortFieldType.date;
 
     $: {
@@ -115,23 +107,23 @@
 
 <container class={$$props.class} class:hidden={!visible}>
     <div
-        class="w-full grid {compactMode && display !== 'browser'
+        class="w-full grid {display !== 'browser'
             ? 'grid-cols-1'
             : 'grid-cols-[1fr_auto]'} grid gap-x-2 gap-y-2 items-center"
-        bind:clientWidth={filterBoxWidth}
     >
-        <div id="searchbar" class="flex flex-col w-full">
-            <div class="relative w-full">
-                <svg
-                    class="absolute left-3 bottom-[28%]"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 18 18"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <path
-                        d="M13.2095 11.6374C14.2989 10.1509 14.7868 8.30791 14.5756
+        <div class="flex flex-row w-full gap-2">
+            <div id="searchbar" class="flex flex-col w-full">
+                <div class="relative w-full">
+                    <svg
+                        class="absolute left-3 bottom-[28%]"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 18 18"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                            d="M13.2095 11.6374C14.2989 10.1509 14.7868 8.30791 14.5756
                                 6.47715C14.3645 4.64639 13.4699 2.96286 12.0708 1.76338C10.6717
                                 0.563893 8.87126 -0.0630888 7.02973 0.0078685C5.1882 0.0788258
                                 3.44137 0.84249 2.13872 2.14608C0.83606 3.44967 0.0736462 5.19704
@@ -153,40 +145,42 @@
                                 4.09802 2.93707 2.93763C4.09745 1.77725 5.67126 1.12536 7.31229
                                 1.12536C8.95332 1.12536 10.5271 1.77725 11.6875 2.93763C12.8479
                                 4.09802 13.4998 5.67183 13.4998 7.31286V7.31286Z"
-                        fill="#CDCDCD"
-                    />
-                </svg>
+                            fill="#CDCDCD"
+                        />
+                    </svg>
 
-                {#if searchbarValue != ""}
-                    <button
-                        class="absolute right-2 bottom-[25%]"
-                        on:click={() => (searchbarValue = "")}
-                    >
-                        <svg
-                            width="28"
-                            height="28"
-                            viewBox="0 0 39 39"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
+                    {#if searchbarValue != ""}
+                        <button
+                            class="absolute right-2 bottom-[25%]"
+                            on:click={() => (searchbarValue = "")}
                         >
-                            <path
-                                d="M24.25 32.9102L14.75 23.4102M24.25 23.4102L14.75 32.9102"
-                                stroke="#FFF"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                            />
-                        </svg>
-                    </button>
-                {/if}
+                            <svg
+                                width="28"
+                                height="28"
+                                viewBox="0 0 39 39"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    d="M24.25 32.9102L14.75 23.4102M24.25 23.4102L14.75 32.9102"
+                                    stroke="#FFF"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                />
+                            </svg>
+                        </button>
+                    {/if}
 
-                <input
-                    type="text"
-                    bind:value={searchbarValue}
-                    class="flex w-full py-2 px-12 bg-white dark:bg-primary-700
+                    <input
+                        type="text"
+                        bind:value={searchbarValue}
+                        class="flex w-full py-2 px-12 bg-white dark:bg-primary-700
                 dark:placeholder-gray-400 text-md focus:outline-none"
-                    placeholder="Find..."
-                />
+                        placeholder="Find..."
+                    />
+                </div>
             </div>
+            <slot />
         </div>
         <div class="flex flex-grow flex-row items-center gap-2">
             <label
@@ -199,7 +193,6 @@
             <div class="flex flex-row gap-1 flex-grow flex-nowrap">
                 <select
                     class="bg-white dark:bg-secondary border-none flex-grow p-1 focus:outline-none min-w-fit"
-                    class:flex-grow={compactMode}
                     id="sort-select-box"
                     name="sorting select"
                     bind:value={sortField}
@@ -258,7 +251,7 @@
                 </button>
             </div>
         </div>
-        <div class="flex flex-row gap-1 py-1 flex-wrap w-full {compactMode ? '' : 'col-span-2'}">
+        <div class="flex flex-row gap-1 flex-wrap">
             {#each searchSuggestions as suggestion}
                 <button
                     on:click={() => handleSuggestionClicked(suggestion)}
