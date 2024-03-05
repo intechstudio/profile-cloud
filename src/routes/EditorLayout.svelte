@@ -23,14 +23,17 @@
     import { loginToProfileCloud } from "./user_account";
     import Filter from "./Filter.svelte";
     import ConfigCardDisplay from "./ConfigCardDisplay.svelte";
-    import { scrollToTop } from "./scroll-actions";
     import { Pane, Splitpanes } from "svelte-splitpanes";
+    import Accordion from "$lib/components/accordion/Accordion.svelte";
+    import AccordionItem from "$lib/components/accordion/AccordionItem.svelte";
 
-    let selectedConfigIndex: number = 0;
+    let selectedConfigId: string | undefined = undefined;
+    let selectedConfigIndex: number;
 
     let configManager: ConfigManager | undefined = undefined;
     let configs: Config[] = [];
     let filteredConfigs: Config[] = [];
+    let isFiltering: boolean = false;
 
     let linkFlag: string | undefined = undefined;
 
@@ -117,7 +120,6 @@
                 ?.saveConfig(BaseConfigSchema.parse(configResponse.data), true)
                 .then(() => {
                     filter.reset();
-                    scrollToTop(configList);
                 });
         }
     }
@@ -182,7 +184,18 @@
     }
 
     async function createCloudConfigLink(config: Config) {
-        const configLinkUrl = "grid-editor://?config-link=" + config.id;
+        const configCloudId = configManager?.getConfigCloudId(config);
+        if (!configCloudId) {
+            parentIframeCommunication({
+                windowPostMessageName: "sendLogMessage",
+                dataForParent: {
+                    type: "fail",
+                    message: `Upload config before linking!`
+                }
+            });
+            return;
+        }
+        const configLinkUrl = "grid-editor://?config-link=" + configCloudId;
 
         await parentIframeCommunication({
             windowPostMessageName: "createCloudConfigLink",
@@ -216,6 +229,7 @@
     function handleFilter(e: any) {
         const { configs } = e.detail;
         filteredConfigs = configs;
+        isFiltering = e.detail.isFiltering;
     }
 
     onMount(async () => {
@@ -266,6 +280,7 @@
     }
 
     function handleOpenconfigurationSave() {
+        provideSelectedConfigForEditor(undefined);
         configurationSaveVisible = true;
     }
 </script>
@@ -305,45 +320,80 @@
                 class="h-full w-full"
             >
                 <Pane size={60}>
-                    <div class="flex flex-col overflow-hidden h-full py-3">
+                    <div class="flex flex-col overflow-hidden h-full pb-3">
                         <div
                             class="overflow-y-scroll grid grid-flow-row auto-rows-min pr-2 gap-4 flex-grow"
                             bind:this={configList}
                         >
-                            {#each filteredConfigs as config, index (config.id)}
-                                <div in:slide>
-                                    <ConfigCardEditor
-                                        on:click={() => {
-                                            /*
-                            if (selectedConfigIndex == index) {
-                                return;
-                            }
-                            */
-                                            provideSelectedConfigForEditor(config);
-                                            selectedConfigIndex = index;
-                                        }}
-                                        on:focusout={(e) => {
-                                            //selectedConfigIndex = -1;
-                                            //provideSelectedConfigForEditor(undefined);
-                                        }}
-                                        data={{
-                                            ...config,
-                                            selectedComponentTypes: selectedComponentTypes
-                                        }}
-                                        isSelected={index === selectedConfigIndex}
-                                    />
-                                </div>
-                            {/each}
+                            <Accordion key="my_configs">
+                                {#each isFiltering ? ["my_configs", "other_configs"] : ["my_configs", "recommended_configs", "community_configs"] as configType}
+                                    {@const categoryList = filteredConfigs.filter((e) => {
+                                        var isMyConfig =
+                                            e.syncStatus == "local" ||
+                                            e.owner === configManager?.getCurrentOwnerId();
+                                        var isOfficialConfig = [
+                                            "7ZOAy8UmSGTsNeQcKmNLMUgfEbW2",
+                                            "12gUq1wXjDVkLH9pDUbN2RzCoos1",
+                                            "RDoRUL39LEe9R81BSEJqwj52n0v1"
+                                        ].includes(e.owner ?? "");
+                                        switch (configType) {
+                                            case "my_configs":
+                                                return isMyConfig;
+                                            case "other_configs":
+                                                return !isMyConfig;
+                                            case "recommended_configs":
+                                                return !isMyConfig && isOfficialConfig;
+                                            default:
+                                                return !isMyConfig && !isOfficialConfig;
+                                        }
+                                    })}
+                                    <AccordionItem key={configType}>
+                                        <div slot="header" class="p-2">
+                                            {#if configType === "my_configs"}
+                                                <p>My configs ({categoryList.length})</p>
+                                            {:else if configType === "other_configs"}
+                                                <p>Other configs ({categoryList.length})</p>
+                                            {:else if configType === "recommended_configs"}
+                                                <p>Recommended configs ({categoryList.length})</p>
+                                            {:else if configType === "community_configs"}
+                                                <p>Community configs ({categoryList.length})</p>
+                                            {/if}
+                                        </div>
+                                        <svelte:fragment slot="body">
+                                            {#each categoryList as config, index (config.id)}
+                                                <div in:slide class="py-1">
+                                                    <ConfigCardEditor
+                                                        on:click={() => {
+                                                            provideSelectedConfigForEditor(config);
+                                                            selectedConfigId = config.id;
+                                                            selectedConfigIndex =
+                                                                filteredConfigs.findIndex(
+                                                                    (e) => e.id === selectedConfigId
+                                                                );
+                                                        }}
+                                                        data={{
+                                                            ...config,
+                                                            selectedComponentTypes:
+                                                                selectedComponentTypes
+                                                        }}
+                                                        isSelected={config.id === selectedConfigId}
+                                                    />
+                                                </div>
+                                            {/each}
+                                        </svelte:fragment>
+                                    </AccordionItem>
+                                {/each}
+                            </Accordion>
                         </div>
-                    </div>
-                </Pane>
+                    </div></Pane
+                >
                 <Pane size={40}>
                     <div class="grid grid-rows-[1fr_auto] h-full w-full">
                         <ConfigCardDisplay
                             on:delete-config={async () => {
                                 const config = filteredConfigs[selectedConfigIndex];
-                                selectedConfigIndex =
-                                    selectedConfigIndex - 1 < 0 ? 0 : selectedConfigIndex - 1;
+                                selectedConfigIndex = -1;
+                                selectedConfigId = undefined;
                                 configManager?.deleteConfig(config);
                                 provideSelectedConfigForEditor(undefined);
                                 submitAnalytics({

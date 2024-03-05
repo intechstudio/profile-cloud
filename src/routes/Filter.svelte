@@ -42,7 +42,7 @@
     $: {
         const filtered: Config[] = filterConfigs(searchbarValue, configs);
         const sorted: Config[] = sortConfigs(sortField, sortAsc, filtered);
-        dispatch("filter", { configs: sorted });
+        dispatch("filter", { configs: sorted, isFiltering: searchbarValue.trim().length != 0 });
     }
 
     function filterConfigs(searchString: string, array: Config[]): Config[] {

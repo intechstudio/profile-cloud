@@ -28,6 +28,8 @@ export interface ConfigManager {
     saveConfig(config: BaseConfig, createMissingConfigs: boolean): Promise<void>;
     importLinkedConfig(linkId: string): Promise<CloudConfig | null | undefined>;
     changeCloudVisibility(config: Config, visibility: boolean): Promise<void>;
+    getCurrentOwnerId(): string | null | undefined;
+    getConfigCloudId(config: Config): string | undefined;
 }
 
 let latestLocalConfigs: LocalConfig[] = [];
@@ -244,6 +246,7 @@ export function createConfigManager(observer: {
                     configCreated = true;
                 })
                 .catch((e) => {
+                    console.log(e);
                     configError = true;
                 });
         }
@@ -296,11 +299,21 @@ export function createConfigManager(observer: {
         return configLink;
     }
 
+    function getCurrentOwnerId() {
+        return currentOwnerId;
+    }
+
+    function getConfigCloudId(config: Config): string | undefined {
+        return appConfigIdToConfigMap.get(config.id)?.cloud?.id;
+    }
+
     return {
         cancel,
         deleteConfig,
         saveConfig,
         importLinkedConfig,
-        changeCloudVisibility
+        changeCloudVisibility,
+        getCurrentOwnerId,
+        getConfigCloudId
     };
 }
