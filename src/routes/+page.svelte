@@ -31,7 +31,7 @@
 
 <section class="w-full h-full flex-grow bg-neutral-100 dark:bg-primary">
     <div class="w-full h-full bg-neutral-100 dark:bg-primary/100">
-        <div class="px-4 container mx-auto flex flex-col max-w-screen-xl h-full">
+        <div class="container flex flex-col max-w-screen-xl h-full">
             <DisplayOnWeb>
                 <div
                     class="flex flex-col justify-between pt-8 text-opacity-80 text-black dark:text-opacity-80 dark:text-white"

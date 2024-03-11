@@ -285,15 +285,17 @@
     }
 </script>
 
-<div id="main" class="flex flex-grow h-screen relative z-0 -mx-4 px-4 overflow-hidden">
-    <div class="flex flex-col py-4 h-full w-full">
-        <div>
+<div id="main" class="flex flex-grow h-screen relative z-0 overflow-hidden">
+    <div class="flex flex-col gap-2 h-full w-full">
+        <div class="px-4 pt-4">
             {#if configurationSaveVisible}
-                <ConfigurationSave
-                    data={selectedComponentTypes}
-                    on:close={handleConfigurationSaverCloseClicked}
-                    on:save={handleConfigurationSaverSaveClicked}
-                />
+                <div class="pb-[7px]">
+                    <ConfigurationSave
+                        data={selectedComponentTypes}
+                        on:close={handleConfigurationSaverCloseClicked}
+                        on:save={handleConfigurationSaverSaveClicked}
+                    />
+                </div>
             {:else}
                 <Filter
                     bind:this={filter}
@@ -312,7 +314,10 @@
             {/if}
         </div>
 
-        <div class="overflow-hidden flex flex-col h-full">
+        <div
+            class="overflow-hidden flex flex-col h-full relative"
+            class:opacity-75={configurationSaveVisible}
+        >
             <Splitpanes
                 horizontal={true}
                 theme="modern-theme"
@@ -320,7 +325,7 @@
                 class="h-full w-full"
             >
                 <Pane size={60}>
-                    <div class="flex flex-col overflow-hidden h-full pb-3">
+                    <div class="flex flex-col overflow-hidden h-full pb-3 px-4">
                         <div
                             class="overflow-y-scroll grid grid-flow-row auto-rows-min pr-2 gap-4 flex-grow"
                             bind:this={configList}
@@ -348,7 +353,7 @@
                                         }
                                     })}
                                     <AccordionItem key={configType}>
-                                        <div slot="header" class="p-2">
+                                        <div slot="header" class="pb-1">
                                             {#if configType === "my_configs"}
                                                 <p>My configs ({categoryList.length})</p>
                                             {:else if configType === "other_configs"}
@@ -598,13 +603,17 @@
                             </span>
                         </ConfigCardDisplay>
 
-                        <UserLogin {usernameInput} />
+                        <div class="px-4 pb-4">
+                            <UserLogin {usernameInput} />
+                        </div>
                     </div>
                 </Pane>
             </Splitpanes>
+            {#if configurationSaveVisible}
+                <div
+                    class="pointer-events-auto absolute w-full h-full z-[2] bg-black bg-opacity-30"
+                />
+            {/if}
         </div>
     </div>
 </div>
-
-<style>
-</style>
