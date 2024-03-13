@@ -5,6 +5,7 @@
     import { compareSemVer } from "semver-parser";
     import EditorLayout from "./EditorLayout.svelte";
     import BrowserLayout from "./BrowserLayout.svelte";
+    import { PUBLIC_APP_ENV } from "$env/static/public";
 
     const display = getContext("display");
     let isEditorVersionCompatible = true;
@@ -12,7 +13,9 @@
     async function profileCloudMounted() {
         return await parentIframeCommunication({
             windowPostMessageName: "profileCloudMounted",
-            dataForParent: {}
+            dataForParent: {
+                environment: PUBLIC_APP_ENV
+            }
         });
     }
 
