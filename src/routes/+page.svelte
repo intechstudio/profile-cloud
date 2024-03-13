@@ -14,7 +14,7 @@
         return await parentIframeCommunication({
             windowPostMessageName: "profileCloudMounted",
             dataForParent: {
-                "environment": PUBLIC_APP_ENV,
+                environment: PUBLIC_APP_ENV
             }
         });
     }
