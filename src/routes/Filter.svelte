@@ -101,7 +101,8 @@
         return array;
     }
 
-    function handleSuggestionClicked(value: string) {
+    function handleSuggestionClicked(e: CustomEvent) {
+        const { value } = e.detail;
         searchbarValue = value;
     }
 </script>
@@ -113,7 +114,11 @@
             : 'grid-cols-[1fr_auto]'} grid gap-x-2 gap-y-2 items-center"
     >
         <div class="flex flex-row w-full gap-2">
-            <SearchBar suggestions={searchSuggestions} />
+            <SearchBar
+                bind:value={searchbarValue}
+                suggestions={searchSuggestions}
+                on:suggestion-clicked={handleSuggestionClicked}
+            />
             <slot />
         </div>
         <div class="flex flex-grow flex-row items-center gap-2">

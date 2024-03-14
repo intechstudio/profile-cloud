@@ -53,8 +53,6 @@
     let isSearchSortingShows = true;
     let configurationSaveVisible = false;
 
-    let configList: HTMLElement;
-
     function updateFontSize(size: string) {
         const main = document.querySelector("#main") as HTMLElement;
         if (!main) {
@@ -325,71 +323,66 @@
                 class="h-full w-full"
             >
                 <Pane size={60}>
-                    <div class="flex flex-col overflow-hidden h-full pb-3 px-4">
-                        <div
-                            class="overflow-y-scroll grid grid-flow-row auto-rows-min pr-2 gap-4 flex-grow"
-                            bind:this={configList}
-                        >
-                            <Accordion key="my_configs">
-                                {#each isFiltering ? ["my_configs", "other_configs"] : ["my_configs", "recommended_configs", "community_configs"] as configType}
-                                    {@const categoryList = filteredConfigs.filter((e) => {
-                                        var isMyConfig =
-                                            e.syncStatus == "local" ||
-                                            e.owner === configManager?.getCurrentOwnerId();
-                                        var isOfficialConfig = [
-                                            "7ZOAy8UmSGTsNeQcKmNLMUgfEbW2",
-                                            "12gUq1wXjDVkLH9pDUbN2RzCoos1",
-                                            "RDoRUL39LEe9R81BSEJqwj52n0v1"
-                                        ].includes(e.owner ?? "");
-                                        switch (configType) {
-                                            case "my_configs":
-                                                return isMyConfig;
-                                            case "other_configs":
-                                                return !isMyConfig;
-                                            case "recommended_configs":
-                                                return !isMyConfig && isOfficialConfig;
-                                            default:
-                                                return !isMyConfig && !isOfficialConfig;
-                                        }
-                                    })}
-                                    <AccordionItem key={configType}>
-                                        <div slot="header" class="pb-1">
-                                            {#if configType === "my_configs"}
-                                                <p>My configs ({categoryList.length})</p>
-                                            {:else if configType === "other_configs"}
-                                                <p>Other configs ({categoryList.length})</p>
-                                            {:else if configType === "recommended_configs"}
-                                                <p>Recommended configs ({categoryList.length})</p>
-                                            {:else if configType === "community_configs"}
-                                                <p>Community configs ({categoryList.length})</p>
-                                            {/if}
-                                        </div>
-                                        <svelte:fragment slot="body">
-                                            {#each categoryList as config, index (config.id)}
-                                                <div in:slide class="py-1">
-                                                    <ConfigCardEditor
-                                                        on:click={() => {
-                                                            provideSelectedConfigForEditor(config);
-                                                            selectedConfigId = config.id;
-                                                            selectedConfigIndex =
-                                                                filteredConfigs.findIndex(
-                                                                    (e) => e.id === selectedConfigId
-                                                                );
-                                                        }}
-                                                        data={{
-                                                            ...config,
-                                                            selectedComponentTypes:
-                                                                selectedComponentTypes
-                                                        }}
-                                                        isSelected={config.id === selectedConfigId}
-                                                    />
-                                                </div>
-                                            {/each}
-                                        </svelte:fragment>
-                                    </AccordionItem>
-                                {/each}
-                            </Accordion>
-                        </div>
+                    <div class="h-full flex-grow overflow-hidden pb-3 px-4">
+                        <Accordion key="my_configs">
+                            {#each isFiltering ? ["my_configs", "other_configs"] : ["my_configs", "recommended_configs", "community_configs"] as configType}
+                                {@const categoryList = filteredConfigs.filter((e) => {
+                                    var isMyConfig =
+                                        e.syncStatus == "local" ||
+                                        e.owner === configManager?.getCurrentOwnerId();
+                                    var isOfficialConfig = [
+                                        "7ZOAy8UmSGTsNeQcKmNLMUgfEbW2",
+                                        "12gUq1wXjDVkLH9pDUbN2RzCoos1",
+                                        "RDoRUL39LEe9R81BSEJqwj52n0v1"
+                                    ].includes(e.owner ?? "");
+                                    switch (configType) {
+                                        case "my_configs":
+                                            return isMyConfig;
+                                        case "other_configs":
+                                            return !isMyConfig;
+                                        case "recommended_configs":
+                                            return !isMyConfig && isOfficialConfig;
+                                        default:
+                                            return !isMyConfig && !isOfficialConfig;
+                                    }
+                                })}
+                                <AccordionItem key={configType}>
+                                    <div slot="header" class="pb-1">
+                                        {#if configType === "my_configs"}
+                                            <p>My configs ({categoryList.length})</p>
+                                        {:else if configType === "other_configs"}
+                                            <p>Other configs ({categoryList.length})</p>
+                                        {:else if configType === "recommended_configs"}
+                                            <p>Recommended configs ({categoryList.length})</p>
+                                        {:else if configType === "community_configs"}
+                                            <p>Community configs ({categoryList.length})</p>
+                                        {/if}
+                                    </div>
+                                    <svelte:fragment slot="body">
+                                        {#each categoryList as config, index (config.id)}
+                                            <div in:slide class="py-1">
+                                                <ConfigCardEditor
+                                                    on:click={() => {
+                                                        provideSelectedConfigForEditor(config);
+                                                        selectedConfigId = config.id;
+                                                        selectedConfigIndex =
+                                                            filteredConfigs.findIndex(
+                                                                (e) => e.id === selectedConfigId
+                                                            );
+                                                    }}
+                                                    data={{
+                                                        ...config,
+                                                        selectedComponentTypes:
+                                                            selectedComponentTypes
+                                                    }}
+                                                    isSelected={config.id === selectedConfigId}
+                                                />
+                                            </div>
+                                        {/each}
+                                    </svelte:fragment>
+                                </AccordionItem>
+                            {/each}
+                        </Accordion>
                     </div></Pane
                 >
                 <Pane size={40}>

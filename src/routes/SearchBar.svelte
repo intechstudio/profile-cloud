@@ -6,7 +6,8 @@
     export let value: string = "";
     export let suggestions: string[];
 
-    let inputFocus = false;
+    let showSuggestions = false;
+    let suggestionContainer: HTMLElement;
 
     function handleValueChange(value: string) {
         dispatch("change", { value: value });
@@ -14,14 +15,20 @@
 
     $: handleValueChange(value);
 
-    function handleSuggestionClicked(suggestion: string) {}
-
-    function handleInputFocus() {
-        inputFocus = true;
+    function handleSuggestionClicked(suggestion: string) {
+        console.log("YAY");
+        dispatch("suggestion-clicked", { value: suggestion });
     }
 
-    function handleInputBlur() {
-        inputFocus = false;
+    function handleSearchbarFocus() {
+        showSuggestions = true;
+    }
+
+    function handleSearchbarBlur(event: FocusEvent) {
+        // Delay the update of showSuggestions to ensure that blur event on suggestion container fires first
+        setTimeout(() => {
+            showSuggestions = false;
+        }, 150);
     }
 </script>
 
@@ -84,25 +91,28 @@
         <input
             type="text"
             bind:value
-            on:focus={handleInputFocus}
-            on:blur={handleInputBlur}
+            on:focus={handleSearchbarFocus}
+            on:blur={handleSearchbarBlur}
             class="flex w-full py-2 px-12 bg-white dark:bg-primary-700
     dark:placeholder-gray-400 text-md focus:outline-none"
             placeholder="Find..."
         />
     </div>
-    {#if inputFocus}
+    {#if showSuggestions}
         <div
-            class="absolute top-full left-0 bg-black bg-opacity-75 z-[1] p-2 rounded flex flex-col w-full max-h-36 overflow-y-auto"
+            bind:this={suggestionContainer}
+            class="absolute top-full left-0 bg-primary shadow shadow-black z-[1] p-2 rounded-b flex flex-col w-full max-h-36 overflow-y-auto"
         >
             {#each suggestions as suggestion}
-                <button
-                    on:click={() => handleSuggestionClicked(suggestion)}
-                    class="hover:bg-primary-500/50 text-xs dark:text-primary-100 text-left
+                {#if suggestion.includes(value)}
+                    <button
+                        on:click={() => handleSuggestionClicked(suggestion)}
+                        class="hover:bg-primary-500/50 text-xs dark:text-primary-100 text-left
     py-0.5 px-1 h-min"
-                >
-                    {suggestion}
-                </button>
+                    >
+                        {suggestion}
+                    </button>
+                {/if}
             {/each}
         </div>
     {/if}
