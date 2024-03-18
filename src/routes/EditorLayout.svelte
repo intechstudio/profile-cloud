@@ -228,6 +228,10 @@
         const { configs } = e.detail;
         filteredConfigs = configs;
         isFiltering = e.detail.isFiltering;
+        selectedConfigIndex = filteredConfigs.findIndex((e) => e.id === selectedConfigId);
+        if (selectedConfigIndex === -1) {
+            selectedConfigId = undefined;
+        }
     }
 
     onMount(async () => {
@@ -360,7 +364,7 @@
                                     </div>
                                     <svelte:fragment slot="body">
                                         {#each categoryList as config, index (config.id)}
-                                            <div in:slide class="py-1">
+                                            <div class="py-1">
                                                 <ConfigCardEditor
                                                     on:click={() => {
                                                         provideSelectedConfigForEditor(config);
