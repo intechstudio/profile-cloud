@@ -4,7 +4,7 @@
         ELEMENT = 1
     }
 
-    enum ConfigurationSaveStep {
+    enum ConfigurationSaveState {
         SELECT = 0,
         SAVE = 1
     }
@@ -51,15 +51,15 @@
         }
     }
 
-    let step = ConfigurationSaveStep.SELECT;
+    let state = ConfigurationSaveState.SELECT;
 
-    function handleNextClicked(value: ConfigurationSaveStep) {
+    function handleNextClicked(value: ConfigurationSaveState) {
         switch (value) {
-            case ConfigurationSaveStep.SELECT: {
-                step = ConfigurationSaveStep.SAVE;
+            case ConfigurationSaveState.SELECT: {
+                state = ConfigurationSaveState.SAVE;
                 break;
             }
-            case ConfigurationSaveStep.SAVE: {
+            case ConfigurationSaveState.SAVE: {
                 dispatch("save", { type: selected, name: nameInputValue });
                 dispatch("close");
                 break;
@@ -67,24 +67,43 @@
         }
     }
 
-    function handleBackClicked(value: ConfigurationSaveStep) {
+    function handleBackClicked(value: ConfigurationSaveState) {
         switch (value) {
-            case ConfigurationSaveStep.SELECT: {
+            case ConfigurationSaveState.SELECT: {
                 dispatch("close");
                 break;
             }
-            case ConfigurationSaveStep.SAVE: {
-                step = ConfigurationSaveStep.SELECT;
+            case ConfigurationSaveState.SAVE: {
+                state = ConfigurationSaveState.SELECT;
                 break;
             }
         }
     }
 
+    $: {
+        switch (state) {
+            case ConfigurationSaveState.SELECT: {
+                break;
+            }
+            case ConfigurationSaveState.SAVE: {
+                nameInput?.focus();
+                break;
+            }
+        }
+    }
+
+    $: handleStateChange(state);
+
+    function handleStateChange(state: ConfigurationSaveState) {
+        dispatch("state-change", { state: state });
+    }
+
     let nameInputValue: string;
+    let nameInput: HTMLInputElement | undefined;
 </script>
 
 <container class="flex w-full">
-    {#if step === ConfigurationSaveStep.SELECT}
+    {#if state === ConfigurationSaveState.SELECT}
         <div class="grid grid-cols-[1fr_1fr_auto] gap-2 w-full">
             <button
                 class="flex w-full dark:bg-primary-700 dark:hover:bg-secondary items-center justify-center {selected ===
@@ -107,18 +126,18 @@
             <div class="flex flex-col gap-2 w-20">
                 <button
                     class="px-4 py-1 dark:bg-primary-700 dark:hover:bg-secondary"
-                    on:click={() => handleBackClicked(ConfigurationSaveStep.SELECT)}>Cancel</button
+                    on:click={() => handleBackClicked(ConfigurationSaveState.SELECT)}>Cancel</button
                 >
                 <button
                     class="px-4 py-1 dark:bg-emerald-600 font-medium"
                     class:opacity-50={typeof selected === "undefined"}
                     class:dark:hover:bg-emerald-700={typeof selected !== "undefined"}
                     disabled={typeof selected === "undefined"}
-                    on:click={() => handleNextClicked(ConfigurationSaveStep.SELECT)}>Next</button
+                    on:click={() => handleNextClicked(ConfigurationSaveState.SELECT)}>Next</button
                 >
             </div>
         </div>
-    {:else if step === ConfigurationSaveStep.SAVE}
+    {:else if state === ConfigurationSaveState.SAVE}
         <div class="grid grid-cols-[1fr_auto] gap-2 w-full">
             <div class="flex flex-col gap-2 w-full">
                 {#if selected === ConfigurationSaveType.ELEMENT}
@@ -129,6 +148,7 @@
 
                 <input
                     type="text"
+                    bind:this={nameInput}
                     bind:value={nameInputValue}
                     class="flex w-full p-2 bg-white dark:bg-primary-700
                         dark:placeholder-gray-400 text-md focus:outline-none"
@@ -138,14 +158,14 @@
             <div class="flex flex-col gap-2 w-20">
                 <button
                     class="px-4 py-1 dark:bg-primary-700 dark:hover:bg-secondary"
-                    on:click={() => handleBackClicked(ConfigurationSaveStep.SAVE)}>Back</button
+                    on:click={() => handleBackClicked(ConfigurationSaveState.SAVE)}>Back</button
                 >
                 <button
                     class="px-4 py-1 dark:bg-emerald-600 font-medium"
                     class:opacity-50={typeof selected === "undefined"}
                     class:dark:hover:bg-emerald-700={typeof selected !== "undefined"}
                     disabled={typeof selected === "undefined"}
-                    on:click={() => handleNextClicked(ConfigurationSaveStep.SAVE)}>Save</button
+                    on:click={() => handleNextClicked(ConfigurationSaveState.SAVE)}>Save</button
                 >
             </div>
         </div>

@@ -28,6 +28,6 @@
     onDestroy(unsubscribe);
 </script>
 
-<ul class="flex flex-col h-full">
+<ul class="flex flex-col gap-1 h-full">
     <slot />
 </ul>
