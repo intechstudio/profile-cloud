@@ -197,6 +197,13 @@
         </div>
     </div>
 {/if}
-<div class="bottom-0 left-0 text-white text-opacity-40 absolute text-xs">
-    {PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING} - {PUBLIC_COMMIT_HASH}
+<div class="absolute flex flex-row w-full flex-wrap gap-2 bottom-0 left-0 text-xs">
+    <span class="text-white text-opacity-40">
+        {PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING}
+    </span>
+    <a
+        class="text-white hover:text-opacity-75 text-opacity-40"
+        href="https://github.com/intechstudio/profile-cloud/commit/{PUBLIC_COMMIT_HASH}"
+        >({PUBLIC_COMMIT_HASH})</a
+    >
 </div>
