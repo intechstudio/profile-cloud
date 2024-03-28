@@ -2,6 +2,7 @@
     import { onDestroy } from "svelte";
     import { PUBLIC_APP_ENV } from "$env/static/public";
     import { PUBLIC_VERSION_STRING } from "$env/static/public";
+    import { PUBLIC_COMMIT_HASH } from "$env/static/public";
     import { userAccountService } from "$lib/stores";
     import { doc, getDoc, writeBatch } from "firebase/firestore";
     import { userCollection, usernameCollection } from "$lib/collections";
@@ -196,6 +197,14 @@
         </div>
     </div>
 {/if}
-<div class="bottom-0 left-0 text-white text-opacity-40 absolute text-xs">
-    {PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING}
+<div class="absolute flex flex-row w-full flex-wrap gap-2 bottom-0 left-0 text-xs">
+    <span class="text-white text-opacity-40">
+        {PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING}
+    </span>
+    <a
+        class="text-white hover:text-opacity-75 text-opacity-40"
+        target="_blank"
+        href="https://github.com/intechstudio/profile-cloud/commit/{PUBLIC_COMMIT_HASH}"
+        >({PUBLIC_COMMIT_HASH})</a
+    >
 </div>
