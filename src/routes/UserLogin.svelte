@@ -2,7 +2,7 @@
     import { onDestroy } from "svelte";
     import { PUBLIC_APP_ENV } from "$env/static/public";
     import { PUBLIC_VERSION_STRING } from "$env/static/public";
-    import { COMMIT_HASH } from "$env/static/public";
+    import { PUBLIC_COMMIT_HASH } from "$env/static/public";
     import { userAccountService } from "$lib/stores";
     import { doc, getDoc, writeBatch } from "firebase/firestore";
     import { userCollection, usernameCollection } from "$lib/collections";
@@ -198,5 +198,5 @@
     </div>
 {/if}
 <div class="bottom-0 left-0 text-white text-opacity-40 absolute text-xs">
-    {PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING} - {COMMIT_HASH}
+    {PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING} - {PUBLIC_COMMIT_HASH}
 </div>
