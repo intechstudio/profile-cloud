@@ -203,6 +203,7 @@
     </span>
     <a
         class="text-white hover:text-opacity-75 text-opacity-40"
+        target="_blank"
         href="https://github.com/intechstudio/profile-cloud/commit/{PUBLIC_COMMIT_HASH}"
         >({PUBLIC_COMMIT_HASH})</a
     >
