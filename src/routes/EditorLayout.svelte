@@ -53,7 +53,7 @@
     let isSearchSortingShows = true;
     let configurationSaveVisible = false;
 
-    let accordionKey = "my_configs";
+    let accordionKey: string | undefined = "my_configs";
 
     function updateFontSize(size: string) {
         const main = document.querySelector("#main") as HTMLElement;
@@ -238,26 +238,27 @@
         if (isMyConfig) {
             return "my_configs";
         } else if (!isMyConfig && isOfficialConfig) {
-            return "recommended_configs";
+            return isFiltering ? "other_configs" : "recommended_configs";
         } else {
             return "other_configs";
         }
     }
 
     function handleFilter(e: any) {
+        console.log(e);
         const { configs } = e.detail;
         filteredConfigs = configs;
         isFiltering = e.detail.isFiltering;
         selectedConfigIndex = filteredConfigs.findIndex((e) => e.id === selectedConfigId);
-        if (selectedConfigIndex === -1) {
-            if (filteredConfigs.length > 0) {
-                selectedConfigIndex = 0;
-                selectedConfigId = filteredConfigs[0].id;
-                const category = getConfigCategory(filteredConfigs[0]);
-                accordionKey = category;
-            } else {
-                selectedConfigId = undefined;
-            }
+        if (filteredConfigs.length > 0) {
+            selectedConfigIndex = 0;
+            selectedConfigId = filteredConfigs[0].id;
+            const category = getConfigCategory(filteredConfigs[0]);
+            console.log(category);
+            accordionKey = category;
+        } else {
+            selectedConfigId = undefined;
+            accordionKey = undefined;
         }
     }
 
