@@ -33,7 +33,7 @@
 </script>
 
 <section class="w-full h-full flex-grow bg-neutral-100 dark:bg-primary">
-    <div class="w-full h-full bg-neutral-100 dark:bg-primary/100">
+    <div class="w-full h-full bg-neutral-100 dark:bg-primary/100 flex justify-center">
         <div class="container flex flex-col max-w-screen-xl h-full">
             <DisplayOnWeb>
                 <div

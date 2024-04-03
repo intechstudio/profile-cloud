@@ -245,20 +245,28 @@
     }
 
     function handleFilter(e: any) {
-        console.log(e);
         const { configs } = e.detail;
         filteredConfigs = configs;
         isFiltering = e.detail.isFiltering;
         selectedConfigIndex = filteredConfigs.findIndex((e) => e.id === selectedConfigId);
         if (filteredConfigs.length > 0) {
-            selectedConfigIndex = 0;
-            selectedConfigId = filteredConfigs[0].id;
-            const category = getConfigCategory(filteredConfigs[0]);
-            console.log(category);
-            accordionKey = category;
+            if (selectedConfigIndex == -1) {
+                selectedConfigIndex = 0;
+                selectedConfigId = filteredConfigs[0].id;
+                const category = getConfigCategory(filteredConfigs[0]);
+                accordionKey = category;
+            }
         } else {
             selectedConfigId = undefined;
             accordionKey = undefined;
+        }
+    }
+
+    $: {
+        if (!isFiltering && typeof selectedConfigId !== "undefined") {
+            const config = filteredConfigs.find((e) => e.id === selectedConfigId);
+            const category = getConfigCategory(config);
+            accordionKey = category;
         }
     }
 

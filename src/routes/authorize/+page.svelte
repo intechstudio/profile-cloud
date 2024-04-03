@@ -1,8 +1,4 @@
 <script lang="ts">
-    import { goto } from "$app/navigation";
-    import { PUBLIC_APP_ENV } from "$env/static/public";
-    import { onMount } from "svelte";
-
     import GoogleAuth from "$lib/components/GoogleAuth.svelte";
 
     type AuthStatus = {
