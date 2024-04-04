@@ -263,7 +263,7 @@
     }
 
     $: {
-        if (!isFiltering && typeof selectedConfigId !== "undefined") {
+        if (!isFiltering && accordionKey === "other_configs") {
             const config = filteredConfigs.find((e) => e.id === selectedConfigId);
             const category = getConfigCategory(config);
             accordionKey = category;
