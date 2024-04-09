@@ -249,25 +249,21 @@
         filteredConfigs = configs;
         isFiltering = e.detail.isFiltering;
         selectedConfigIndex = filteredConfigs.findIndex((e) => e.id === selectedConfigId);
+
+        let category = undefined;
         if (filteredConfigs.length > 0) {
             if (selectedConfigIndex == -1) {
                 selectedConfigIndex = 0;
                 selectedConfigId = filteredConfigs[0].id;
-                const category = getConfigCategory(filteredConfigs[0]);
-                accordionKey = category;
+                category = getConfigCategory(filteredConfigs[0]);
+            } else {
+                const config = filteredConfigs.find((e) => e.id === selectedConfigId);
+                category = getConfigCategory(config);
             }
         } else {
             selectedConfigId = undefined;
-            accordionKey = undefined;
         }
-    }
-
-    $: {
-        if (!isFiltering && accordionKey === "other_configs") {
-            const config = filteredConfigs.find((e) => e.id === selectedConfigId);
-            const category = getConfigCategory(config);
-            accordionKey = category;
-        }
+        accordionKey = category;
     }
 
     onMount(async () => {
