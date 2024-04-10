@@ -1,7 +1,5 @@
 <script lang="ts">
     import { onDestroy } from "svelte";
-    import { PUBLIC_APP_ENV } from "$env/static/public";
-    import { PUBLIC_VERSION_STRING } from "$env/static/public";
     import { userAccountService } from "$lib/stores";
     import { doc, getDoc, writeBatch } from "firebase/firestore";
     import { userCollection, usernameCollection } from "$lib/collections";
@@ -16,6 +14,7 @@
         logoutFromProfileCloud,
         type UserNameInput
     } from "./user_account";
+    import VersionStamp from "./VersionStamp.svelte";
 
     export let usernameInput: UserNameInput;
 
@@ -91,11 +90,6 @@
                     Profile Cloud - {usernameInput.element?.value}
                 </div>
             {/if}
-            <div
-                class="group-hover:block font-medium hidden absolute mt-7 bottom-2 left-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-            >
-                {PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING}
-            </div>
             <div class="flex items-center">
                 <input
                     id="display-name"
@@ -196,6 +190,6 @@
         </div>
     </div>
 {/if}
-<div class="bottom-0 left-0 text-white text-opacity-40 absolute text-xs">
-    {PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING}
+<div class="flex w-full justify-center text-xs">
+    <VersionStamp />
 </div>

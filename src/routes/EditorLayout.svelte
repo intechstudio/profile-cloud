@@ -53,6 +53,8 @@
     let isSearchSortingShows = true;
     let configurationSaveVisible = false;
 
+    let accordionKey: string | undefined = "my_configs";
+
     function updateFontSize(size: string) {
         const main = document.querySelector("#main") as HTMLElement;
         if (!main) {
@@ -224,14 +226,44 @@
         }
     }
 
+    function getConfigCategory(config: any): string {
+        var isMyConfig =
+            config.syncStatus == "local" || config.owner === configManager?.getCurrentOwnerId();
+        var isOfficialConfig = [
+            "7ZOAy8UmSGTsNeQcKmNLMUgfEbW2",
+            "12gUq1wXjDVkLH9pDUbN2RzCoos1",
+            "RDoRUL39LEe9R81BSEJqwj52n0v1"
+        ].includes(config.owner ?? "");
+
+        if (isMyConfig) {
+            return "my_configs";
+        } else if (!isMyConfig && isOfficialConfig) {
+            return isFiltering ? "other_configs" : "recommended_configs";
+        } else {
+            return "other_configs";
+        }
+    }
+
     function handleFilter(e: any) {
         const { configs } = e.detail;
         filteredConfigs = configs;
         isFiltering = e.detail.isFiltering;
         selectedConfigIndex = filteredConfigs.findIndex((e) => e.id === selectedConfigId);
-        if (selectedConfigIndex === -1) {
+
+        let category = undefined;
+        if (filteredConfigs.length > 0) {
+            if (selectedConfigIndex == -1) {
+                selectedConfigIndex = 0;
+                selectedConfigId = filteredConfigs[0].id;
+                category = getConfigCategory(filteredConfigs[0]);
+            } else {
+                const config = filteredConfigs.find((e) => e.id === selectedConfigId);
+                category = getConfigCategory(config);
+            }
+        } else {
             selectedConfigId = undefined;
         }
+        accordionKey = category;
     }
 
     onMount(async () => {
@@ -328,7 +360,7 @@
             >
                 <Pane size={60}>
                     <div class="h-full flex-grow overflow-hidden pb-3 px-4">
-                        <Accordion key="my_configs">
+                        <Accordion bind:key={accordionKey}>
                             {#each isFiltering ? ["my_configs", "other_configs"] : ["my_configs", "recommended_configs", "community_configs"] as configType}
                                 {@const categoryList = filteredConfigs.filter((e) => {
                                     var isMyConfig =

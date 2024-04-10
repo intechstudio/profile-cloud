@@ -1,11 +1,9 @@
 <script lang="ts">
     import ToggleSwitch from "$lib/components/atomic/ToggleSwitch.svelte";
     import DisplayOnWeb from "$lib/components/DisplayOnWeb.svelte";
-    import { getContext, onMount, setContext } from "svelte";
+    import { getContext, setContext } from "svelte";
     import "../app.css";
-    import SvgIcon from "$lib/icons/SvgIcon.svelte";
-    import { PUBLIC_APP_ENV } from "$env/static/public";
-    import { PUBLIC_VERSION_STRING } from "$env/static/public";
+    import VersionStamp from "./VersionStamp.svelte";
 
     function isThisAnIframe() {
         try {
@@ -73,16 +71,22 @@
         <DisplayOnWeb>
             <footer class=" bg-emerald-300 dark:bg-emerald-800">
                 <div class="container mx-auto flex w-full justify-center p-4 text-center">
-                    <p class="text-sm">
-                        <a
-                            href="https://intech.studio"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="text-neutral-500 hover:text-neutral-600 dark:text-white dark:text-opacity-80 dark:hover:text-opacity-60"
-                        >
-                            &copy; {new Date().getFullYear()} Intech Studio - {PUBLIC_APP_ENV} - {PUBLIC_VERSION_STRING}
-                        </a>
-                    </p>
+                    <div
+                        class="flex flex-row gap-2 text-sm text-neutral-500 dark:text-white dark:text-opacity-80"
+                    >
+                        <p>
+                            <a
+                                class="hover:text-neutral-600 dark:hover:text-opacity-60"
+                                href="https://intech.studio"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                &copy; {new Date().getFullYear()} Intech Studio
+                            </a>
+                        </p>
+                        <span>-</span>
+                        <VersionStamp />
+                    </div>
                 </div>
             </footer>
         </DisplayOnWeb>
