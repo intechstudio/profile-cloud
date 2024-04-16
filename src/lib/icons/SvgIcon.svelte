@@ -4,9 +4,11 @@
     export let display = false;
     let rawSvg: HTMLElement;
 
-    importAsComponent(iconPath).then((res) => {
-        rawSvg = res.default;
-    });
+    $: {
+        importAsComponent(iconPath).then((res) => {
+            rawSvg = res.default;
+        });
+    }
 
     async function importAsComponent(path: string) {
         return await import(`./${path}.svg?raw`);
