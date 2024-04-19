@@ -1,5 +1,6 @@
 <script lang="ts">
     import GoogleAuth from "$lib/components/GoogleAuth.svelte";
+    import configuration from "../../../Configuration.json";
 
     type AuthStatus = {
         status: number;
@@ -28,7 +29,7 @@
     let showCloseBrowserNotification = false;
 
     function buildProtocolUrl(credential: string) {
-        return "grid-editor://?credential=" + credential;
+        return `${configuration.DEEPLINK_PROTOCOL_NAME}://?credential=` + credential;
     }
 
     function handleCredentialResponse(event: CustomEvent) {

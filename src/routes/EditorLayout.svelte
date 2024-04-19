@@ -196,7 +196,8 @@
             });
             return;
         }
-        const configLinkUrl = "grid-editor://?config-link=" + configCloudId;
+        const configLinkUrl =
+            `${configuration.DEEPLINK_PROTOCOL_NAME}://?config-link=` + configCloudId;
 
         await parentIframeCommunication({
             windowPostMessageName: "createCloudConfigLink",
@@ -365,7 +366,10 @@
                                     var isMyConfig =
                                         e.syncStatus == "local" ||
                                         e.owner === configManager?.getCurrentOwnerId();
-                                    var isOfficialConfig = configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(e.owner ?? "");
+                                    var isOfficialConfig =
+                                        configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
+                                            e.owner ?? ""
+                                        );
                                     switch (configType) {
                                         case "my_configs":
                                             return isMyConfig;
