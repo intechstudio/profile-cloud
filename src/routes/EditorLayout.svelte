@@ -26,6 +26,7 @@
     import { Pane, Splitpanes } from "svelte-splitpanes";
     import Accordion from "$lib/components/accordion/Accordion.svelte";
     import AccordionItem from "$lib/components/accordion/AccordionItem.svelte";
+    import configuration from "../../Configuration.json";
 
     let selectedConfigId: string | undefined = undefined;
     let selectedConfigIndex: number;
@@ -195,7 +196,8 @@
             });
             return;
         }
-        const configLinkUrl = "grid-editor://?config-link=" + configCloudId;
+        const configLinkUrl =
+            `${configuration.DEEPLINK_PROTOCOL_NAME}://?config-link=` + configCloudId;
 
         await parentIframeCommunication({
             windowPostMessageName: "createCloudConfigLink",
@@ -229,11 +231,9 @@
     function getConfigCategory(config: any): string {
         var isMyConfig =
             config.syncStatus == "local" || config.owner === configManager?.getCurrentOwnerId();
-        var isOfficialConfig = [
-            "7ZOAy8UmSGTsNeQcKmNLMUgfEbW2",
-            "12gUq1wXjDVkLH9pDUbN2RzCoos1",
-            "RDoRUL39LEe9R81BSEJqwj52n0v1"
-        ].includes(config.owner ?? "");
+        var isOfficialConfig = configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
+            config.owner ?? ""
+        );
 
         if (isMyConfig) {
             return "my_configs";
@@ -366,11 +366,10 @@
                                     var isMyConfig =
                                         e.syncStatus == "local" ||
                                         e.owner === configManager?.getCurrentOwnerId();
-                                    var isOfficialConfig = [
-                                        "7ZOAy8UmSGTsNeQcKmNLMUgfEbW2",
-                                        "12gUq1wXjDVkLH9pDUbN2RzCoos1",
-                                        "RDoRUL39LEe9R81BSEJqwj52n0v1"
-                                    ].includes(e.owner ?? "");
+                                    var isOfficialConfig =
+                                        configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
+                                            e.owner ?? ""
+                                        );
                                     switch (configType) {
                                         case "my_configs":
                                             return isMyConfig;

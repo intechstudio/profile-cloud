@@ -4,6 +4,7 @@
     import Filter from "./Filter.svelte";
     import { type ConfigManager, createConfigManager } from "$lib/configmanager/ConfigManager";
     import ConfigCardBrowser from "./ConfigCardBrowser.svelte";
+    import configuration from "../../Configuration.json";
 
     let selectedConfigIndex: number | undefined = undefined;
 
@@ -76,7 +77,9 @@
                 <svelte:fragment slot="import-config-browser-button">
                     <button
                         on:click={() => {
-                            const configLinkUrl = "grid-editor://?config-link=" + config.id;
+                            const configLinkUrl =
+                                `${configuration.DEEPLINK_PROTOCOL_NAME}://?config-link=` +
+                                config.id;
                             window.open(configLinkUrl, "_self");
                         }}
                         class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
