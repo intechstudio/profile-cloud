@@ -503,7 +503,7 @@
                                         </div>
                                         {#if linkFlag == config?.id}
                                             <div
-                                                transition:fade={{
+                                                transition:fade|global={{
                                                     duration: 100
                                                 }}
                                                 class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
