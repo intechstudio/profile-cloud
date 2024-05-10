@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { tooltip } from "./../lib/actions/tooltip.ts";
     import ConfigurationSave, { ConfigurationSaveType } from "./ConfigurationSave.svelte";
     import { onDestroy, onMount } from "svelte";
     import { userAccountService } from "$lib/stores";
@@ -501,7 +502,7 @@
                                         </div>
                                         {#if linkFlag == config?.id}
                                             <div
-                                                transition:fade={{
+                                                transition:fade|global={{
                                                     duration: 100
                                                 }}
                                                 class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
@@ -547,6 +548,18 @@
                                             });
                                         }}
                                         class="flex items-center group relative"
+                                        use:tooltip={{
+                                            nowrap: true,
+                                            placement: "bottom",
+                                            duration: 75,
+                                            instant: true,
+                                            class: "px-2 py-1",
+                                            text: !config?.isEditable
+                                                ? "Import"
+                                                : config.syncStatus === "cloud"
+                                                ? "Download"
+                                                : "Upload"
+                                        }}
                                     >
                                         <SvgIcon
                                             class={!config?.isEditable ? "w-4" : "w-5 -m-0.5"}
@@ -556,15 +569,6 @@
                                                 ? "download_from_cloud"
                                                 : "move_to_cloud_02"}
                                         />
-                                        <div
-                                            class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                        >
-                                            {!config?.isEditable
-                                                ? "Import"
-                                                : config.syncStatus === "cloud"
-                                                ? "Download"
-                                                : "Upload"}
-                                        </div>
                                     </button>
                                 {/if}
                             </svelte:fragment>
@@ -583,13 +587,16 @@
                                             });
                                         }}
                                         class="flex items-center group relative"
+                                        use:tooltip={{
+                                            nowrap: true,
+                                            placement: "bottom",
+                                            duration: 75,
+                                            instant: true,
+                                            class: "px-2 py-1",
+                                            text: "Split"
+                                        }}
                                     >
                                         <SvgIcon class="w-5 -m-0.5" iconPath="split_config" />
-                                        <div
-                                            class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                        >
-                                            Split
-                                        </div>
                                     </button>
                                 {/if}
                             </svelte:fragment>
