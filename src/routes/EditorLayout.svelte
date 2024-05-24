@@ -214,7 +214,7 @@
     async function overwriteConfigWithEditorConfig(config: Config) {
         const configResponse = await parentIframeCommunication({
             windowPostMessageName: "getCurrenConfigurationFromEditor",
-            dataForParent: { configType: configTypeSelector }
+            dataForParent: { configType: config.configType }
         });
         if (configResponse.ok) {
             let editorConfig = BaseConfigSchema.parse(configResponse.data);
@@ -493,13 +493,16 @@
                                                 }
                                             });
                                         }}
+                                        use:tooltip={{
+                                            nowrap: true,
+                                            placement: "bottom",
+                                            duration: 75,
+                                            instant: true,
+                                            class: "px-2 py-1",
+                                            text: "Link"
+                                        }}
                                     >
                                         <SvgIcon class="w-4" iconPath="link" />
-                                        <div
-                                            class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                        >
-                                            Link
-                                        </div>
                                         {#if linkFlag == config?.id}
                                             <div
                                                 transition:fade|global={{
@@ -614,25 +617,37 @@
                                         configManager?.changeCloudVisibility(config, e.detail);
                                     }}
                                 >
-                                    <div class="relative group" slot="on">
+                                    <div
+                                        class="relative group"
+                                        slot="on"
+                                        use:tooltip={{
+                                            nowrap: true,
+                                            placement: "bottom",
+                                            duration: 75,
+                                            instant: true,
+                                            class: "px-2 py-1",
+                                            text: "Public"
+                                        }}
+                                    >
                                         <SvgIcon display={true} iconPath={"public"} class="mr-1" />
-                                        <div
-                                            class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                        >
-                                            Public
-                                        </div>
                                     </div>
-                                    <div class="relative group" slot="off">
+                                    <div
+                                        class="relative group"
+                                        slot="off"
+                                        use:tooltip={{
+                                            nowrap: true,
+                                            placement: "bottom",
+                                            duration: 75,
+                                            instant: true,
+                                            class: "px-2 py-1",
+                                            text: "Private"
+                                        }}
+                                    >
                                         <SvgIcon
                                             display={true}
                                             iconPath={"private"}
                                             class="mr-1 text-opacity-70"
                                         />
-                                        <div
-                                            class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                        >
-                                            Private
-                                        </div>
                                     </div>
                                 </ToggleSwitch>
                             </span>
