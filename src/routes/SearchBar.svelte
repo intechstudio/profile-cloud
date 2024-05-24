@@ -101,7 +101,7 @@
     {#if showSuggestions}
         <div
             bind:this={suggestionContainer}
-            class="absolute top-full left-0 bg-primary shadow shadow-black z-[1] p-2 rounded-b flex flex-col w-full max-h-36 overflow-y-auto"
+            class="absolute top-full left-0 dark:bg-primary dark:text-white bg-white text-black shadow shadow-black z-[1] p-2 rounded-b flex flex-col w-full max-h-36 overflow-y-auto"
         >
             {#each suggestions as suggestion}
                 {#if suggestion.includes(value)}
