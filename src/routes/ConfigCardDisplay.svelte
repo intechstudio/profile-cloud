@@ -159,32 +159,22 @@
                     {#if data.selectedConfig.isEditable && data.selectedConfig.public !== undefined}
                         <slot name="toggle-accessibility" />
                     {:else if data.selectedConfig.public}
-                        <div
-                            class="relative group"
-                            use:tooltip={{
-                                nowrap: true,
-                                placement: "bottom",
-                                duration: 75,
-                                instant: true,
-                                class: "px-2 py-1",
-                                text: "Public"
-                            }}
-                        >
+                        <div class="relative group">
                             <SvgIcon display={true} iconPath={"public"} />
+                            <div
+                                class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2"
+                            >
+                                Public
+                            </div>
                         </div>
                     {:else if data.selectedConfig.public === false}
-                        <div
-                            class="relative group"
-                            use:tooltip={{
-                                nowrap: true,
-                                placement: "bottom",
-                                duration: 75,
-                                instant: true,
-                                class: "px-2 py-1",
-                                text: "Private"
-                            }}
-                        >
+                        <div class="relative group">
                             <SvgIcon display={true} iconPath={"private"} />
+                            <div
+                                class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2"
+                            >
+                                Private
+                            </div>
                         </div>
                     {/if}
                 </div>
