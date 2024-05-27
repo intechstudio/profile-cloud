@@ -13,11 +13,11 @@ jobs:
             - uses: actions/checkout@v2
             - name: Create public env file
               run: |
-                  echo $(git log -5)
                   touch .env
+                  echo PUBLIC_COMMIT_HASH=$(git log --format="%h" -n 1) >> .env
                   echo PUBLIC_APP_ENV=development >> .env
                   echo PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.PUBLIC_GOOGLE_CLIENT_ID_DEV }} >> .env
-                  echo PUBLIC_VERSION_STRING=$(git log --format="%h %cd" --date=short --abbrev-commit -1) >> .env
+                   echo PUBLIC_CREATION_DATE=$(git log --format="%cd" --date=format:'%Y-%m-%d' -1) >> .env
             - run: npm ci && npm run build
             - uses: FirebaseExtended/action-hosting-deploy@v0
               with:

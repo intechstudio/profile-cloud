@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { tooltip } from "./../lib/actions/tooltip.ts";
     import { createEventDispatcher, getContext, onDestroy, onMount } from "svelte";
     import SvgIcon from "$lib/icons/SvgIcon.svelte";
     import type { Config } from "$lib/schemas";
@@ -105,13 +106,16 @@
                             on:click|stopPropagation={() => {
                                 deleteConfirmFlag = true;
                             }}
+                            use:tooltip={{
+                                nowrap: true,
+                                placement: "bottom",
+                                duration: 75,
+                                instant: true,
+                                class: "px-2 py-1",
+                                text: "Delete"
+                            }}
                         >
                             <SvgIcon class="w-5" iconPath="delete" />
-                            <div
-                                class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                            >
-                                Delete
-                            </div>
                         </button>
                     {:else}
                         <button
@@ -132,13 +136,16 @@
                             on:click|stopPropagation={() => {
                                 overwriteApplyFlag = true;
                             }}
+                            use:tooltip={{
+                                nowrap: true,
+                                placement: "bottom",
+                                duration: 75,
+                                instant: true,
+                                class: "px-2 py-1",
+                                text: "Overwrite"
+                            }}
                         >
                             <SvgIcon class="w-5" iconPath="overwrite_profile" />
-                            <div
-                                class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                            >
-                                Overwrite
-                            </div>
                         </button>
                     {:else}
                         <button
@@ -223,22 +230,32 @@
                     {#if data.isEditable && data.public !== undefined}
                         <slot name="toggle-accessibility" />
                     {:else if data.public}
-                        <div class="relative group">
+                        <div
+                            class="relative group"
+                            use:tooltip={{
+                                nowrap: true,
+                                placement: "bottom",
+                                duration: 75,
+                                instant: true,
+                                class: "px-2 py-1",
+                                text: "Public"
+                            }}
+                        >
                             <SvgIcon display={true} iconPath={"public"} />
-                            <div
-                                class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                            >
-                                Public
-                            </div>
                         </div>
                     {:else if data.public === false}
-                        <div class="relative group">
+                        <div
+                            class="relative group"
+                            use:tooltip={{
+                                nowrap: true,
+                                placement: "bottom",
+                                duration: 75,
+                                instant: true,
+                                class: "px-2 py-1",
+                                text: "Private"
+                            }}
+                        >
                             <SvgIcon display={true} iconPath={"private"} />
-                            <div
-                                class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                            >
-                                Private
-                            </div>
                         </div>
                     {/if}
                 </div>

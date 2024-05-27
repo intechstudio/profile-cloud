@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { tooltip } from "./../lib/actions/tooltip.ts";
     import ConfigurationSave, { ConfigurationSaveType } from "./ConfigurationSave.svelte";
     import { onDestroy, onMount } from "svelte";
     import { userAccountService } from "$lib/stores";
@@ -26,6 +27,7 @@
     import { Pane, Splitpanes } from "svelte-splitpanes";
     import Accordion from "$lib/components/accordion/Accordion.svelte";
     import AccordionItem from "$lib/components/accordion/AccordionItem.svelte";
+    import configuration from "../../Configuration.json";
 
     let selectedConfigId: string | undefined = undefined;
     let selectedConfigIndex: number;
@@ -52,6 +54,8 @@
 
     let isSearchSortingShows = true;
     let configurationSaveVisible = false;
+
+    let accordionKey: string | undefined = "my_configs";
 
     function updateFontSize(size: string) {
         const main = document.querySelector("#main") as HTMLElement;
@@ -193,7 +197,8 @@
             });
             return;
         }
-        const configLinkUrl = "grid-editor://?config-link=" + configCloudId;
+        const configLinkUrl =
+            `${configuration.DEEPLINK_PROTOCOL_NAME}://?config-link=` + configCloudId;
 
         await parentIframeCommunication({
             windowPostMessageName: "createCloudConfigLink",
@@ -209,7 +214,7 @@
     async function overwriteConfigWithEditorConfig(config: Config) {
         const configResponse = await parentIframeCommunication({
             windowPostMessageName: "getCurrenConfigurationFromEditor",
-            dataForParent: { configType: configTypeSelector }
+            dataForParent: { configType: config.configType }
         });
         if (configResponse.ok) {
             let editorConfig = BaseConfigSchema.parse(configResponse.data);
@@ -224,14 +229,42 @@
         }
     }
 
+    function getConfigCategory(config: any): string {
+        var isMyConfig =
+            config.syncStatus == "local" || config.owner === configManager?.getCurrentOwnerId();
+        var isOfficialConfig = configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
+            config.owner ?? ""
+        );
+
+        if (isMyConfig) {
+            return "my_configs";
+        } else if (!isMyConfig && isOfficialConfig) {
+            return isFiltering ? "other_configs" : "recommended_configs";
+        } else {
+            return "other_configs";
+        }
+    }
+
     function handleFilter(e: any) {
         const { configs } = e.detail;
         filteredConfigs = configs;
         isFiltering = e.detail.isFiltering;
         selectedConfigIndex = filteredConfigs.findIndex((e) => e.id === selectedConfigId);
-        if (selectedConfigIndex === -1) {
+
+        let category = undefined;
+        if (filteredConfigs.length > 0) {
+            if (selectedConfigIndex == -1) {
+                selectedConfigIndex = 0;
+                selectedConfigId = filteredConfigs[0].id;
+                category = getConfigCategory(filteredConfigs[0]);
+            } else {
+                const config = filteredConfigs.find((e) => e.id === selectedConfigId);
+                category = getConfigCategory(config);
+            }
+        } else {
             selectedConfigId = undefined;
         }
+        accordionKey = category;
     }
 
     onMount(async () => {
@@ -328,17 +361,16 @@
             >
                 <Pane size={60}>
                     <div class="h-full flex-grow overflow-hidden pb-3 px-4">
-                        <Accordion key="my_configs">
+                        <Accordion bind:key={accordionKey}>
                             {#each isFiltering ? ["my_configs", "other_configs"] : ["my_configs", "recommended_configs", "community_configs"] as configType}
                                 {@const categoryList = filteredConfigs.filter((e) => {
                                     var isMyConfig =
                                         e.syncStatus == "local" ||
                                         e.owner === configManager?.getCurrentOwnerId();
-                                    var isOfficialConfig = [
-                                        "7ZOAy8UmSGTsNeQcKmNLMUgfEbW2",
-                                        "12gUq1wXjDVkLH9pDUbN2RzCoos1",
-                                        "RDoRUL39LEe9R81BSEJqwj52n0v1"
-                                    ].includes(e.owner ?? "");
+                                    var isOfficialConfig =
+                                        configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
+                                            e.owner ?? ""
+                                        );
                                     switch (configType) {
                                         case "my_configs":
                                             return isMyConfig;
@@ -461,16 +493,19 @@
                                                 }
                                             });
                                         }}
+                                        use:tooltip={{
+                                            nowrap: true,
+                                            placement: "bottom",
+                                            duration: 75,
+                                            instant: true,
+                                            class: "px-2 py-1",
+                                            text: "Link"
+                                        }}
                                     >
                                         <SvgIcon class="w-4" iconPath="link" />
-                                        <div
-                                            class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                        >
-                                            Link
-                                        </div>
                                         {#if linkFlag == config?.id}
                                             <div
-                                                transition:fade={{
+                                                transition:fade|global={{
                                                     duration: 100
                                                 }}
                                                 class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
@@ -516,6 +551,18 @@
                                             });
                                         }}
                                         class="flex items-center group relative"
+                                        use:tooltip={{
+                                            nowrap: true,
+                                            placement: "bottom",
+                                            duration: 75,
+                                            instant: true,
+                                            class: "px-2 py-1",
+                                            text: !config?.isEditable
+                                                ? "Import"
+                                                : config.syncStatus === "cloud"
+                                                ? "Download"
+                                                : "Upload"
+                                        }}
                                     >
                                         <SvgIcon
                                             class={!config?.isEditable ? "w-4" : "w-5 -m-0.5"}
@@ -525,15 +572,6 @@
                                                 ? "download_from_cloud"
                                                 : "move_to_cloud_02"}
                                         />
-                                        <div
-                                            class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                        >
-                                            {!config?.isEditable
-                                                ? "Import"
-                                                : config.syncStatus === "cloud"
-                                                ? "Download"
-                                                : "Upload"}
-                                        </div>
                                     </button>
                                 {/if}
                             </svelte:fragment>
@@ -552,13 +590,16 @@
                                             });
                                         }}
                                         class="flex items-center group relative"
+                                        use:tooltip={{
+                                            nowrap: true,
+                                            placement: "bottom",
+                                            duration: 75,
+                                            instant: true,
+                                            class: "px-2 py-1",
+                                            text: "Split"
+                                        }}
                                     >
                                         <SvgIcon class="w-5 -m-0.5" iconPath="split_config" />
-                                        <div
-                                            class="group-hover:block hidden font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                        >
-                                            Split
-                                        </div>
                                     </button>
                                 {/if}
                             </svelte:fragment>
@@ -576,25 +617,37 @@
                                         configManager?.changeCloudVisibility(config, e.detail);
                                     }}
                                 >
-                                    <div class="relative group" slot="on">
+                                    <div
+                                        class="relative group"
+                                        slot="on"
+                                        use:tooltip={{
+                                            nowrap: true,
+                                            placement: "bottom",
+                                            duration: 75,
+                                            instant: true,
+                                            class: "px-2 py-1",
+                                            text: "Public"
+                                        }}
+                                    >
                                         <SvgIcon display={true} iconPath={"public"} class="mr-1" />
-                                        <div
-                                            class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                        >
-                                            Public
-                                        </div>
                                     </div>
-                                    <div class="relative group" slot="off">
+                                    <div
+                                        class="relative group"
+                                        slot="off"
+                                        use:tooltip={{
+                                            nowrap: true,
+                                            placement: "bottom",
+                                            duration: 75,
+                                            instant: true,
+                                            class: "px-2 py-1",
+                                            text: "Private"
+                                        }}
+                                    >
                                         <SvgIcon
                                             display={true}
                                             iconPath={"private"}
                                             class="mr-1 text-opacity-70"
                                         />
-                                        <div
-                                            class="group-hover:block font-medium hidden absolute mt-1 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
-                                        >
-                                            Private
-                                        </div>
                                     </div>
                                 </ToggleSwitch>
                             </span>
