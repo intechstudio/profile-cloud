@@ -4,6 +4,7 @@ import { z } from "zod";
 export const BaseConfigSchema = z.object({
     id: z.string(),
     modifiedAt: z.coerce.date().default(new Date()),
+    createdAt: z.coerce.date().optional(),
     name: z.string(),
     description: z.string(),
     type: z.string(),
