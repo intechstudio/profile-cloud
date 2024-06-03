@@ -1,6 +1,6 @@
 <script lang="ts">
     import { createEventDispatcher } from "svelte";
-    import { clickOutside } from "./click-outside.action";
+    //import { clickOutside } from "./click-outside.action.ts";
 
     const dispatch = createEventDispatcher();
 
