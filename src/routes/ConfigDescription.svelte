@@ -1,40 +1,35 @@
 <script lang="ts">
     import { createEventDispatcher } from "svelte";
-    //import { clickOutside } from "./click-outside.action.ts";
-
-    const dispatch = createEventDispatcher();
-
-    export let value: string;
-    let disabled: boolean = false;
-
-    function handleBlur() {
-        isEdit = false;
-        //dispatch("change", textArea.value ?? "");
-    }
-
-    function handleFocus() {
-        isEdit = true;
-    }
-
     import { createMarkdown } from "svelte-markdown-input";
 
-    let markdown = createMarkdown();
+    const dispatch = createEventDispatcher();
+    const markdown = createMarkdown();
 
-    let isEdit = false;
+    export let value: string;
+    export let disabled: boolean;
 
-    function handleApplyClicked() {}
+    let selectedTab = "edit";
+
+    function handleBlur(e: FocusEvent) {
+        const textArea = e.target as HTMLTextAreaElement;
+        dispatch("change", textArea.value ?? "");
+    }
 </script>
 
 <div class="flex h-full w-full flex-col">
     {#if !disabled}
         <div class="flex flex-row self-end">
-            <button class="py-0.5 px-2" class:bg-primary={isEdit} on:click={() => (isEdit = true)}>
+            <button
+                class="py-0.5 px-2"
+                class:bg-primary={selectedTab === "edit"}
+                on:click={() => (selectedTab = "edit")}
+            >
                 Edit
             </button>
             <button
                 class="py-0.5 px-2"
-                class:bg-primary={!isEdit}
-                on:click={() => (isEdit = false)}
+                class:bg-primary={selectedTab === "preview"}
+                on:click={() => (selectedTab = "preview")}
             >
                 Preview
             </button>
@@ -43,19 +38,22 @@
 
     {#key value}
         <div class="flex-grow w-full h-full max-h-full max-w-full overflow-hidden">
-            <textarea
-                class="flex-grow w-full p-1 h-full overflow-y-auto dark:bg-primary text-xs resize-none"
-                class:hidden={!isEdit}
-                use:markdown
-                {value}
-            />
-            <div
-                id="preview"
-                class="markdown-container p-1 flex-grow w-full h-full dark:bg-primary bg-opacity-40 overflow-y-auto"
-                class:hidden={isEdit}
-            >
-                {@html $markdown}
-            </div>
+            {#if selectedTab === "edit"}
+                <textarea
+                    spellcheck="false"
+                    class="flex-grow w-full p-1 h-full overflow-y-auto dark:bg-primary border border-transparent focus:border-emerald-500 text-xs resize-none focus:outline-none"
+                    class:dark:hover:bg-neutral-800={!disabled}
+                    on:blur={handleBlur}
+                    use:markdown
+                    {value}
+                />
+            {:else if selectedTab === "preview"}
+                <div
+                    class="markdown-container p-1 flex-grow w-full h-full dark:bg-primary bg-opacity-40 overflow-y-auto"
+                >
+                    {@html $markdown}
+                </div>
+            {/if}
         </div>
     {/key}
 </div>
