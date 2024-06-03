@@ -40,6 +40,7 @@
         "firebase": "^9.18.0",
         "fix": "^0.0.6",
         "semver-parser": "^4.1.4",
+        "svelte-markdown-input": "^0.0.2",
         "svelte-splitpanes": "^0.8.0",
         "uuid": "^9.0.0",
         "zod": "^3.21.4"

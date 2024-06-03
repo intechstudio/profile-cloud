@@ -41,7 +41,6 @@
     </div>
     <div class="px-2 py-1 grid grid-cols-[1fr_auto] w-full items-center">
         <span class="truncate text-left">{data.name}</span>
-
         <div
             class="dark:text-white text-black text-opacity-80 py-0.5 px-2 dark:border
                 {data.selectedComponentTypes?.includes(data.type) ?? false
