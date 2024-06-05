@@ -1,9 +1,8 @@
 <script lang="ts">
     import { createEventDispatcher } from "svelte";
-    import { createMarkdown } from "svelte-markdown-input";
+    import { marked } from "marked";
 
     const dispatch = createEventDispatcher();
-    const markdown = createMarkdown();
 
     export let value: string;
     export let disabled: boolean;
@@ -11,8 +10,8 @@
     let selectedTab = "edit";
 
     function handleBlur(e: FocusEvent) {
-        const textArea = e.target as HTMLTextAreaElement;
-        dispatch("change", textArea.value ?? "");
+        const target = e.target as HTMLElement;
+        dispatch("change", target.innerHTML);
     }
 </script>
 
@@ -36,28 +35,36 @@
         </div>
     {/if}
 
-    {#key value}
-        <div class="flex-grow w-full h-full max-h-full max-w-full overflow-hidden">
-            {#if selectedTab === "edit"}
-                <textarea
+    <div class="markdown-editor flex-grow w-full h-full max-h-full max-w-full overflow-hidden">
+        {#if selectedTab === "edit"}
+            {#key value}
+                <div
+                    contenteditable="true"
                     spellcheck="false"
-                    class="flex-grow w-full p-1 h-full overflow-y-auto dark:bg-primary border border-transparent focus:border-emerald-500 text-xs resize-none focus:outline-none"
+                    class="editable-content w-full p-1 h-full overflow-y-auto dark:bg-primary border border-transparent focus:border-emerald-500 text-xs focus:outline-none"
                     class:dark:hover:bg-neutral-800={!disabled}
                     on:blur={handleBlur}
-                    use:markdown
-                    {value}
-                />
-            {:else if selectedTab === "preview"}
-                <div
-                    class="markdown-container p-1 flex-grow w-full h-full dark:bg-primary bg-opacity-40 overflow-y-auto"
                 >
-                    {@html $markdown}
+                    {@html value}
                 </div>
-            {/if}
-        </div>
-    {/key}
+            {/key}
+        {:else if selectedTab === "preview"}
+            <div
+                class="markdown-container p-1 flex-grow w-full h-full dark:bg-primary bg-opacity-40 overflow-y-auto"
+            >
+                {@html marked(value)}
+            </div>
+        {/if}
+    </div>
 </div>
 
 <style>
     @import "./preview-styles.css";
+
+    :global(.markdown-editor img) {
+        display: inline;
+        vertical-align: middle;
+        width: auto;
+        height: auto;
+    }
 </style>

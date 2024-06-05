@@ -7,7 +7,6 @@
     import { doc, getDoc } from "firebase/firestore";
     import { userCollection } from "$lib/collections";
     import ConfigDescription from "./ConfigDescription.svelte";
-    import { boolean } from "zod";
 
     const dispatchEvent = createEventDispatcher();
 
