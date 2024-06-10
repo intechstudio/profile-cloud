@@ -118,7 +118,7 @@
         });
         configResponse.data.name = name;
         if (configResponse.ok) {
-            var config = BaseConfigSchema.parse(configResponse.data);
+            const config = BaseConfigSchema.parse(configResponse.data);
             config.createdAt = new Date();
             configManager?.saveConfig(config, true).then(() => {
                 filter.reset();
