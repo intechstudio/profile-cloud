@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { createEventDispatcher, tick } from "svelte";
+    import { createEventDispatcher, onMount, tick } from "svelte";
     import { marked } from "marked";
 
     const dispatch = createEventDispatcher();
@@ -7,14 +7,12 @@
     export let value: string;
     export let disabled: boolean;
 
-    let input: HTMLElement;
+    let textArea: HTMLTextAreaElement;
     let mode = "preview";
 
     function handleBlur(e: FocusEvent) {
-        const target = e.target as HTMLElement;
         mode = "preview";
-        value = target.innerText;
-        dispatch("change", target.innerHTML);
+        dispatch("change", value);
     }
 
     async function handleDoubleClick() {
@@ -23,7 +21,7 @@
         }
         mode = "edit";
         await tick(); // Wait for the DOM to update
-        input.focus(); // Focus the input element
+        textArea.focus(); // Focus the input element
     }
 
     function handlePaste(e: ClipboardEvent) {
@@ -41,51 +39,68 @@
                         const markdownImage = `![Inline Image](${base64Image})`;
 
                         // Insert the Markdown image syntax at the caret position
-                        insertTextAtCaret(input, markdownImage);
-                        value = input.innerText;
+                        const startPos = textArea.selectionStart;
+                        const endPos = textArea.selectionEnd;
+                        const textBefore = textArea.value.substring(0, startPos);
+                        const textAfter = textArea.value.substring(endPos, textArea.value.length);
+
+                        // Set the new value of the textarea
+                        textArea.value = textBefore + markdownImage + textAfter;
+
+                        // Move the caret position to the end of the inserted text
+                        const newCaretPos = startPos + markdownImage.length;
+                        textArea.setSelectionRange(newCaretPos, newCaretPos);
+
+                        // Trigger input event to update binding if using Svelte's two-way binding
+                        textArea.dispatchEvent(new Event("input"));
+
+                        // Prevent the default paste behavior
+                        e.preventDefault();
                     };
 
                     reader.readAsDataURL(blob);
+                    return; // Exit the function after handling the image paste
                 }
             }
         }
+        // Allow the default paste behavior for non-image content
     }
 
-    function insertTextAtCaret(element: HTMLElement, text: string) {
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-            range.deleteContents();
-            const textNode = document.createTextNode(text);
-            range.insertNode(textNode);
-            range.setStartAfter(textNode);
-            range.setEndAfter(textNode);
-            selection.removeAllRanges();
-            selection.addRange(range);
-        }
+    let preview: any = "";
+
+    $: handleValueChange(value);
+
+    onMount(() => {
+        marked.use({
+            gfm: true,
+            breaks: true
+        });
+    });
+
+    async function handleValueChange(value: string) {
+        preview = await marked.parse(value);
     }
 </script>
 
 <div class="markdown-editor flex-grow w-full h-full max-h-full max-w-full overflow-hidden">
     {#if mode === "edit"}
-        <div
-            bind:this={input}
+        <textarea
+            bind:this={textArea}
             contenteditable="true"
             spellcheck="false"
-            class="editable-content w-full p-1 h-full overflow-y-auto dark:bg-primary border border-transparent focus:border-emerald-500 text-xs focus:outline-none"
+            class="w-full p-1 h-full overflow-y-auto dark:bg-primary border border-transparent focus:border-emerald-500 text-xs focus:outline-none resize-none"
             class:dark:hover:bg-neutral-800={!disabled}
             on:blur={handleBlur}
-            on:paste|preventDefault={handlePaste}
-        >
-            {@html value.replace(/\n/g, "<br>")}
-        </div>
+            on:paste={handlePaste}
+            bind:value
+        />
     {:else if mode === "preview"}
         <!-- svelte-ignore a11y-no-static-element-interactions -->
         <div
             class="markdown-container p-1 flex-grow w-full h-full dark:bg-primary bg-opacity-40 overflow-y-auto"
             on:dblclick={handleDoubleClick}
         >
-            {@html marked(value).replace(/\n/g, "<br>")}
+            {@html preview}
         </div>
     {/if}
 </div>

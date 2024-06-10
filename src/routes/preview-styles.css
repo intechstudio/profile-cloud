@@ -1,31 +1,35 @@
+.markdown-container p {
+    margin-bottom: 10px; /* Adjust the value as per your preference */
+}
+
 .markdown-container h1 {
     font-size: 2em; /* Adjust size as needed */
-    margin: 1.5em 0 0.5em;
+    margin: 0.3em 0 0.5em;
 }
 
 .markdown-container h2 {
     font-size: 1.5em; /* Adjust size as needed */
-    margin: 1.3em 0 0.5em;
+    margin: 0.1em 0 0.5em;
 }
 
 .markdown-container h3 {
     font-size: 1.17em; /* Adjust size as needed */
-    margin: 1.2em 0 0.5em;
+    margin: 0.05em 0 0.5em;
 }
 
 .markdown-container h4 {
     font-size: 1em; /* Adjust size as needed */
-    margin: 1em 0 0.5em;
+    margin: 0.025 0 0.5em;
 }
 
 .markdown-container h5 {
     font-size: 0.83em; /* Adjust size as needed */
-    margin: 0.8em 0 0.5em;
+    margin: 0.0125em 0 0.5em;
 }
 
 .markdown-container h6 {
     font-size: 0.67em; /* Adjust size as needed */
-    margin: 0.7em 0 0.5em;
+    margin: 0 0 0.5em;
 }
 
 .markdown-container ul,
