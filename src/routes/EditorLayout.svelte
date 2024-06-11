@@ -118,11 +118,11 @@
         });
         configResponse.data.name = name;
         if (configResponse.ok) {
-            configManager
-                ?.saveConfig(BaseConfigSchema.parse(configResponse.data), true)
-                .then(() => {
-                    filter.reset();
-                });
+            const config = BaseConfigSchema.parse(configResponse.data);
+            config.createdAt = new Date();
+            configManager?.saveConfig(config, true).then(() => {
+                filter.reset();
+            });
         }
     }
 
