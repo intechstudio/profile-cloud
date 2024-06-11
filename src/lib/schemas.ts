@@ -45,6 +45,12 @@ export const CloudConfigSchema = BaseConfigSchema.extend({
         if (val instanceof Timestamp) return val.toDate();
         return val;
     }, z.date().default(new Date())),
+    createdAt: z.preprocess((val) => {
+        if (!val) return new Date();
+        if (val instanceof String) return new Date(val as string);
+        if (val instanceof Timestamp) return val.toDate();
+        return val;
+    }, z.date().optional()),
     public: z.boolean().default(false)
 });
 
