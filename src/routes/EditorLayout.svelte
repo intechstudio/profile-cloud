@@ -200,14 +200,9 @@
         const configLinkUrl =
             `${configuration.DEEPLINK_PROTOCOL_NAME}://?config-link=` + configCloudId;
 
-        await parentIframeCommunication({
+        return await parentIframeCommunication({
             windowPostMessageName: "createCloudConfigLink",
             dataForParent: { configLinkUrl }
-        }).then((res) => {
-            linkFlag = config.id;
-            setTimeout(() => {
-                linkFlag = undefined;
-            }, 1750);
         });
     }
 
@@ -484,8 +479,25 @@
                                     <button
                                         class="relative group flex"
                                         on:click|stopPropagation={() => {
-                                            createCloudConfigLink(config);
-                                            provideSelectedConfigForEditor(undefined);
+                                            createCloudConfigLink(config)
+                                                .then((res) => {
+                                                    linkFlag = config.id;
+                                                    setTimeout(() => {
+                                                        linkFlag = undefined;
+                                                    }, 1750);
+                                                    provideSelectedConfigForEditor(undefined);
+                                                })
+                                                .catch((e) => {
+                                                    console.warn(e.data);
+                                                    parentIframeCommunication({
+                                                        windowPostMessageName: "sendLogMessage",
+                                                        dataForParent: {
+                                                            type: "fail",
+                                                            message: `Import link failed. ${e.data}`
+                                                        }
+                                                    });
+                                                });
+
                                             submitAnalytics({
                                                 eventName: "Cloud Action",
                                                 payload: {

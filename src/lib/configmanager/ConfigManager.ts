@@ -207,6 +207,7 @@ export function createConfigManager(observer: {
         let cloudId = appConfigs?.cloud?.id;
         let configCreated = false;
         let configError = false;
+        let errorDetail = undefined;
         if (currentOwnerId != null && (createMissingConfigs || cloudId)) {
             if (createMissingConfigs || !cloudId) {
                 configCreated = true;
@@ -246,8 +247,8 @@ export function createConfigManager(observer: {
                     configCreated = true;
                 })
                 .catch((e) => {
-                    console.log(e);
                     configError = true;
+                    errorDetail = e.data;
                 });
         }
         if (configCreated) {
@@ -259,11 +260,12 @@ export function createConfigManager(observer: {
                 }
             });
         } else if (configError) {
+            console.warn(errorDetail);
             parentIframeCommunication({
                 windowPostMessageName: "sendLogMessage",
                 dataForParent: {
                     type: "fail",
-                    message: `Config ${config.name} import failed`
+                    message: `Config ${config.name} import failed. ${errorDetail}`
                 }
             });
         }
