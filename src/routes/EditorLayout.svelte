@@ -203,12 +203,22 @@
         await parentIframeCommunication({
             windowPostMessageName: "createCloudConfigLink",
             dataForParent: { configLinkUrl }
-        }).then((res) => {
-            linkFlag = config.id;
-            setTimeout(() => {
-                linkFlag = undefined;
-            }, 1750);
-        });
+        })
+            .then((res) => {
+                linkFlag = config.id;
+                setTimeout(() => {
+                    linkFlag = undefined;
+                }, 1750);
+            })
+            .catch((e) => {
+                parentIframeCommunication({
+                    windowPostMessageName: "sendLogMessage",
+                    dataForParent: {
+                        type: "fail",
+                        message: `Config link creation failed. ${e.data}`
+                    }
+                });
+            });
     }
 
     async function overwriteConfigWithEditorConfig(config: Config) {
