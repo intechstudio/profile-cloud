@@ -6,6 +6,7 @@
     import { applyFocus } from "$lib/utils";
     import { doc, getDoc } from "firebase/firestore";
     import { userCollection } from "$lib/collections";
+    import ConfigDescription from "./ConfigDescription.svelte";
 
     const dispatchEvent = createEventDispatcher();
 
@@ -39,14 +40,16 @@
         currentSelection: ""
     };
 
-    let descriptionTextarea = {
-        element: null as HTMLTextAreaElement | null,
-        doubleClicked: false,
-        currentSelection: ""
-    };
+    function handleDescriptionChange(e: CustomEvent<string>) {
+        const value = e.detail;
+        console.log(value);
+        dispatchEvent("description-change", {
+            newDescription: value
+        });
+    }
 </script>
 
-<div class="flex flex-col gap-1 w-full h-full bg-secondary p-2">
+<div class="grid grid-cols-1 grid-rows-[auto_1fr] overflow-hidden w-full h-full bg-secondary p-2">
     {#if typeof data.selectedConfig !== "undefined"}
         <div class="w-full flex flex-row gap-2 items-center justify-between">
             <div class="flex flex-col flex-grow">
@@ -190,51 +193,11 @@
                 </div>
             </div>
         </div>
-        <div class="flex flex-grow text-white text-opacity-70">
-            <textarea
-                rows={2}
-                bind:this={descriptionTextarea.element}
-                class="overflow-none w-full border resize-none bg-neutral-100 dark:bg-primary focus:outline-none
-                    {descriptionTextarea.doubleClicked
-                    ? 'border-emerald-500'
-                    : 'border-transparent'}"
-                class:dark:hover:bg-neutral-800={data.selectedConfig.isEditable}
-                readonly={!descriptionTextarea.doubleClicked}
-                on:keydown={(e) => {
-                    if (e.key == "Enter" && !e.shiftKey) {
-                        descriptionTextarea.element?.blur();
-                    }
-                }}
-                on:blur={() => {
-                    if (!data.selectedConfig.isEditable) {
-                        return;
-                    }
-                    window?.getSelection()?.removeAllRanges();
-                    descriptionTextarea.doubleClicked = false;
-                    // reset input value if user clicked out without changing the value
-                    if (descriptionTextarea.element?.value == "") {
-                        descriptionTextarea.element.value = "Add description";
-                    }
-                    if (
-                        descriptionTextarea.element?.value != descriptionTextarea.currentSelection
-                    ) {
-                        dispatchEvent("description-change", {
-                            newDescription: descriptionTextarea.element?.value
-                        });
-                    }
-                }}
-                on:dblclick|stopPropagation|preventDefault={() => {
-                    if (!data.selectedConfig.isEditable) {
-                        return;
-                    }
-                    descriptionTextarea.doubleClicked = true;
-                    descriptionTextarea.element?.setSelectionRange(
-                        0,
-                        descriptionTextarea.element.value.length
-                    );
-                    descriptionTextarea.currentSelection = descriptionTextarea.element?.value || "";
-                }}
+        <div class="flex text-white text-opacity-70 overflow-scroll">
+            <ConfigDescription
                 value={data.selectedConfig.description}
+                disabled={!data.selectedConfig.isEditable}
+                on:change={handleDescriptionChange}
             />
         </div>
     {:else}
