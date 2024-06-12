@@ -2,6 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
+import { getStorage } from "firebase/storage";
 import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
 
 import { PUBLIC_APP_ENV } from "$env/static/public";
@@ -38,4 +39,5 @@ export const firebaseApp = initializeApp(profileCloudConfig, "profile-cloud");
 export const firebaseAnalytics = getAnalytics(firebaseApp);
 export const firestore = getFirestore(firebaseApp);
 export const firebaseAuth = getAuth(firebaseApp);
+export const firebaseStorage = getStorage(firebaseApp);
 //connectFirestoreEmulator(db, 'localhost', 8080);

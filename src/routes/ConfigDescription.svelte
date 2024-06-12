@@ -1,6 +1,9 @@
 <script lang="ts">
     import { createEventDispatcher, onMount, tick } from "svelte";
     import { marked } from "marked";
+    import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
+    import { firebaseStorage } from "$lib/firebase";
+    import { v4 as uuidv4 } from "uuid";
 
     const dispatch = createEventDispatcher();
 
@@ -32,34 +35,62 @@
             if (items[i].type.indexOf("image") !== -1) {
                 const blob = items[i].getAsFile();
                 if (blob) {
-                    const reader = new FileReader();
+                    let fileName = `${uuidv4()}.${blob.name.split(".").pop()}`;
+                    let storageReference = ref(firebaseStorage, `config_images/${fileName}`);
 
-                    reader.onload = function (event) {
-                        const base64Image = event.target?.result as string;
-                        const markdownImage = `![Inline Image](${base64Image})`;
+                    const markdownImage = `![Uploading image ${fileName}]()`;
+                    // Insert the Markdown image syntax at the caret position
+                    const startPos = textArea.selectionStart;
+                    const endPos = textArea.selectionEnd;
+                    let textBefore = textArea.value.substring(0, startPos);
+                    let textAfter = textArea.value.substring(endPos, textArea.value.length);
 
-                        // Insert the Markdown image syntax at the caret position
-                        const startPos = textArea.selectionStart;
-                        const endPos = textArea.selectionEnd;
-                        const textBefore = textArea.value.substring(0, startPos);
-                        const textAfter = textArea.value.substring(endPos, textArea.value.length);
+                    // Set the new value of the textarea
+                    textArea.value = textBefore + markdownImage + textAfter;
 
-                        // Set the new value of the textarea
-                        textArea.value = textBefore + markdownImage + textAfter;
+                    // Move the caret position to the end of the inserted text
+                    const newCaretPos = startPos + markdownImage.length;
+                    textArea.setSelectionRange(newCaretPos, newCaretPos);
 
-                        // Move the caret position to the end of the inserted text
-                        const newCaretPos = startPos + markdownImage.length;
-                        textArea.setSelectionRange(newCaretPos, newCaretPos);
+                    // Trigger input event to update binding if using Svelte's two-way binding
+                    textArea.dispatchEvent(new Event("input"));
 
-                        // Trigger input event to update binding if using Svelte's two-way binding
-                        textArea.dispatchEvent(new Event("input"));
+                    e.preventDefault();
 
-                        // Prevent the default paste behavior
-                        e.preventDefault();
-                    };
+                    uploadBytes(storageReference, blob)
+                        .then((snapshot) => {
+                            getDownloadURL(snapshot.ref).then((url) => {
+                                const regex = new RegExp(
+                                    `!\\[Uploading image ${fileName}\\]\\(\\)`
+                                );
+                                const replacement = `![Image](${url})`;
+                                let originalText = textArea.value;
+                                let match = regex.exec(originalText);
+                                if (!match) {
+                                    deleteObject(snapshot.ref);
+                                    return;
+                                }
 
-                    reader.readAsDataURL(blob);
-                    return; // Exit the function after handling the image paste
+                                const matchEnd = match.index + match[0].length;
+
+                                // Replace the matched pattern with the replacement string
+                                const newString = originalText.replace(regex, replacement);
+                                let newCaretStart = textArea.selectionStart;
+                                if (newCaretStart >= matchEnd) {
+                                    newCaretStart += replacement.length - match[0].length;
+                                }
+                                let newCaretEnd = textArea.selectionEnd;
+                                if (newCaretEnd >= matchEnd) {
+                                    newCaretEnd += replacement.length - match[0].length;
+                                }
+                                textArea.value = newString;
+                                textArea.setSelectionRange(newCaretStart, newCaretEnd);
+                                textArea.dispatchEvent(new Event("input"));
+                            });
+                        })
+                        .catch((error) => {
+                            console.log(error);
+                        });
                 }
             }
         }
