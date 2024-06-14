@@ -1,22 +1,23 @@
 import type { Action } from "svelte/action";
+import { MoltenTooltip } from "@intechstudio/grid-uikit";
 
-export const tooltip: Action<HTMLElement, any> = (node: HTMLElement, options: any): void => {
+export const tooltip: Action<HTMLElement, any> = (node: HTMLElement, options: any): any => {
     if (typeof options === "undefined") {
         return;
     }
 
-    const setTooltipAsync = async () => {
-        const sibling = document.createElement("div");
-        node.parentNode?.insertBefore(sibling, node.nextSibling);
+    const sibling = document.createElement("div");
+    node.parentNode?.insertBefore(sibling, node.nextSibling);
 
-        const MoltenTooltip = (await import("@intechstudio/grid-uikit")).MoltenTooltip;
+    options.referenceElement = node;
 
-        options.referenceElement = node;
+    setTimeout(() => {
+        new MoltenTooltip({ target: sibling, props: options });
+    });
 
-        new MoltenTooltip({
-            target: sibling,
-            props: options
-        });
+    return {
+        destroy() {
+            sibling.remove();
+        }
     };
-    setTooltipAsync();
 };
