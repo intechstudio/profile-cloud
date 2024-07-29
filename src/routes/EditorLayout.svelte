@@ -421,9 +421,13 @@
                         <ConfigCardDisplay
                             on:delete-config={async () => {
                                 const config = filteredConfigs[selectedConfigIndex];
-                                selectedConfigIndex = -1;
-                                selectedConfigId = undefined;
                                 configManager?.deleteConfig(config);
+
+                                selectedConfigIndex =
+                                    filteredConfigs.length > 0
+                                        ? Math.max(selectedConfigIndex - 1, 0)
+                                        : -1;
+                                selectedConfigId = filteredConfigs[selectedConfigIndex]?.id;
                                 provideSelectedConfigForEditor(undefined);
                                 submitAnalytics({
                                     eventName: "Cloud Action",
