@@ -45,6 +45,7 @@
     };
 
     let selectedComponentTypes: string[] = [];
+    let compatibleTypes: string[] = [];
 
     let configTypeSelector: "profile" | "preset" = "profile";
 
@@ -64,36 +65,50 @@
     }
 
     async function editorMessageListener(event: MessageEvent) {
-        if (event.data.messageType == "updateFontSize") {
-            updateFontSize(event.data.fontSize);
-        }
-        if (event.data.messageType == "localConfigs") {
-            const localConfigs = (event.data.configs as any[]).map((config) =>
-                LocalConfigSchema.parse(config)
-            );
-            updateLocalConfigs(localConfigs);
-        }
-
-        if (event.data.messageType == "userAuthentication") {
-            userAccountService.authenticateUser(event.data.authEvent);
-        }
-
-        if (event.data.messageType == "configLink") {
-            const linkedConfig = await configManager?.importLinkedConfig(event.data.configLinkId);
-
-            if (linkedConfig) {
-                submitAnalytics({
-                    eventName: "Cloud Action",
-                    payload: {
-                        click: "Config Link Import"
-                    }
-                });
-                configTypeSelector = linkedConfig?.configType;
+        switch (event.data.messageType) {
+            case "updateFontSize": {
+                updateFontSize(event.data.fontSize);
+                break;
             }
-        }
+            case "localConfigs": {
+                const localConfigs = (event.data.configs as any[]).map((config) =>
+                    LocalConfigSchema.parse(config)
+                );
+                updateLocalConfigs(localConfigs);
+                break;
+            }
 
-        if (event.data.messageType == "selectedComponentTypes") {
-            selectedComponentTypes = event.data.selectedComponentTypes;
+            case "userAuthentication": {
+                userAccountService.authenticateUser(event.data.authEvent);
+                break;
+            }
+
+            case "configLink": {
+                const linkedConfig = await configManager?.importLinkedConfig(
+                    event.data.configLinkId
+                );
+
+                if (linkedConfig) {
+                    submitAnalytics({
+                        eventName: "Cloud Action",
+                        payload: {
+                            click: "Config Link Import"
+                        }
+                    });
+                    configTypeSelector = linkedConfig?.configType;
+                }
+                break;
+            }
+
+            case "selectedComponentTypes": {
+                selectedComponentTypes = event.data.selectedComponentTypes;
+                break;
+            }
+
+            case "compatibleTypes": {
+                compatibleTypes = event.data.compatibleTypes;
+                break;
+            }
         }
     }
 
