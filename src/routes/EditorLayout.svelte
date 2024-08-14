@@ -1,15 +1,11 @@
 <script lang="ts">
     import { tooltip } from "./../lib/actions/tooltip.ts";
     import ConfigurationSave, { ConfigurationSaveType } from "./ConfigurationSave.svelte";
-    import { onDestroy, onMount } from "svelte";
+    import { onDestroy, onMount, tick } from "svelte";
     import { userAccountService } from "$lib/stores";
-    import { doc, setDoc } from "firebase/firestore";
-    import { configLinksCollection } from "$lib/collections";
     import SvgIcon from "$lib/icons/SvgIcon.svelte";
-    import { get } from "svelte/store";
     import { type Config, LocalConfigSchema, BaseConfigSchema } from "$lib/schemas";
-    import type { CloudConfig } from "$lib/schemas";
-    import { fade, slide } from "svelte/transition";
+    import { fade } from "svelte/transition";
     import ToggleSwitch from "$lib/components/atomic/ToggleSwitch.svelte";
     import { parentIframeCommunication } from "$lib/utils";
     import {
@@ -238,6 +234,21 @@
         } else {
             return "other_configs";
         }
+    }
+
+    async function scrollToSelectedConfig() {
+        await tick();
+        const target = document.getElementById(selectedConfigId as string);
+        if (!target) {
+            return;
+        }
+        target.scrollIntoView({
+            behavior: "smooth"
+        });
+    }
+
+    $: if (filteredConfigs) {
+        scrollToSelectedConfig();
     }
 
     function handleFilter(e: any) {
