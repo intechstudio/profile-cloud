@@ -383,24 +383,28 @@
                 <Pane size={60}>
                     <div class="h-full flex-grow overflow-hidden pb-3 px-4">
                         <Accordion bind:key={accordionKey}>
-                            {#each isFiltering ? ["my_configs", "other_configs"] : ["my_configs", "recommended_configs", "community_configs"] as configType}
+                            {#each isFiltering ? ["my_configs", "other_configs", "unsupported_configs"] : ["my_configs", "recommended_configs", "community_configs", "unsupported_configs"] as configType}
                                 {@const categoryList = filteredConfigs.filter((e) => {
-                                    var isMyConfig =
+                                    const isMyConfig =
                                         e.syncStatus == "local" ||
                                         e.owner === configManager?.getCurrentOwnerId();
-                                    var isOfficialConfig =
+                                    const isOfficialConfig =
                                         configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
                                             e.owner ?? ""
                                         );
+                                    const supported = compatibleTypes.includes(e.type);
+
+                                    console.log(e);
+
                                     switch (configType) {
                                         case "my_configs":
                                             return isMyConfig;
                                         case "other_configs":
-                                            return !isMyConfig;
+                                            return !isMyConfig && supported;
                                         case "recommended_configs":
-                                            return !isMyConfig && isOfficialConfig;
-                                        default:
-                                            return !isMyConfig && !isOfficialConfig;
+                                            return !isMyConfig && isOfficialConfig && supported;
+                                        case "unsupported_configs":
+                                            return !isMyConfig && !supported;
                                     }
                                 })}
                                 <AccordionItem key={configType}>
@@ -413,29 +417,33 @@
                                             <p>Recommended configs ({categoryList.length})</p>
                                         {:else if configType === "community_configs"}
                                             <p>Community configs ({categoryList.length})</p>
+                                        {:else if configType === "unsupported_configs"}
+                                            <p>Unsupported configs ({categoryList.length})</p>
                                         {/if}
                                     </div>
                                     <svelte:fragment slot="body">
-                                        {#each categoryList as config, index (config.id)}
-                                            <div class="py-1">
-                                                <ConfigCardEditor
-                                                    on:click={() => {
-                                                        provideSelectedConfigForEditor(config);
-                                                        selectedConfigId = config.id;
-                                                        selectedConfigIndex =
-                                                            filteredConfigs.findIndex(
-                                                                (e) => e.id === selectedConfigId
-                                                            );
-                                                    }}
-                                                    data={{
-                                                        ...config,
-                                                        selectedComponentTypes:
-                                                            selectedComponentTypes
-                                                    }}
-                                                    isSelected={config.id === selectedConfigId}
-                                                />
-                                            </div>
-                                        {/each}
+                                        {#key compatibleTypes}
+                                            {#each categoryList as config, index (config.id)}
+                                                <div class="py-1">
+                                                    <ConfigCardEditor
+                                                        on:click={() => {
+                                                            provideSelectedConfigForEditor(config);
+                                                            selectedConfigId = config.id;
+                                                            selectedConfigIndex =
+                                                                filteredConfigs.findIndex(
+                                                                    (e) => e.id === selectedConfigId
+                                                                );
+                                                        }}
+                                                        data={{
+                                                            ...config,
+                                                            selectedComponentTypes,
+                                                            compatibleTypes
+                                                        }}
+                                                        isSelected={config.id === selectedConfigId}
+                                                    />
+                                                </div>
+                                            {/each}
+                                        {/key}
                                     </svelte:fragment>
                                 </AccordionItem>
                             {/each}
