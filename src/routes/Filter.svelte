@@ -23,13 +23,11 @@
         "EN16",
         "PBF4",
         "PO16",
-        "TEK2",
         "Button",
         "Encoder",
         "Potentiometer",
         "Fader",
-        "System",
-        "Endless"
+        "System"
     ];
 
     enum SortFieldType {

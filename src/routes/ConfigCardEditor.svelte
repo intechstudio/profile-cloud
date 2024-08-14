@@ -10,10 +10,11 @@
 
     export let data: Config & SelectedComponentTypes;
     export let isSelected: boolean;
+
+    $: console.log();
 </script>
 
 <button
-    id={data.id}
     on:click={() => {
         dispatchEvent("click", {});
     }}
