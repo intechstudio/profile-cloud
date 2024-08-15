@@ -24,6 +24,7 @@
     import Accordion from "$lib/components/accordion/Accordion.svelte";
     import AccordionItem from "$lib/components/accordion/AccordionItem.svelte";
     import configuration from "../../Configuration.json";
+    import { MeltCheckbox } from "@intechstudio/grid-uikit";
 
     let selectedConfigId: string | undefined = undefined;
     let selectedConfigIndex: number;
@@ -47,12 +48,30 @@
     let selectedComponentTypes: string[] = [];
     let compatibleTypes: string[] = [];
 
-    let configTypeSelector: "profile" | "preset" = "profile";
+    let showSupportedOnly = false;
 
     let isSearchSortingShows = true;
     let configurationSaveVisible = false;
 
-    let accordionKey: string | undefined = "my_configs";
+    enum AccordionCategory {
+        LOCAL = "my_configs",
+        PUBLIC = "other_configs",
+        OFFICIAL = "recommended_configs",
+        COMMUNITY = "community_configs",
+        UNSUPPORTED = "unsupported_configs"
+    }
+
+    let accordionKey: AccordionCategory = AccordionCategory.LOCAL;
+    let categories: AccordionCategory[] = [];
+
+    $: {
+        categories = isFiltering
+            ? [AccordionCategory.LOCAL, AccordionCategory.PUBLIC]
+            : [AccordionCategory.LOCAL, AccordionCategory.OFFICIAL, AccordionCategory.COMMUNITY];
+        if (showSupportedOnly) {
+            categories.push(AccordionCategory.UNSUPPORTED);
+        }
+    }
 
     function updateFontSize(size: string) {
         const main = document.querySelector("#main") as HTMLElement;
@@ -243,11 +262,11 @@
         );
 
         if (isMyConfig) {
-            return "my_configs";
+            return AccordionCategory.LOCAL;
         } else if (!isMyConfig && isOfficialConfig) {
-            return isFiltering ? "other_configs" : "recommended_configs";
+            return isFiltering ? AccordionCategory.PUBLIC : AccordionCategory.OFFICIAL;
         } else {
-            return "other_configs";
+            return AccordionCategory.PUBLIC;
         }
     }
 
@@ -367,6 +386,7 @@
                         +
                     </button>
                 </Filter>
+                <MeltCheckbox bind:target={showSupportedOnly} title="Only show supported" />
             {/if}
         </div>
 
@@ -383,7 +403,7 @@
                 <Pane size={60}>
                     <div class="h-full flex-grow overflow-hidden pb-3 px-4">
                         <Accordion bind:key={accordionKey}>
-                            {#each isFiltering ? ["my_configs", "other_configs", "unsupported_configs"] : ["my_configs", "recommended_configs", "community_configs", "unsupported_configs"] as configType}
+                            {#each categories as configType}
                                 {@const categoryList = filteredConfigs.filter((e) => {
                                     const isMyConfig =
                                         e.syncStatus == "local" ||
@@ -394,30 +414,37 @@
                                         );
                                     const supported = compatibleTypes.includes(e.type);
 
-                                    console.log(e);
-
                                     switch (configType) {
-                                        case "my_configs":
+                                        case AccordionCategory.LOCAL:
                                             return isMyConfig;
-                                        case "other_configs":
-                                            return !isMyConfig && supported;
-                                        case "recommended_configs":
-                                            return !isMyConfig && isOfficialConfig && supported;
-                                        case "unsupported_configs":
-                                            return !isMyConfig && !supported;
+                                        case AccordionCategory.COMMUNITY:
+                                        case AccordionCategory.PUBLIC:
+                                            return (
+                                                !isMyConfig &&
+                                                !isOfficialConfig &&
+                                                (!showSupportedOnly || supported)
+                                            );
+                                        case AccordionCategory.OFFICIAL:
+                                            return (
+                                                !isMyConfig &&
+                                                isOfficialConfig &&
+                                                (!showSupportedOnly || supported)
+                                            );
+                                        case AccordionCategory.UNSUPPORTED:
+                                            return !isMyConfig && showSupportedOnly && !supported;
                                     }
                                 })}
                                 <AccordionItem key={configType}>
                                     <div slot="header" class="pb-1">
-                                        {#if configType === "my_configs"}
+                                        {#if configType === AccordionCategory.LOCAL}
                                             <p>My configs ({categoryList.length})</p>
-                                        {:else if configType === "other_configs"}
+                                        {:else if configType === AccordionCategory.PUBLIC}
                                             <p>Other configs ({categoryList.length})</p>
-                                        {:else if configType === "recommended_configs"}
+                                        {:else if configType === AccordionCategory.OFFICIAL}
                                             <p>Recommended configs ({categoryList.length})</p>
-                                        {:else if configType === "community_configs"}
+                                        {:else if configType === AccordionCategory.COMMUNITY}
                                             <p>Community configs ({categoryList.length})</p>
-                                        {:else if configType === "unsupported_configs"}
+                                        {:else if configType === AccordionCategory.UNSUPPORTED}
                                             <p>Unsupported configs ({categoryList.length})</p>
                                         {/if}
                                     </div>

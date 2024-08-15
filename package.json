@@ -34,7 +34,7 @@
     },
     "type": "module",
     "dependencies": {
-        "@intechstudio/grid-uikit": "^0.0.8",
+        "@intechstudio/grid-uikit": "^1.20240813.1834",
         "@toast-ui/editor": "^3.2.2",
         "audit": "^0.0.6",
         "firebase": "^9.18.0",
