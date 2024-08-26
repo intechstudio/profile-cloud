@@ -1,4 +1,5 @@
 <script lang="ts">
+    import ConfigTree, { type TreeNode } from "../lib/components/tree/ConfigTree.svelte";
     import { tooltip } from "./../lib/actions/tooltip.ts";
     import ConfigurationSave, { ConfigurationSaveType } from "./ConfigurationSave.svelte";
     import { onDestroy, onMount, tick } from "svelte";
@@ -13,7 +14,6 @@
         type ConfigManager,
         createConfigManager
     } from "$lib/configmanager/ConfigManager";
-    import ConfigCardEditor from "./ConfigCardEditor.svelte";
     import { submitAnalytics } from "./analytics";
     import UserLogin from "./UserLogin.svelte";
 
@@ -21,8 +21,6 @@
     import Filter from "./Filter.svelte";
     import ConfigCardDisplay from "./ConfigCardDisplay.svelte";
     import { Pane, Splitpanes } from "svelte-splitpanes";
-    import Accordion from "$lib/components/accordion/Accordion.svelte";
-    import AccordionItem from "$lib/components/accordion/AccordionItem.svelte";
     import configuration from "../../Configuration.json";
 
     let selectedConfigId: string | undefined = undefined;
@@ -50,8 +48,6 @@
 
     let isSearchSortingShows = true;
     let configurationSaveVisible = false;
-
-    let accordionKey: string | undefined = "my_configs";
 
     function updateFontSize(size: string) {
         const main = document.querySelector("#main") as HTMLElement;
@@ -251,6 +247,55 @@
         scrollToSelectedConfig();
     }
 
+    let treeData: TreeNode;
+
+    function createTree(configs: any) {
+        const [my_configs, recommended_configs, community_configs]: TreeNode[] = [
+            {
+                label: "My Configs",
+                children: configs.filter((e: any) => {
+                    return (
+                        e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId()
+                    );
+                }),
+                open: false
+            },
+            {
+                label: "Recommended Configs",
+                children: configs.filter((e: any) => {
+                    var isMyConfig =
+                        e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
+                    var isOfficialConfig = configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
+                        e.owner ?? ""
+                    );
+
+                    return !isMyConfig && isOfficialConfig;
+                }),
+                open: false
+            },
+            {
+                label: "Community Configs",
+                children: configs.filter((e: any) => {
+                    var isMyConfig =
+                        e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
+                    var isOfficialConfig = configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
+                        e.owner ?? ""
+                    );
+
+                    return !isMyConfig && !isOfficialConfig;
+                }),
+                open: false
+            }
+        ];
+
+        let data: TreeNode = {
+            label: "root",
+            children: [my_configs, recommended_configs, community_configs],
+            open: true
+        };
+
+        return data;
+    }
     function handleFilter(e: any) {
         const { configs } = e.detail;
         filteredConfigs = configs;
@@ -270,7 +315,8 @@
         } else {
             selectedConfigId = undefined;
         }
-        accordionKey = category;
+
+        treeData = createTree(filteredConfigs);
     }
 
     onMount(async () => {
@@ -324,6 +370,14 @@
         provideSelectedConfigForEditor(undefined);
         configurationSaveVisible = true;
     }
+
+    function handleConfigurationSelected(e: any) {
+        const { config } = e.detail;
+
+        provideSelectedConfigForEditor(config);
+        selectedConfigId = config.id;
+        selectedConfigIndex = filteredConfigs.findIndex((e) => e.id === selectedConfigId);
+    }
 </script>
 
 <div id="main" class="flex flex-grow h-screen relative z-0 overflow-hidden">
@@ -367,64 +421,11 @@
             >
                 <Pane size={60}>
                     <div class="h-full flex-grow overflow-hidden pb-3 px-4">
-                        <Accordion bind:key={accordionKey}>
-                            {#each isFiltering ? ["my_configs", "other_configs"] : ["my_configs", "recommended_configs", "community_configs"] as configType}
-                                {@const categoryList = filteredConfigs.filter((e) => {
-                                    var isMyConfig =
-                                        e.syncStatus == "local" ||
-                                        e.owner === configManager?.getCurrentOwnerId();
-                                    var isOfficialConfig =
-                                        configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
-                                            e.owner ?? ""
-                                        );
-                                    switch (configType) {
-                                        case "my_configs":
-                                            return isMyConfig;
-                                        case "other_configs":
-                                            return !isMyConfig;
-                                        case "recommended_configs":
-                                            return !isMyConfig && isOfficialConfig;
-                                        default:
-                                            return !isMyConfig && !isOfficialConfig;
-                                    }
-                                })}
-                                <AccordionItem key={configType}>
-                                    <div slot="header" class="pb-1">
-                                        {#if configType === "my_configs"}
-                                            <p>My configs ({categoryList.length})</p>
-                                        {:else if configType === "other_configs"}
-                                            <p>Other configs ({categoryList.length})</p>
-                                        {:else if configType === "recommended_configs"}
-                                            <p>Recommended configs ({categoryList.length})</p>
-                                        {:else if configType === "community_configs"}
-                                            <p>Community configs ({categoryList.length})</p>
-                                        {/if}
-                                    </div>
-                                    <svelte:fragment slot="body">
-                                        {#each categoryList as config, index (config.id)}
-                                            <div class="py-1">
-                                                <ConfigCardEditor
-                                                    on:click={() => {
-                                                        provideSelectedConfigForEditor(config);
-                                                        selectedConfigId = config.id;
-                                                        selectedConfigIndex =
-                                                            filteredConfigs.findIndex(
-                                                                (e) => e.id === selectedConfigId
-                                                            );
-                                                    }}
-                                                    data={{
-                                                        ...config,
-                                                        selectedComponentTypes:
-                                                            selectedComponentTypes
-                                                    }}
-                                                    isSelected={config.id === selectedConfigId}
-                                                />
-                                            </div>
-                                        {/each}
-                                    </svelte:fragment>
-                                </AccordionItem>
-                            {/each}
-                        </Accordion>
+                        <ConfigTree
+                            data={treeData}
+                            {selectedConfigId}
+                            on:select={handleConfigurationSelected}
+                        />
                     </div></Pane
                 >
                 <Pane size={40}>
