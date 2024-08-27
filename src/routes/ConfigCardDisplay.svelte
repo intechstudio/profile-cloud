@@ -7,10 +7,13 @@
     import { doc, getDoc } from "firebase/firestore";
     import { userCollection } from "$lib/collections";
     import ConfigDescription from "./ConfigDescription.svelte";
+    import DataInput from "$lib/components/DataInput.svelte";
 
     const dispatchEvent = createEventDispatcher();
 
     export let data: { selectedConfig: Config; selectedComponentTypes: string[] | undefined };
+
+    $: console.log(data);
 
     let deleteConfirmFlag = false;
     let overwriteApplyFlag = false;
@@ -49,47 +52,42 @@
     }
 </script>
 
-<div class="grid grid-cols-1 grid-rows-[auto_1fr] overflow-hidden w-full h-full bg-secondary p-2">
+<div
+    class="grid grid-cols-1 grid-rows-[auto_1fr] gap-1 overflow-hidden w-full h-full bg-secondary p-2"
+>
     {#if typeof data.selectedConfig !== "undefined"}
         <div class="w-full flex flex-row gap-2 items-center justify-between">
             <div class="flex flex-col flex-grow">
-                <input
-                    bind:this={nameInputField.element}
-                    class="w-full mr-1 font-bold border bg-white dark:bg-transparent truncate dark:hover:bg-neutral-800 focus:outline-none
-                    {!data.selectedConfig.isEditable ? 'pointer-events-none' : ''} 
-                    {nameInputField.doubleClicked ? 'border-emerald-500' : 'border-transparent'}"
-                    readonly={!nameInputField.doubleClicked}
-                    on:keydown={(e) => {
-                        if (e.key == "Enter" && !e.shiftKey) {
-                            nameInputField.element?.blur();
-                        }
-                    }}
-                    on:blur={() => {
-                        window?.getSelection()?.removeAllRanges();
-                        nameInputField.doubleClicked = false;
-                        // reset input value if user clicked out without changing the value
-                        if (nameInputField.element?.value == "") {
-                            nameInputField.element.value = "Add name";
-                        }
-                        if (nameInputField.element?.value != nameInputField.currentSelection) {
-                            dispatchEvent("name-change", {
-                                newName: nameInputField.element?.value
-                            });
-                        }
-                    }}
-                    on:dblclick|stopPropagation|preventDefault={() => {
-                        nameInputField.doubleClicked = true;
-                        nameInputField.element?.setSelectionRange(
-                            0,
-                            nameInputField.element.value.length
-                        );
-                        nameInputField.currentSelection = nameInputField.element?.value || "";
-                    }}
+                <DataInput
                     value={data.selectedConfig.name}
+                    disabled={!data.selectedConfig.isEditable}
+                    placeholder={"Add name"}
+                    bold={true}
+                    on:change={(e) => {
+                        const { newName } = e.detail;
+                        dispatchEvent("name-change", {
+                            newName
+                        });
+                    }}
                 />
                 <span class="text-black text-xs dark:text-opacity-70 dark:text-white"
                     >{configOwner}</span
                 >
+                <div class="flex flex-row gap-2 items-center">
+                    <span>Folder:</span>
+                    <DataInput
+                        value={data.selectedConfig.virtualPath ?? "Unsorted"}
+                        disabled={!data.selectedConfig.isEditable}
+                        on:change={(e) => {
+                            /*
+                        const { newName } = e.detail;
+                        dispatchEvent("name-change", {
+                            newName
+                        });
+                        */
+                        }}
+                    />
+                </div>
             </div>
             <div class="relative flex items-center gap-x-1">
                 {#if data.selectedConfig.isEditable}

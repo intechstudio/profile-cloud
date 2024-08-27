@@ -25,7 +25,8 @@ export type BaseConfig = z.infer<typeof BaseConfigSchema>;
 export const ConfigSchema = BaseConfigSchema.extend({
     isEditable: z.boolean(),
     syncStatus: z.enum(["synced", "cloud", "local"]),
-    public: z.boolean().optional()
+    public: z.boolean().optional(),
+    virtualPath: z.string().optional()
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
