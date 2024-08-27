@@ -1,4 +1,5 @@
 <script lang="ts" context="module">
+    import { selected_config } from "./../../../routes/EditorLayout";
     export type TreeNode = {
         label: string;
         children: Array<TreeNode | any>;
@@ -7,40 +8,51 @@
 </script>
 
 <script lang="ts">
+    import { get } from "svelte/store";
     import ConfigCardEditor from "../../../routes/ConfigCardEditor.svelte";
     import { createEventDispatcher } from "svelte";
+    import { tree_key } from "../../../routes/EditorLayout";
     export let data: TreeNode;
     export let indentation = 0;
-    export let selectedConfigId: any;
 
     const dispatch = createEventDispatcher();
+
     function handleSelection(config: any) {
         dispatch("select", { config });
     }
+
+    function handleToggleCategory(category: string) {
+        const key = get(tree_key);
+        if (key !== category) {
+            tree_key.set(category);
+        } else {
+            tree_key.set(undefined);
+        }
+    }
 </script>
 
-<ul class="flex flex-col gap-1 max-h-full overflow-auto">
+<ul class="flex flex-col gap-1 overflow-auto max-h-full">
     {#each data?.children ?? [] as child}
-        {#if typeof child.children !== "undefined"}
+        {#if child.children}
             <li
                 class="flex flex-col border-b border-white/40"
-                style="margin-left: {indentation * 10}px;"
+                style="margin-left: {indentation * 20}px;"
             >
                 <button
                     type="button"
-                    on:click={() => {
-                        child.open = !child.open;
-                    }}
+                    on:click={() => handleToggleCategory(child.label)}
                     class="flex items-center"
                 >
                     <div class="flex-grow text-left text-white/80">
-                        {`${child.label} (${child.children.length})`}
+                        {`${child.label} (${
+                            child.children.filter((e) => typeof e.label === "undefined").length
+                        })`}
                     </div>
                     <div>
                         <svg
                             width="14"
                             height="11"
-                            class={child.open ? "" : "-rotate-90"}
+                            class={child.label === $tree_key ? "" : "-rotate-90"}
                             viewBox="0 0 14 11"
                             fill="none"
                             xmlns="http://www.w3.org/2000/svg"
@@ -53,27 +65,21 @@
                     </div>
                 </button>
             </li>
-            {#if child.open}
-                <svelte:self
-                    data={child}
-                    indentation={indentation + 1}
-                    {selectedConfigId}
-                    on:select={(e) => {
-                        //Bubbling events
-                        const { config } = e.detail;
-                        handleSelection(config);
-                    }}
-                />
-            {/if}
-        {:else}
-            <div class="mr-1" style="margin-left: {(indentation - 1) * 10}px;">
+            <svelte:self
+                data={child}
+                indentation={indentation + 1}
+                on:select={(e) => {
+                    //Bubbling events
+                    const { config } = e.detail;
+                    handleSelection(config);
+                }}
+            />
+        {:else if data.label === $tree_key}
+            <div class="mr-1" style="margin-left: {(indentation - 1) * 20}px;">
                 <ConfigCardEditor
                     on:click={() => handleSelection(child)}
-                    data={{
-                        ...child,
-                        selectedComponentTypes: [] //selectedComponentTypes
-                    }}
-                    isSelected={child.id === selectedConfigId}
+                    data={child}
+                    isSelected={child.id === $selected_config}
                 />
             </div>
         {/if}

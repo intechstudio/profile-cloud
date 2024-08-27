@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { selected_config, tree_key } from "./EditorLayout.ts";
+    import { get } from "svelte/store";
     import ConfigTree, { type TreeNode } from "../lib/components/tree/ConfigTree.svelte";
     import { tooltip } from "./../lib/actions/tooltip.ts";
     import ConfigurationSave, { ConfigurationSaveType } from "./ConfigurationSave.svelte";
@@ -22,9 +24,8 @@
     import ConfigCardDisplay from "./ConfigCardDisplay.svelte";
     import { Pane, Splitpanes } from "svelte-splitpanes";
     import configuration from "../../Configuration.json";
-
-    let selectedConfigId: string | undefined = undefined;
-    let selectedConfigIndex: number;
+    import { MeltCheckbox } from "@intechstudio/grid-uikit";
+    import { compatible_config_types } from "./EditorLayout";
 
     let configManager: ConfigManager | undefined = undefined;
     let configs: Config[] = [];
@@ -44,7 +45,7 @@
 
     let selectedComponentTypes: string[] = [];
 
-    let configTypeSelector: "profile" | "preset" = "profile";
+    let showSupportedOnly = false;
 
     let isSearchSortingShows = true;
     let configurationSaveVisible = false;
@@ -60,36 +61,50 @@
     }
 
     async function editorMessageListener(event: MessageEvent) {
-        if (event.data.messageType == "updateFontSize") {
-            updateFontSize(event.data.fontSize);
-        }
-        if (event.data.messageType == "localConfigs") {
-            const localConfigs = (event.data.configs as any[]).map((config) =>
-                LocalConfigSchema.parse(config)
-            );
-            updateLocalConfigs(localConfigs);
-        }
-
-        if (event.data.messageType == "userAuthentication") {
-            userAccountService.authenticateUser(event.data.authEvent);
-        }
-
-        if (event.data.messageType == "configLink") {
-            const linkedConfig = await configManager?.importLinkedConfig(event.data.configLinkId);
-
-            if (linkedConfig) {
-                submitAnalytics({
-                    eventName: "Cloud Action",
-                    payload: {
-                        click: "Config Link Import"
-                    }
-                });
-                configTypeSelector = linkedConfig?.configType;
+        switch (event.data.messageType) {
+            case "updateFontSize": {
+                updateFontSize(event.data.fontSize);
+                break;
             }
-        }
+            case "localConfigs": {
+                const localConfigs = (event.data.configs as any[]).map((config) =>
+                    LocalConfigSchema.parse(config)
+                );
+                updateLocalConfigs(localConfigs);
+                break;
+            }
 
-        if (event.data.messageType == "selectedComponentTypes") {
-            selectedComponentTypes = event.data.selectedComponentTypes;
+            case "userAuthentication": {
+                userAccountService.authenticateUser(event.data.authEvent);
+                break;
+            }
+
+            case "configLink": {
+                const linkedConfig = await configManager?.importLinkedConfig(
+                    event.data.configLinkId
+                );
+
+                if (linkedConfig) {
+                    submitAnalytics({
+                        eventName: "Cloud Action",
+                        payload: {
+                            click: "Config Link Import"
+                        }
+                    });
+                    configTypeSelector = linkedConfig?.configType;
+                }
+                break;
+            }
+
+            case "selectedComponentTypes": {
+                selectedComponentTypes = event.data.selectedComponentTypes;
+                break;
+            }
+
+            case "compatibleTypes": {
+                compatible_config_types.set(event.data.compatibleTypes);
+                break;
+            }
         }
     }
 
@@ -216,25 +231,9 @@
         }
     }
 
-    function getConfigCategory(config: any): string {
-        var isMyConfig =
-            config.syncStatus == "local" || config.owner === configManager?.getCurrentOwnerId();
-        var isOfficialConfig = configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
-            config.owner ?? ""
-        );
-
-        if (isMyConfig) {
-            return "my_configs";
-        } else if (!isMyConfig && isOfficialConfig) {
-            return isFiltering ? "other_configs" : "recommended_configs";
-        } else {
-            return "other_configs";
-        }
-    }
-
     async function scrollToSelectedConfig() {
         await tick();
-        const target = document.getElementById(selectedConfigId as string);
+        const target = document.getElementById($selected_config as string);
         if (!target) {
             return;
         }
@@ -249,40 +248,77 @@
 
     let treeData: TreeNode;
 
-    function createTree(configs: any) {
-        const [my_configs, recommended_configs, community_configs]: TreeNode[] = [
+    function createTree(configs: any, showSupportedOnly: boolean, isFiltering: boolean) {
+        const [
+            my_configs,
+            recommended_configs,
+            community_configs,
+            other_configs,
+            unsupported_configs
+        ]: TreeNode[] = [
             {
                 label: "My Configs",
-                children: configs.filter((e: any) => {
-                    return (
-                        e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId()
-                    );
+                children: configs.filter((e: Config) => {
+                    const isMyConfig =
+                        e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
+                    return isMyConfig;
                 }),
                 open: false
             },
             {
                 label: "Recommended Configs",
-                children: configs.filter((e: any) => {
-                    var isMyConfig =
+                children: configs.filter((e: Config) => {
+                    const isMyConfig =
                         e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
-                    var isOfficialConfig = configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
+                    const isOfficialConfig = configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
                         e.owner ?? ""
                     );
 
-                    return !isMyConfig && isOfficialConfig;
+                    const cct = get(compatible_config_types);
+
+                    return (
+                        !isMyConfig &&
+                        isOfficialConfig &&
+                        (!showSupportedOnly || cct.includes(e.type))
+                    );
                 }),
                 open: false
             },
             {
                 label: "Community Configs",
-                children: configs.filter((e: any) => {
-                    var isMyConfig =
+                children: configs.filter((e: Config) => {
+                    const isMyConfig =
                         e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
-                    var isOfficialConfig = configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
+                    const isOfficialConfig = configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
                         e.owner ?? ""
                     );
+                    const cct = get(compatible_config_types);
+                    return (
+                        !isMyConfig &&
+                        !isOfficialConfig &&
+                        (!showSupportedOnly || cct.includes(e.type))
+                    );
+                }),
+                open: false
+            },
+            {
+                label: "Other Configs",
+                children: configs.filter((e: Config) => {
+                    const isMyConfig =
+                        e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
+                    const cct = get(compatible_config_types);
+                    return !isMyConfig && (!showSupportedOnly || cct.includes(e.type));
+                }),
+                open: false
+            },
+            {
+                label: "Unsupported Configs",
+                children: configs.filter((e: Config) => {
+                    const isMyConfig =
+                        e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
+                    const cct = get(compatible_config_types);
 
-                    return !isMyConfig && !isOfficialConfig;
+                    return !isMyConfig && showSupportedOnly && !cct.includes(e.type);
                 }),
                 open: false
             }
@@ -290,33 +326,94 @@
 
         let data: TreeNode = {
             label: "root",
-            children: [my_configs, recommended_configs, community_configs],
+            children: [my_configs],
             open: true
         };
 
+        if (isFiltering) {
+            data.children.push(other_configs);
+        } else {
+            data.children.push(recommended_configs, community_configs);
+        }
+
+        if (showSupportedOnly) {
+            data.children.push(unsupported_configs);
+        }
+
+        data.children.forEach((category) => {
+            for (const child of category.children) {
+                const path = child.virtualPath;
+                if (typeof path !== "undefined") {
+                    const parts = path.split("/");
+                    let node = category;
+                    for (let i = 0; i < parts.length; ++i) {
+                        const part = parts[i];
+                        const found = node.children.find((e: any) => e.label === part);
+                        if (found) {
+                            node = found;
+                        } else {
+                            const newNode = {
+                                label: part,
+                                children: [],
+                                open: false
+                            };
+                            node.children.push(newNode);
+                            node = newNode;
+                        }
+                    }
+                    node.children.push(child);
+                }
+            }
+
+            category.children = category.children.filter((e: any) => {
+                return typeof e.virtualPath === "undefined";
+            });
+        });
+
         return data;
     }
+
+    function getTreeKey(node: TreeNode, id: string): string | undefined {
+        const findParentLabel = (node: TreeNode): string | undefined => {
+            for (let child of node.children) {
+                // Check if the child matches the id
+                if (child.id === id) {
+                    return node.label; // Return the parent's label
+                }
+                // If the child has children, search recursively
+                if (child.children && child.children.length > 0) {
+                    const found = findParentLabel(child);
+                    if (found) {
+                        return found; // Propagate the found label upwards
+                    }
+                }
+            }
+            return undefined; // No match found
+        };
+
+        return findParentLabel(node);
+    }
+
     function handleFilter(e: any) {
         const { configs } = e.detail;
         filteredConfigs = configs;
         isFiltering = e.detail.isFiltering;
-        selectedConfigIndex = filteredConfigs.findIndex((e) => e.id === selectedConfigId);
 
-        let category = undefined;
-        if (filteredConfigs.length > 0) {
-            if (selectedConfigIndex == -1) {
-                selectedConfigIndex = 0;
-                selectedConfigId = filteredConfigs[0].id;
-                category = getConfigCategory(filteredConfigs[0]);
-            } else {
-                const config = filteredConfigs.find((e) => e.id === selectedConfigId);
-                category = getConfigCategory(config);
-            }
-        } else {
-            selectedConfigId = undefined;
+        const selectedConfig = filteredConfigs.find((e) => e.id === $selected_config);
+        if (typeof selectedConfig === "undefined" && filteredConfigs.length > 0) {
+            selected_config.set(filteredConfigs[0]?.id);
+        } else if (filteredConfigs.length === 0) {
+            selected_config.set(undefined);
         }
+    }
 
-        treeData = createTree(filteredConfigs);
+    $: {
+        treeData = createTree(filteredConfigs, showSupportedOnly, isFiltering);
+        const selected = $selected_config;
+        if (typeof selected !== "undefined") {
+            const key = getTreeKey(treeData, selected);
+            tree_key.set(key);
+        }
     }
 
     onMount(async () => {
@@ -375,8 +472,7 @@
         const { config } = e.detail;
 
         provideSelectedConfigForEditor(config);
-        selectedConfigId = config.id;
-        selectedConfigIndex = filteredConfigs.findIndex((e) => e.id === selectedConfigId);
+        selected_config.set(config.id);
     }
 </script>
 
@@ -406,6 +502,7 @@
                         +
                     </button>
                 </Filter>
+                <MeltCheckbox bind:target={showSupportedOnly} title="Only show supported" />
             {/if}
         </div>
 
@@ -421,25 +518,28 @@
             >
                 <Pane size={60}>
                     <div class="h-full flex-grow overflow-hidden pb-3 px-4">
-                        <ConfigTree
-                            data={treeData}
-                            {selectedConfigId}
-                            on:select={handleConfigurationSelected}
-                        />
+                        <ConfigTree data={treeData} on:select={handleConfigurationSelected} />
                     </div></Pane
                 >
                 <Pane size={40}>
                     <div class="grid grid-rows-[1fr_auto] h-full w-full">
                         <ConfigCardDisplay
                             on:delete-config={async () => {
-                                const config = filteredConfigs[selectedConfigIndex];
+                                const config = filteredConfigs.find(
+                                    (e) => e.id === $selected_config
+                                );
                                 configManager?.deleteConfig(config);
 
-                                selectedConfigIndex =
+                                const index =
                                     filteredConfigs.length > 0
-                                        ? Math.max(selectedConfigIndex - 1, 0)
+                                        ? Math.max(
+                                              filteredConfigs.findIndex(
+                                                  (e) => e.id === $selected_config
+                                              ) - 1,
+                                              0
+                                          )
                                         : -1;
-                                selectedConfigId = filteredConfigs[selectedConfigIndex]?.id;
+                                $selected_config = filteredConfigs[index]?.id;
                                 provideSelectedConfigForEditor(undefined);
                                 submitAnalytics({
                                     eventName: "Cloud Action",
@@ -450,7 +550,9 @@
                             }}
                             on:description-change={(e) => {
                                 const { newDescription } = e.detail;
-                                const config = filteredConfigs[selectedConfigIndex];
+                                const config = filteredConfigs.find(
+                                    (e) => e.id === $selected_config
+                                );
                                 let oldDescription = config.description;
                                 let newConfig = {
                                     ...config,
@@ -465,12 +567,14 @@
                                 });
                             }}
                             on:name-change={(e) => {
-                                const { newName } = e.detail;
-                                const config = filteredConfigs[selectedConfigIndex];
+                                const { value } = e.detail;
+                                const config = filteredConfigs.find(
+                                    (e) => e.id === $selected_config
+                                );
                                 let oldConfigName = config.name;
                                 let newConfig = {
                                     ...config,
-                                    name: newName
+                                    name: value
                                 };
                                 configManager?.saveConfig(newConfig, false);
                                 submitAnalytics({
@@ -480,17 +584,41 @@
                                     }
                                 });
                             }}
+                            on:path-change={(e) => {
+                                const { value } = e.detail;
+                                const config = filteredConfigs.find(
+                                    (e) => e.id === $selected_config
+                                );
+                                let newConfig = {
+                                    ...config,
+                                    virtualPath: value
+                                };
+                                configManager?.saveConfig(newConfig, false);
+
+                                submitAnalytics({
+                                    eventName: "Cloud Action",
+                                    payload: {
+                                        click: "Edit config path"
+                                    }
+                                });
+                            }}
                             on:overwrite-profile={() => {
-                                const config = filteredConfigs[selectedConfigIndex];
+                                const config = filteredConfigs.find(
+                                    (e) => e.id === $selected_config
+                                );
                                 overwriteConfigWithEditorConfig(config);
                             }}
                             data={{
-                                selectedConfig: filteredConfigs[selectedConfigIndex],
+                                selectedConfig: filteredConfigs.find(
+                                    (e) => e.id === $selected_config
+                                ),
                                 selectedComponentTypes: selectedComponentTypes
                             }}
                         >
                             <svelte:fragment slot="link-button">
-                                {@const config = filteredConfigs[selectedConfigIndex]}
+                                {@const config = filteredConfigs.find(
+                                    (e) => e.id === $selected_config
+                                )}
                                 {#if config?.syncStatus != "local"}
                                     <button
                                         class="relative group flex"
@@ -545,7 +673,9 @@
                                 {/if}
                             </svelte:fragment>
                             <svelte:fragment slot="sync-config-button">
-                                {@const config = filteredConfigs[selectedConfigIndex]}
+                                {@const config = filteredConfigs.find(
+                                    (e) => e.id === $selected_config
+                                )}
                                 {#if config?.syncStatus != "synced" || !config?.isEditable}
                                     <button
                                         on:click|stopPropagation={async () => {
@@ -604,7 +734,9 @@
                                 {/if}
                             </svelte:fragment>
                             <svelte:fragment slot="split-config-button">
-                                {@const config = filteredConfigs[selectedConfigIndex]}
+                                {@const config = filteredConfigs.find(
+                                    (e) => e.id === $selected_config
+                                )}
                                 {#if config?.configType === "profile"}
                                     <button
                                         on:click|stopPropagation={async () => {
@@ -632,7 +764,9 @@
                                 {/if}
                             </svelte:fragment>
                             <span slot="toggle-accessibility">
-                                {@const config = filteredConfigs[selectedConfigIndex]}
+                                {@const config = filteredConfigs.find(
+                                    (e) => e.id === $selected_config
+                                )}
                                 <ToggleSwitch
                                     checkbox={config?.public}
                                     on:toggle={(e) => {

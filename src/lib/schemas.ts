@@ -17,7 +17,8 @@ export const BaseConfigSchema = z.object({
         .optional(),
     configType: z.enum(["profile", "preset"]),
     configs: z.any(),
-    owner: z.string().optional()
+    owner: z.string().optional(),
+    virtualPath: z.string().optional()
 });
 
 export type BaseConfig = z.infer<typeof BaseConfigSchema>;
@@ -25,8 +26,7 @@ export type BaseConfig = z.infer<typeof BaseConfigSchema>;
 export const ConfigSchema = BaseConfigSchema.extend({
     isEditable: z.boolean(),
     syncStatus: z.enum(["synced", "cloud", "local"]),
-    public: z.boolean().optional(),
-    virtualPath: z.string().optional()
+    public: z.boolean().optional()
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

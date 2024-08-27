@@ -34,7 +34,7 @@
         }
         if (element?.value != currentSelection) {
             dispatch("change", {
-                newName: element?.value
+                value: element?.value
             });
         }
     }}

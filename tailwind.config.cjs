@@ -3,7 +3,10 @@ const defaultTheme = require("tailwindcss/defaultTheme");
 /** @type {import('tailwindcss').Config} */
 module.exports = {
     darkMode: "class",
-    content: ["./src/**/*.{html,js,svelte,ts}"],
+    content: [
+        "./src/**/*.{html,js,svelte,ts}",
+        "./node_modules/@intechstudio/grid-uikit/dist/*.{html,js,svelte,ts}"
+    ],
     theme: {
         extend: {
             colors: {

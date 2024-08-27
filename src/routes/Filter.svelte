@@ -53,7 +53,7 @@
 
         const filtered = array.filter((config) => {
             const currentProfileSearchable = String(
-                `${config.name} ${config.type} ${config.configType}`
+                `${config.name} ${config.type} ${config.configType} ${config.virtualPath ?? ""}`
             ).toLocaleLowerCase();
 
             for (const searchTerm of arrayOfSearchTerms) {
