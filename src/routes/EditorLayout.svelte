@@ -24,6 +24,7 @@
     import Accordion from "$lib/components/accordion/Accordion.svelte";
     import AccordionItem from "$lib/components/accordion/AccordionItem.svelte";
     import configuration from "../../Configuration.json";
+    import { MeltCheckbox } from "@intechstudio/grid-uikit";
 
     let selectedConfigId: string | undefined = undefined;
     let selectedConfigIndex: number;
@@ -45,13 +46,32 @@
     };
 
     let selectedComponentTypes: string[] = [];
+    let compatibleTypes: string[] = [];
 
-    let configTypeSelector: "profile" | "preset" = "profile";
+    let showSupportedOnly = false;
 
     let isSearchSortingShows = true;
     let configurationSaveVisible = false;
 
-    let accordionKey: string | undefined = "my_configs";
+    enum AccordionCategory {
+        LOCAL = "my_configs",
+        PUBLIC = "other_configs",
+        OFFICIAL = "recommended_configs",
+        COMMUNITY = "community_configs",
+        UNSUPPORTED = "unsupported_configs"
+    }
+
+    let accordionKey: AccordionCategory = AccordionCategory.LOCAL;
+    let categories: AccordionCategory[] = [];
+
+    $: {
+        categories = isFiltering
+            ? [AccordionCategory.LOCAL, AccordionCategory.PUBLIC]
+            : [AccordionCategory.LOCAL, AccordionCategory.OFFICIAL, AccordionCategory.COMMUNITY];
+        if (showSupportedOnly) {
+            categories.push(AccordionCategory.UNSUPPORTED);
+        }
+    }
 
     function updateFontSize(size: string) {
         const main = document.querySelector("#main") as HTMLElement;
@@ -64,36 +84,50 @@
     }
 
     async function editorMessageListener(event: MessageEvent) {
-        if (event.data.messageType == "updateFontSize") {
-            updateFontSize(event.data.fontSize);
-        }
-        if (event.data.messageType == "localConfigs") {
-            const localConfigs = (event.data.configs as any[]).map((config) =>
-                LocalConfigSchema.parse(config)
-            );
-            updateLocalConfigs(localConfigs);
-        }
-
-        if (event.data.messageType == "userAuthentication") {
-            userAccountService.authenticateUser(event.data.authEvent);
-        }
-
-        if (event.data.messageType == "configLink") {
-            const linkedConfig = await configManager?.importLinkedConfig(event.data.configLinkId);
-
-            if (linkedConfig) {
-                submitAnalytics({
-                    eventName: "Cloud Action",
-                    payload: {
-                        click: "Config Link Import"
-                    }
-                });
-                configTypeSelector = linkedConfig?.configType;
+        switch (event.data.messageType) {
+            case "updateFontSize": {
+                updateFontSize(event.data.fontSize);
+                break;
             }
-        }
+            case "localConfigs": {
+                const localConfigs = (event.data.configs as any[]).map((config) =>
+                    LocalConfigSchema.parse(config)
+                );
+                updateLocalConfigs(localConfigs);
+                break;
+            }
 
-        if (event.data.messageType == "selectedComponentTypes") {
-            selectedComponentTypes = event.data.selectedComponentTypes;
+            case "userAuthentication": {
+                userAccountService.authenticateUser(event.data.authEvent);
+                break;
+            }
+
+            case "configLink": {
+                const linkedConfig = await configManager?.importLinkedConfig(
+                    event.data.configLinkId
+                );
+
+                if (linkedConfig) {
+                    submitAnalytics({
+                        eventName: "Cloud Action",
+                        payload: {
+                            click: "Config Link Import"
+                        }
+                    });
+                    configTypeSelector = linkedConfig?.configType;
+                }
+                break;
+            }
+
+            case "selectedComponentTypes": {
+                selectedComponentTypes = event.data.selectedComponentTypes;
+                break;
+            }
+
+            case "compatibleTypes": {
+                compatibleTypes = event.data.compatibleTypes;
+                break;
+            }
         }
     }
 
@@ -228,11 +262,11 @@
         );
 
         if (isMyConfig) {
-            return "my_configs";
+            return AccordionCategory.LOCAL;
         } else if (!isMyConfig && isOfficialConfig) {
-            return isFiltering ? "other_configs" : "recommended_configs";
+            return isFiltering ? AccordionCategory.PUBLIC : AccordionCategory.OFFICIAL;
         } else {
-            return "other_configs";
+            return AccordionCategory.PUBLIC;
         }
     }
 
@@ -352,6 +386,7 @@
                         +
                     </button>
                 </Filter>
+                <MeltCheckbox bind:target={showSupportedOnly} title="Only show supported" />
             {/if}
         </div>
 
@@ -368,59 +403,74 @@
                 <Pane size={60}>
                     <div class="h-full flex-grow overflow-hidden pb-3 px-4">
                         <Accordion bind:key={accordionKey}>
-                            {#each isFiltering ? ["my_configs", "other_configs"] : ["my_configs", "recommended_configs", "community_configs"] as configType}
+                            {#each categories as configType}
                                 {@const categoryList = filteredConfigs.filter((e) => {
-                                    var isMyConfig =
+                                    const isMyConfig =
                                         e.syncStatus == "local" ||
                                         e.owner === configManager?.getCurrentOwnerId();
-                                    var isOfficialConfig =
+                                    const isOfficialConfig =
                                         configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
                                             e.owner ?? ""
                                         );
+                                    const supported = compatibleTypes.includes(e.type);
+
                                     switch (configType) {
-                                        case "my_configs":
+                                        case AccordionCategory.LOCAL:
                                             return isMyConfig;
-                                        case "other_configs":
-                                            return !isMyConfig;
-                                        case "recommended_configs":
-                                            return !isMyConfig && isOfficialConfig;
-                                        default:
-                                            return !isMyConfig && !isOfficialConfig;
+                                        case AccordionCategory.COMMUNITY:
+                                        case AccordionCategory.PUBLIC:
+                                            return (
+                                                !isMyConfig &&
+                                                !isOfficialConfig &&
+                                                (!showSupportedOnly || supported)
+                                            );
+                                        case AccordionCategory.OFFICIAL:
+                                            return (
+                                                !isMyConfig &&
+                                                isOfficialConfig &&
+                                                (!showSupportedOnly || supported)
+                                            );
+                                        case AccordionCategory.UNSUPPORTED:
+                                            return !isMyConfig && showSupportedOnly && !supported;
                                     }
                                 })}
                                 <AccordionItem key={configType}>
                                     <div slot="header" class="pb-1">
-                                        {#if configType === "my_configs"}
+                                        {#if configType === AccordionCategory.LOCAL}
                                             <p>My configs ({categoryList.length})</p>
-                                        {:else if configType === "other_configs"}
+                                        {:else if configType === AccordionCategory.PUBLIC}
                                             <p>Other configs ({categoryList.length})</p>
-                                        {:else if configType === "recommended_configs"}
+                                        {:else if configType === AccordionCategory.OFFICIAL}
                                             <p>Recommended configs ({categoryList.length})</p>
-                                        {:else if configType === "community_configs"}
+                                        {:else if configType === AccordionCategory.COMMUNITY}
                                             <p>Community configs ({categoryList.length})</p>
+                                        {:else if configType === AccordionCategory.UNSUPPORTED}
+                                            <p>Unsupported configs ({categoryList.length})</p>
                                         {/if}
                                     </div>
                                     <svelte:fragment slot="body">
-                                        {#each categoryList as config, index (config.id)}
-                                            <div class="py-1">
-                                                <ConfigCardEditor
-                                                    on:click={() => {
-                                                        provideSelectedConfigForEditor(config);
-                                                        selectedConfigId = config.id;
-                                                        selectedConfigIndex =
-                                                            filteredConfigs.findIndex(
-                                                                (e) => e.id === selectedConfigId
-                                                            );
-                                                    }}
-                                                    data={{
-                                                        ...config,
-                                                        selectedComponentTypes:
-                                                            selectedComponentTypes
-                                                    }}
-                                                    isSelected={config.id === selectedConfigId}
-                                                />
-                                            </div>
-                                        {/each}
+                                        {#key compatibleTypes}
+                                            {#each categoryList as config, index (config.id)}
+                                                <div class="py-1">
+                                                    <ConfigCardEditor
+                                                        on:click={() => {
+                                                            provideSelectedConfigForEditor(config);
+                                                            selectedConfigId = config.id;
+                                                            selectedConfigIndex =
+                                                                filteredConfigs.findIndex(
+                                                                    (e) => e.id === selectedConfigId
+                                                                );
+                                                        }}
+                                                        data={{
+                                                            ...config,
+                                                            selectedComponentTypes,
+                                                            compatibleTypes
+                                                        }}
+                                                        isSelected={config.id === selectedConfigId}
+                                                    />
+                                                </div>
+                                            {/each}
+                                        {/key}
                                     </svelte:fragment>
                                 </AccordionItem>
                             {/each}
