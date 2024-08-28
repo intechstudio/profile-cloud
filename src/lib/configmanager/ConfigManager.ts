@@ -209,7 +209,6 @@ export function createConfigManager(observer: {
         let configError = false;
         let errorDetail = undefined;
         if (currentOwnerId != null && (createMissingConfigs || cloudId)) {
-            console.log("asd");
             if (createMissingConfigs || !cloudId) {
                 configCreated = true;
             }
@@ -229,7 +228,6 @@ export function createConfigManager(observer: {
                 localConfigs.find((e) => e.id === appConfigs!.local!.id)!.cloudId = cloudId;
             }
 
-            console.log(configToSave, config);
             setDoc(configRef, configToSave);
             cloudId = configRef.id;
         }

@@ -5,11 +5,7 @@
 
     const dispatchEvent = createEventDispatcher();
 
-    interface SelectedComponentTypes {
-        selectedComponentTypes: string[] | undefined;
-    }
-
-    export let data: Config & SelectedComponentTypes;
+    export let data: Config;
     export let isSelected: boolean;
 
     let compatible = false;

@@ -1,8 +1,9 @@
 <script lang="ts">
-    import { selected_config, tree_key } from "./EditorLayout.ts";
+    import { selected_config } from "./EditorLayout";
     import { get } from "svelte/store";
-    import ConfigTree, { type TreeNode } from "../lib/components/tree/ConfigTree.svelte";
-    import { tooltip } from "./../lib/actions/tooltip.ts";
+    import ConfigTree from "../lib/components/tree/ConfigTree.svelte";
+    import { TreeNode, tree_key } from "../lib/components/tree/ConfigTree";
+    import { tooltip } from "./../lib/actions/tooltip";
     import ConfigurationSave, { ConfigurationSaveType } from "./ConfigurationSave.svelte";
     import { onDestroy, onMount, tick } from "svelte";
     import { userAccountService } from "$lib/stores";
@@ -246,101 +247,94 @@
         scrollToSelectedConfig();
     }
 
-    let treeData: TreeNode;
+    let treeData: TreeNode<Config>[];
 
-    function createTree(configs: any, showSupportedOnly: boolean, isFiltering: boolean) {
+    function createTree(
+        configs: any,
+        showSupportedOnly: boolean,
+        isFiltering: boolean
+    ): TreeNode<Config>[] {
         const [
             my_configs,
             recommended_configs,
             community_configs,
             other_configs,
             unsupported_configs
-        ]: TreeNode[] = [
-            {
-                label: "My Configs",
-                children: configs.filter((e: Config) => {
-                    const isMyConfig =
-                        e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
-                    return isMyConfig;
-                }),
-                open: false
-            },
-            {
-                label: "Recommended Configs",
-                children: configs.filter((e: Config) => {
-                    const isMyConfig =
-                        e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
-                    const isOfficialConfig = configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
-                        e.owner ?? ""
-                    );
-
-                    const cct = get(compatible_config_types);
-
-                    return (
-                        !isMyConfig &&
-                        isOfficialConfig &&
-                        (!showSupportedOnly || cct.includes(e.type))
-                    );
-                }),
-                open: false
-            },
-            {
-                label: "Community Configs",
-                children: configs.filter((e: Config) => {
-                    const isMyConfig =
-                        e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
-                    const isOfficialConfig = configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
-                        e.owner ?? ""
-                    );
-                    const cct = get(compatible_config_types);
-                    return (
-                        !isMyConfig &&
-                        !isOfficialConfig &&
-                        (!showSupportedOnly || cct.includes(e.type))
-                    );
-                }),
-                open: false
-            },
-            {
-                label: "Other Configs",
-                children: configs.filter((e: Config) => {
-                    const isMyConfig =
-                        e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
-                    const cct = get(compatible_config_types);
-                    return !isMyConfig && (!showSupportedOnly || cct.includes(e.type));
-                }),
-                open: false
-            },
-            {
-                label: "Unsupported Configs",
-                children: configs.filter((e: Config) => {
-                    const isMyConfig =
-                        e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
-                    const cct = get(compatible_config_types);
-
-                    return !isMyConfig && showSupportedOnly && !cct.includes(e.type);
-                }),
-                open: false
-            }
+        ] = [
+            new TreeNode<Config>("My Configs"),
+            new TreeNode<Config>("Recommended Configs"),
+            new TreeNode<Config>("Community Configs"),
+            new TreeNode<Config>("Other Configs"),
+            new TreeNode<Config>("Unsupported Configs")
         ];
 
-        let data: TreeNode = {
-            label: "root",
-            children: [my_configs],
-            open: true
-        };
+        my_configs.addChild(
+            ...configs.filter((e: Config) => {
+                const isMyConfig =
+                    e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
+                return isMyConfig;
+            })
+        );
+        recommended_configs.addChild(
+            ...configs.filter((e: Config) => {
+                const isMyConfig =
+                    e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
+                const isOfficialConfig = configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
+                    e.owner ?? ""
+                );
+
+                const cct = get(compatible_config_types);
+
+                return (
+                    !isMyConfig && isOfficialConfig && (!showSupportedOnly || cct.includes(e.type))
+                );
+            })
+        );
+        community_configs.addChild(
+            ...configs.filter((e: Config) => {
+                const isMyConfig =
+                    e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
+                const isOfficialConfig = configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
+                    e.owner ?? ""
+                );
+                const cct = get(compatible_config_types);
+                return (
+                    !isMyConfig && !isOfficialConfig && (!showSupportedOnly || cct.includes(e.type))
+                );
+            })
+        );
+        other_configs.addChild(
+            configs.filter((e: Config) => {
+                const isMyConfig =
+                    e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
+                const cct = get(compatible_config_types);
+                return !isMyConfig && (!showSupportedOnly || cct.includes(e.type));
+            })
+        );
+        unsupported_configs.addChild(
+            ...configs.filter((e: Config) => {
+                const isMyConfig =
+                    e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
+                const cct = get(compatible_config_types);
+
+                return !isMyConfig && showSupportedOnly && !cct.includes(e.type);
+            })
+        );
+
+        const data: TreeNode<Config>[] = [];
+        data.push(my_configs);
 
         if (isFiltering) {
-            data.children.push(other_configs);
+            data.push(other_configs);
         } else {
-            data.children.push(recommended_configs, community_configs);
+            data.push(recommended_configs, community_configs);
         }
 
         if (showSupportedOnly) {
-            data.children.push(unsupported_configs);
+            data.push(unsupported_configs);
         }
 
-        data.children.forEach((category) => {
+        data.forEach((category) => {
             for (const child of category.children) {
                 const path = child.virtualPath;
                 if (typeof path !== "undefined") {
@@ -348,16 +342,12 @@
                     let node = category;
                     for (let i = 0; i < parts.length; ++i) {
                         const part = parts[i];
-                        const found = node.children.find((e: any) => e.label === part);
+                        const found = node.nodes.find((e: any) => e.label === part);
                         if (found) {
                             node = found;
                         } else {
-                            const newNode = {
-                                label: part,
-                                children: [],
-                                open: false
-                            };
-                            node.children.push(newNode);
+                            const newNode = new TreeNode<Config>(part);
+                            node.addNode(newNode);
                             node = newNode;
                         }
                     }
@@ -373,25 +363,20 @@
         return data;
     }
 
-    function getTreeKey(node: TreeNode, id: string): string | undefined {
-        const findParentLabel = (node: TreeNode): string | undefined => {
-            for (let child of node.children) {
-                // Check if the child matches the id
-                if (child.id === id) {
-                    return node.label; // Return the parent's label
-                }
-                // If the child has children, search recursively
-                if (child.children && child.children.length > 0) {
-                    const found = findParentLabel(child);
-                    if (found) {
-                        return found; // Propagate the found label upwards
-                    }
-                }
-            }
-            return undefined; // No match found
-        };
+    function getTreeKey(node: TreeNode<Config>, id: string): string | undefined {
+        const found = node.children.find((e) => e.id === id);
+        if (found) {
+            return node.label;
+        }
 
-        return findParentLabel(node);
+        for (const child of node.nodes) {
+            const found = getTreeKey(child, id);
+            if (found) {
+                return child.label;
+            }
+        }
+
+        return undefined;
     }
 
     function handleFilter(e: any) {
@@ -409,11 +394,13 @@
 
     $: {
         treeData = createTree(filteredConfigs, showSupportedOnly, isFiltering);
+        /*
         const selected = $selected_config;
         if (typeof selected !== "undefined") {
             const key = getTreeKey(treeData, selected);
             tree_key.set(key);
         }
+            */
     }
 
     onMount(async () => {
@@ -517,8 +504,16 @@
                 class="h-full w-full"
             >
                 <Pane size={60}>
-                    <div class="h-full flex-grow overflow-hidden pb-3 px-4">
-                        <ConfigTree data={treeData} on:select={handleConfigurationSelected} />
+                    <div
+                        class="flex flex-col max-h-full h-full overflow-hidden pb-3 px-4 bg-lime-800"
+                    >
+                        {#each treeData as data}
+                            <ConfigTree
+                                {data}
+                                on:select={handleConfigurationSelected}
+                                hideRoot={false}
+                            />
+                        {/each}
                     </div></Pane
                 >
                 <Pane size={40}>
@@ -695,9 +690,6 @@
                                                     owner: undefined,
                                                     id: ""
                                                 };
-                                                console.log({
-                                                    configToSave
-                                                });
                                             }
                                             configManager?.saveConfig(configToSave, true);
                                             provideSelectedConfigForEditor(undefined);
