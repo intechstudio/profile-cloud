@@ -1,6 +1,11 @@
 <script lang="ts">
-    import { filter_value } from "./Filter";
-    import { selected_config, show_supported_only, config_manager } from "./EditorLayout";
+    import { filter_value, FilterValue } from "./Filter";
+    import {
+        selected_config,
+        show_supported_only,
+        config_manager,
+        selected_component_types
+    } from "./EditorLayout";
     import { get } from "svelte/store";
     import ConfigTree from "../lib/components/tree/ConfigTree.svelte";
     import { tooltip } from "./../lib/actions/tooltip";
@@ -35,8 +40,6 @@
         valid: false,
         active: false
     };
-
-    let selectedComponentTypes: string[] = [];
 
     let configurationSaveVisible = false;
 
@@ -80,13 +83,12 @@
                             click: "Config Link Import"
                         }
                     });
-                    configTypeSelector = linkedConfig?.configType;
                 }
                 break;
             }
 
             case "selectedComponentTypes": {
-                selectedComponentTypes = event.data.selectedComponentTypes;
+                selected_component_types.set(event.data.selectedComponentTypes);
                 break;
             }
 
@@ -117,8 +119,8 @@
             const config = BaseConfigSchema.parse(configResponse.data);
             config.createdAt = new Date();
             const cm = get(config_manager);
-            cm?.saveConfig(config, true).then(() => {
-                filter_value.set([]);
+            cm?.saveConfig(config, true).then((e) => {
+                filter_value.set(new FilterValue());
             });
         }
     }
@@ -234,6 +236,8 @@
                         return ai - bi;
                     });
                     configs = newConfigs;
+                    configs.sort((a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime());
+                    selected_config.set(configs[0].id);
                 }
             })
         );
@@ -278,11 +282,109 @@
         configurationSaveVisible = true;
     }
 
-    function handleConfigurationSelected(e: any) {
-        const { config } = e.detail;
+    $: handleSelectedConfigurationChange($selected_config);
 
+    function handleSelectedConfigurationChange(id: string | undefined) {
+        const config = configs.find((e) => e.id === id);
+        console.log(config);
         provideSelectedConfigForEditor(config);
-        selected_config.set(config.id);
+    }
+
+    async function handleDeleteConfig() {
+        const config = configs.find((e) => e.id === $selected_config);
+
+        if (typeof config === "undefined") {
+            return;
+        }
+
+        const cm = get(config_manager);
+        cm?.deleteConfig(config);
+        provideSelectedConfigForEditor(undefined);
+        submitAnalytics({
+            eventName: "Cloud Action",
+            payload: {
+                click: "Config delete"
+            }
+        });
+    }
+
+    async function handleDescriptionChange(e: any) {
+        const { newDescription } = e.detail;
+        const config = configs.find((e) => e.id === $selected_config);
+
+        if (typeof config === "undefined") {
+            return;
+        }
+
+        let oldDescription = config.description;
+        let newConfig = {
+            ...config,
+            description: newDescription
+        };
+        const cm = get(config_manager);
+        cm?.saveConfig(newConfig, false);
+        submitAnalytics({
+            eventName: "Cloud Action",
+            payload: {
+                click: "Edit config description"
+            }
+        });
+    }
+
+    async function handleNameChange(e: any) {
+        const { value } = e.detail;
+        const config = configs.find((e) => e.id === $selected_config);
+
+        if (typeof config === "undefined") {
+            return;
+        }
+
+        let oldConfigName = config.name;
+        let newConfig = {
+            ...config,
+            name: value
+        };
+        const cm = get(config_manager);
+        cm?.saveConfig(newConfig, false);
+        submitAnalytics({
+            eventName: "Cloud Action",
+            payload: {
+                click: "Edit config name"
+            }
+        });
+    }
+
+    async function handlePathChange(e: any) {
+        const { value } = e.detail;
+        const config = configs.find((e) => e.id === $selected_config);
+
+        if (typeof config === "undefined") {
+            return;
+        }
+
+        let newConfig = {
+            ...config,
+            virtualPath: value
+        };
+        const cm = get(config_manager);
+        cm?.saveConfig(newConfig, false);
+
+        submitAnalytics({
+            eventName: "Cloud Action",
+            payload: {
+                click: "Edit config path"
+            }
+        });
+    }
+
+    function handleOverwriteProfile() {
+        const config = configs.find((e) => e.id === $selected_config);
+
+        if (typeof config === "undefined") {
+            return;
+        }
+
+        overwriteConfigWithEditorConfig(config);
     }
 </script>
 
@@ -292,13 +394,13 @@
             {#if configurationSaveVisible}
                 <div class="pb-[7px]">
                     <ConfigurationSave
-                        data={selectedComponentTypes}
+                        data={$selected_component_types}
                         on:close={handleConfigurationSaverCloseClicked}
                         on:save={handleConfigurationSaverSaveClicked}
                     />
                 </div>
             {:else}
-                <div class="w-full flex flex-col gap-x-2 gap-y-2 items-center">
+                <div class="w-full grid grid-cols-1 gap-x-2 gap-y-2 items-center">
                     <div class="flex flex-row w-full gap-2">
                         <Filter />
                         <button
@@ -308,7 +410,7 @@
                             <span>+</span>
                         </button>
                     </div>
-                    <div class="flex w-full">
+                    <div class="flex flex-grow">
                         <Sorter />
                     </div>
                 </div>
@@ -328,83 +430,18 @@
             >
                 <Pane size={60}>
                     <div class="flex h-full w-full pb-3 px-4">
-                        <ConfigTree {configs} on:select={handleConfigurationSelected} />
+                        <ConfigTree {configs} />
                     </div></Pane
                 >
                 <Pane size={40}>
                     <div class="grid grid-rows-[1fr_auto] h-full w-full">
                         <ConfigCardDisplay
-                            on:delete-config={async () => {
-                                const config = configs.find((e) => e.id === $selected_config);
-                                const cm = get(config_manager);
-                                cm?.deleteConfig(config);
-                                provideSelectedConfigForEditor(undefined);
-                                submitAnalytics({
-                                    eventName: "Cloud Action",
-                                    payload: {
-                                        click: "Config delete"
-                                    }
-                                });
-                            }}
-                            on:description-change={(e) => {
-                                const { newDescription } = e.detail;
-                                const config = configs.find((e) => e.id === $selected_config);
-                                let oldDescription = config.description;
-                                let newConfig = {
-                                    ...config,
-                                    description: newDescription
-                                };
-                                const cm = get(config_manager);
-                                cm?.saveConfig(newConfig, false);
-                                submitAnalytics({
-                                    eventName: "Cloud Action",
-                                    payload: {
-                                        click: "Edit config description"
-                                    }
-                                });
-                            }}
-                            on:name-change={(e) => {
-                                const { value } = e.detail;
-                                const config = configs.find((e) => e.id === $selected_config);
-                                let oldConfigName = config.name;
-                                let newConfig = {
-                                    ...config,
-                                    name: value
-                                };
-                                const cm = get(config_manager);
-                                cm?.saveConfig(newConfig, false);
-                                submitAnalytics({
-                                    eventName: "Cloud Action",
-                                    payload: {
-                                        click: "Edit config name"
-                                    }
-                                });
-                            }}
-                            on:path-change={(e) => {
-                                const { value } = e.detail;
-                                const config = configs.find((e) => e.id === $selected_config);
-                                let newConfig = {
-                                    ...config,
-                                    virtualPath: value
-                                };
-                                const cm = get(config_manager);
-                                cm?.saveConfig(newConfig, false);
-
-                                submitAnalytics({
-                                    eventName: "Cloud Action",
-                                    payload: {
-                                        click: "Edit config path"
-                                    }
-                                });
-                            }}
-                            on:overwrite-profile={() => {
-                                const config = configs.find((e) => e.id === $selected_config);
-                                overwriteConfigWithEditorConfig(config);
-                            }}
-                            data={{
-                                selectedConfig: configs.find((e) => e.id === $selected_config),
-                                selectedComponentTypes: selectedComponentTypes
-                            }}
+                            on:delete-config={handleDeleteConfig}
+                            on:description-change={handleDescriptionChange}
+                            on:name-change={handleNameChange}
+                            on:path-change={handlePathChange}
+                            on:overwrite-profile={handleOverwriteProfile}
+                            data={configs.find((e) => e.id === $selected_config)}
                         >
                             <svelte:fragment slot="link-button">
                                 {@const config = configs.find((e) => e.id === $selected_config)}
@@ -412,6 +449,9 @@
                                     <button
                                         class="relative group flex"
                                         on:click|stopPropagation={() => {
+                                            if (typeof config === "undefined") {
+                                                return;
+                                            }
                                             createCloudConfigLink(config)
                                                 .then((res) => {
                                                     linkFlag = config.id;
@@ -466,6 +506,10 @@
                                 {#if config?.syncStatus != "synced" || !config?.isEditable}
                                     <button
                                         on:click|stopPropagation={async () => {
+                                            if (typeof config === "undefined") {
+                                                return;
+                                            }
+
                                             if (
                                                 config.isEditable &&
                                                 config.syncStatus === "local" &&
@@ -524,7 +568,6 @@
                                     <button
                                         on:click|stopPropagation={async () => {
                                             splitConfig(config);
-                                            configTypeSelector = "preset";
                                             submitAnalytics({
                                                 eventName: "Cloud Action",
                                                 payload: {
@@ -551,6 +594,10 @@
                                 <ToggleSwitch
                                     checkbox={config?.public}
                                     on:toggle={(e) => {
+                                        if (typeof config === "undefined") {
+                                            return;
+                                        }
+
                                         submitAnalytics({
                                             eventName: "Cloud Action",
                                             payload: {

@@ -4,9 +4,6 @@
     import { selected_config } from "./../../../routes/EditorLayout";
     import { get } from "svelte/store";
     import ConfigCardEditor from "../../../routes/ConfigCardEditor.svelte";
-    import { createEventDispatcher } from "svelte";
-
-    const dispatch = createEventDispatcher();
 
     export let data: TreeNodeData<Config>;
     export let hideRoot = false;
@@ -15,7 +12,11 @@
     let open = false;
 
     function handleSelection(config: Config) {
-        dispatch("select", { config });
+        // Temporarily set to a different value to force reactivity
+        // Important to being able to reopen the overlay, when same
+        // Config is clicked, that is currently selected
+        selected_config.set(undefined);
+        selected_config.set(config.id); // Now set to the actual value
     }
 
     function handleToggleNode() {
@@ -70,16 +71,7 @@
         class:pr-1={indentation === 0}
     >
         {#each data.nodes as node}
-            <svelte:self
-                data={node}
-                indentation={indentation + 1}
-                {hideRoot}
-                on:select={(e) => {
-                    //Bubbling events
-                    const { config } = e.detail;
-                    handleSelection(config);
-                }}
-            />
+            <svelte:self data={node} indentation={indentation + 1} {hideRoot} />
         {/each}
         {#each data.children as child (child.id)}
             <div class="mb-1" style="margin-left: {(indentation + 1) * 15}px;">

@@ -17,11 +17,6 @@
 
     const dispatch = createEventDispatcher();
 
-    function handleSelection(e: any) {
-        const { config } = e.detail;
-        dispatch("select", { config });
-    }
-
     async function scrollToSelectedConfig() {
         await tick();
         const target = document.getElementById($selected_config as string);
@@ -107,6 +102,6 @@
 
 <div class="flex flex-col w-full h-full max-h-full">
     {#each data as rootNode}
-        <TreeNode data={rootNode} on:select={handleSelection} />
+        <TreeNode data={rootNode} />
     {/each}
 </div>

@@ -21,6 +21,7 @@ import {
     CloudConfigSchema
 } from "$lib/schemas";
 import { parentIframeCommunication } from "$lib/utils";
+import { selected_config } from "../../routes/EditorLayout";
 
 export interface ConfigManager {
     cancel(): void;
@@ -259,6 +260,7 @@ export function createConfigManager(observer: {
                     message: `Config ${config.name} imported successfully`
                 }
             });
+            return Promise.resolve(appConfigs?.local?.id);
         } else if (configError) {
             console.warn(errorDetail);
             parentIframeCommunication({

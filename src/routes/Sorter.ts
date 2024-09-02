@@ -20,7 +20,7 @@ export namespace Sort {
 
     export const DefaultValue: Key = {
         type: Type.DATE,
-        direction: Direction.ASC
+        direction: Direction.DESC
     };
 }
 
