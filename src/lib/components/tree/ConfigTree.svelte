@@ -1,86 +1,112 @@
 <script lang="ts">
-    import { type Config } from "$lib/schemas";
-    import { TreeNode, type TreeKey, tree_key } from "./ConfigTree";
-    import { selected_config } from "./../../../routes/EditorLayout";
+    import { tree_key } from "./ConfigTree";
     import { get } from "svelte/store";
-    import ConfigCardEditor from "../../../routes/ConfigCardEditor.svelte";
-    import { createEventDispatcher } from "svelte";
-    import { slide } from "svelte/transition";
+    import { filterConfigs } from "./../../../routes/Filter";
+    import { sort_key, sortConfigs } from "./../../../routes/Sorter";
+    import { filter_value, FilterValue } from "./../../../routes/Filter";
+    import { selected_config, show_supported_only } from "./../../../routes/EditorLayout";
+    import TreeNode from "./TreeNode.svelte";
+    import { type Config } from "$lib/schemas";
+    import { TreeNodeData, createTree } from "./ConfigTree";
+    import { createEventDispatcher, tick } from "svelte";
 
-    export let data: TreeNode<Config>;
-    export let hideRoot = false;
-    export let indentation = 0;
+    export let configs: Config[];
+
+    type ConfigTreeData = TreeNodeData<Config>[];
+    let data: ConfigTreeData = [];
 
     const dispatch = createEventDispatcher();
-    const isRoot = indentation === 0;
-    let isOpen = false;
 
-    function handleSelection(config: Config) {
+    function handleSelection(e: any) {
+        const { config } = e.detail;
         dispatch("select", { config });
     }
 
-    function handleToggleCategory(category: string) {
-        const key = get(tree_key);
-        isOpen = !isOpen;
-        if (key !== category) {
-            tree_key.set(category);
-        } else {
-            tree_key.set(undefined);
+    async function scrollToSelectedConfig() {
+        await tick();
+        const target = document.getElementById($selected_config as string);
+        if (!target) {
+            return;
         }
+        target.scrollIntoView({
+            behavior: "smooth"
+        });
     }
 
-    $: handleKeyChange($tree_key);
+    function handleDataChange(data: ConfigTreeData) {
+        const findCategory = (
+            id: string | undefined,
+            root: TreeNodeData<Config>
+        ): string | undefined => {
+            if (typeof id === "undefined") {
+                return undefined;
+            }
 
-    function handleKeyChange(key: TreeKey) {}
+            const found = root.children.find((e) => e.id === id);
+            if (found) {
+                return root.label;
+            }
+            for (const node of root.nodes) {
+                const found = findCategory(id, node);
+                if (found) {
+                    return found;
+                }
+            }
+            return undefined;
+        };
+
+        const selected = get(selected_config);
+        let found = undefined;
+        for (const root of data) {
+            const category = findCategory(selected, root);
+            if (typeof category !== "undefined") {
+                found = category;
+                break;
+            }
+        }
+
+        if (found) {
+            tree_key.set({ label: found });
+        } else {
+            selected_config.set(undefined);
+        }
+
+        scrollToSelectedConfig();
+    }
+
+    function selectClosestMatch() {
+        for (const root of data) {
+            const temp = root.toArray();
+            if (temp.length > 0) {
+                selected_config.set(temp[0].id);
+                return;
+            }
+        }
+
+        selected_config.set(undefined);
+    }
+
+    let filterBuffer = new FilterValue();
+
+    $: {
+        data = createTree(configs, $show_supported_only);
+        data.forEach((root) => {
+            root.filter($filter_value, filterConfigs);
+            root.sort($sort_key, sortConfigs);
+        });
+
+        if (!filterBuffer.isEqual($filter_value)) {
+            selectClosestMatch();
+        }
+
+        filterBuffer = $filter_value;
+    }
+
+    $: handleDataChange(data);
 </script>
 
-<ul class="flex flex-col gap-1 h-full">
-    <li class="flex flex-col border-b border-white/40" style="margin-left: {indentation * 15}px;">
-        <button
-            type="button"
-            on:click={() => handleToggleCategory(data.label)}
-            class="flex items-center"
-        >
-            <div class="flex-grow text-left text-white/80 truncate">
-                {`${data.label} (${data.children.length})`}
-            </div>
-            <div>
-                <svg
-                    width="14"
-                    height="11"
-                    class={isOpen ? "" : "-rotate-90"}
-                    viewBox="0 0 14 11"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <path d="M6.99968 11L0.9375 0.5L13.0619 0.500001L6.99968 11Z" fill="#D9D9D9" />
-                </svg>
-            </div>
-        </button>
-    </li>
-    {#if isOpen}
-        <div class="flex flex-col gap-1 h-full bg-red-500">
-            {#each data.nodes as node}
-                <svelte:self
-                    data={node}
-                    indentation={indentation + 1}
-                    {hideRoot}
-                    on:select={(e) => {
-                        //Bubbling events
-                        const { config } = e.detail;
-                        handleSelection(config);
-                    }}
-                />
-            {/each}
-            {#each data.children as child}
-                <div style="margin-left: {(indentation + 1) * 15}px;">
-                    <ConfigCardEditor
-                        on:click={() => handleSelection(child)}
-                        data={child}
-                        isSelected={child.id === $selected_config}
-                    />
-                </div>
-            {/each}
-        </div>
-    {/if}
-</ul>
+<div class="flex flex-col w-full h-full max-h-full">
+    {#each data as rootNode}
+        <TreeNode data={rootNode} on:select={handleSelection} />
+    {/each}
+</div>

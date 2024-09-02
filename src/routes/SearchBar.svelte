@@ -16,7 +16,6 @@
     $: handleValueChange(value);
 
     function handleSuggestionClicked(suggestion: string) {
-        console.log("YAY");
         dispatch("suggestion-clicked", { value: suggestion });
     }
 
@@ -87,7 +86,6 @@
                 </svg>
             </button>
         {/if}
-
         <input
             type="text"
             bind:value
@@ -104,7 +102,7 @@
             class="absolute top-full left-0 dark:bg-primary dark:text-white bg-white text-black shadow shadow-black z-[1] p-2 rounded-b flex flex-col w-full max-h-36 overflow-y-auto"
         >
             {#each suggestions as suggestion}
-                {#if suggestion.includes(value)}
+                {#if suggestion.toLowerCase().includes(value.toLocaleLowerCase())}
                     <button
                         on:click={() => handleSuggestionClicked(suggestion)}
                         class="hover:bg-primary-500/50 text-xs dark:text-primary-100 text-left

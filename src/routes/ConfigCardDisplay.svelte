@@ -43,7 +43,6 @@
 
     function handleDescriptionChange(e: CustomEvent<string>) {
         const value = e.detail;
-        console.log(value);
         dispatchEvent("description-change", {
             newDescription: value
         });

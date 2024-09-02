@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { selected_config } from "./EditorLayout";
+    import { filter_value } from "./Filter";
+    import { selected_config, show_supported_only, config_manager } from "./EditorLayout";
     import { get } from "svelte/store";
     import ConfigTree from "../lib/components/tree/ConfigTree.svelte";
-    import { TreeNode, tree_key } from "../lib/components/tree/ConfigTree";
     import { tooltip } from "./../lib/actions/tooltip";
     import ConfigurationSave, { ConfigurationSaveType } from "./ConfigurationSave.svelte";
     import { onDestroy, onMount, tick } from "svelte";
@@ -12,11 +12,7 @@
     import { fade } from "svelte/transition";
     import ToggleSwitch from "$lib/components/atomic/ToggleSwitch.svelte";
     import { parentIframeCommunication } from "$lib/utils";
-    import {
-        updateLocalConfigs,
-        type ConfigManager,
-        createConfigManager
-    } from "$lib/configmanager/ConfigManager";
+    import { createConfigManager, updateLocalConfigs } from "$lib/configmanager/ConfigManager";
     import { submitAnalytics } from "./analytics";
     import UserLogin from "./UserLogin.svelte";
 
@@ -27,15 +23,11 @@
     import configuration from "../../Configuration.json";
     import { MeltCheckbox } from "@intechstudio/grid-uikit";
     import { compatible_config_types } from "./EditorLayout";
+    import Sorter from "./Sorter.svelte";
 
-    let configManager: ConfigManager | undefined = undefined;
     let configs: Config[] = [];
-    let filteredConfigs: Config[] = [];
-    let isFiltering: boolean = false;
 
     let linkFlag: string | undefined = undefined;
-
-    let filter: Filter;
 
     let usernameInput = {
         element: null as HTMLInputElement | null,
@@ -46,9 +38,6 @@
 
     let selectedComponentTypes: string[] = [];
 
-    let showSupportedOnly = false;
-
-    let isSearchSortingShows = true;
     let configurationSaveVisible = false;
 
     function updateFontSize(size: string) {
@@ -81,9 +70,8 @@
             }
 
             case "configLink": {
-                const linkedConfig = await configManager?.importLinkedConfig(
-                    event.data.configLinkId
-                );
+                const cm = get(config_manager);
+                const linkedConfig = await cm?.importLinkedConfig(event.data.configLinkId);
 
                 if (linkedConfig) {
                     submitAnalytics({
@@ -128,8 +116,9 @@
         if (configResponse.ok) {
             const config = BaseConfigSchema.parse(configResponse.data);
             config.createdAt = new Date();
-            configManager?.saveConfig(config, true).then(() => {
-                filter.reset();
+            const cm = get(config_manager);
+            cm?.saveConfig(config, true).then(() => {
+                filter_value.set([]);
             });
         }
     }
@@ -178,6 +167,7 @@
                 type = "system";
             }
 
+            const cm = get(config_manager);
             let preset = {
                 name: name,
                 description: description,
@@ -189,12 +179,13 @@
                 },
                 id: "" //ID will be generated on save
             };
-            configManager?.saveConfig(BaseConfigSchema.parse(preset), true);
+            cm?.saveConfig(BaseConfigSchema.parse(preset), true);
         }
     }
 
     async function createCloudConfigLink(config: Config) {
-        const configCloudId = configManager?.getConfigCloudId(config);
+        const cm = get(config_manager);
+        const configCloudId = cm?.getConfigCloudId(config);
         if (!configCloudId) {
             parentIframeCommunication({
                 windowPostMessageName: "sendLogMessage",
@@ -220,6 +211,7 @@
             dataForParent: { configType: config.configType }
         });
         if (configResponse.ok) {
+            const cm = get(config_manager);
             let editorConfig = BaseConfigSchema.parse(configResponse.data);
             let newConfig = {
                 ...config,
@@ -228,200 +220,31 @@
                 version: editorConfig.version,
                 configType: editorConfig.configType
             };
-            configManager?.saveConfig(newConfig, false);
+            cm?.saveConfig(newConfig, false);
         }
-    }
-
-    async function scrollToSelectedConfig() {
-        await tick();
-        const target = document.getElementById($selected_config as string);
-        if (!target) {
-            return;
-        }
-        target.scrollIntoView({
-            behavior: "smooth"
-        });
-    }
-
-    $: if (filteredConfigs) {
-        scrollToSelectedConfig();
-    }
-
-    let treeData: TreeNode<Config>[];
-
-    function createTree(
-        configs: any,
-        showSupportedOnly: boolean,
-        isFiltering: boolean
-    ): TreeNode<Config>[] {
-        const [
-            my_configs,
-            recommended_configs,
-            community_configs,
-            other_configs,
-            unsupported_configs
-        ] = [
-            new TreeNode<Config>("My Configs"),
-            new TreeNode<Config>("Recommended Configs"),
-            new TreeNode<Config>("Community Configs"),
-            new TreeNode<Config>("Other Configs"),
-            new TreeNode<Config>("Unsupported Configs")
-        ];
-
-        my_configs.addChild(
-            ...configs.filter((e: Config) => {
-                const isMyConfig =
-                    e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
-                return isMyConfig;
-            })
-        );
-        recommended_configs.addChild(
-            ...configs.filter((e: Config) => {
-                const isMyConfig =
-                    e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
-                const isOfficialConfig = configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
-                    e.owner ?? ""
-                );
-
-                const cct = get(compatible_config_types);
-
-                return (
-                    !isMyConfig && isOfficialConfig && (!showSupportedOnly || cct.includes(e.type))
-                );
-            })
-        );
-        community_configs.addChild(
-            ...configs.filter((e: Config) => {
-                const isMyConfig =
-                    e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
-                const isOfficialConfig = configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
-                    e.owner ?? ""
-                );
-                const cct = get(compatible_config_types);
-                return (
-                    !isMyConfig && !isOfficialConfig && (!showSupportedOnly || cct.includes(e.type))
-                );
-            })
-        );
-        other_configs.addChild(
-            configs.filter((e: Config) => {
-                const isMyConfig =
-                    e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
-                const cct = get(compatible_config_types);
-                return !isMyConfig && (!showSupportedOnly || cct.includes(e.type));
-            })
-        );
-        unsupported_configs.addChild(
-            ...configs.filter((e: Config) => {
-                const isMyConfig =
-                    e.syncStatus == "local" || e.owner === configManager?.getCurrentOwnerId();
-                const cct = get(compatible_config_types);
-
-                return !isMyConfig && showSupportedOnly && !cct.includes(e.type);
-            })
-        );
-
-        const data: TreeNode<Config>[] = [];
-        data.push(my_configs);
-
-        if (isFiltering) {
-            data.push(other_configs);
-        } else {
-            data.push(recommended_configs, community_configs);
-        }
-
-        if (showSupportedOnly) {
-            data.push(unsupported_configs);
-        }
-
-        data.forEach((category) => {
-            for (const child of category.children) {
-                const path = child.virtualPath;
-                if (typeof path !== "undefined") {
-                    const parts = path.split("/");
-                    let node = category;
-                    for (let i = 0; i < parts.length; ++i) {
-                        const part = parts[i];
-                        const found = node.nodes.find((e: any) => e.label === part);
-                        if (found) {
-                            node = found;
-                        } else {
-                            const newNode = new TreeNode<Config>(part);
-                            node.addNode(newNode);
-                            node = newNode;
-                        }
-                    }
-                    node.children.push(child);
-                }
-            }
-
-            category.children = category.children.filter((e: any) => {
-                return typeof e.virtualPath === "undefined";
-            });
-        });
-
-        return data;
-    }
-
-    function getTreeKey(node: TreeNode<Config>, id: string): string | undefined {
-        const found = node.children.find((e) => e.id === id);
-        if (found) {
-            return node.label;
-        }
-
-        for (const child of node.nodes) {
-            const found = getTreeKey(child, id);
-            if (found) {
-                return child.label;
-            }
-        }
-
-        return undefined;
-    }
-
-    function handleFilter(e: any) {
-        const { configs } = e.detail;
-        filteredConfigs = configs;
-        isFiltering = e.detail.isFiltering;
-
-        const selectedConfig = filteredConfigs.find((e) => e.id === $selected_config);
-        if (typeof selectedConfig === "undefined" && filteredConfigs.length > 0) {
-            selected_config.set(filteredConfigs[0]?.id);
-        } else if (filteredConfigs.length === 0) {
-            selected_config.set(undefined);
-        }
-    }
-
-    $: {
-        treeData = createTree(filteredConfigs, showSupportedOnly, isFiltering);
-        /*
-        const selected = $selected_config;
-        if (typeof selected !== "undefined") {
-            const key = getTreeKey(treeData, selected);
-            tree_key.set(key);
-        }
-            */
     }
 
     onMount(async () => {
+        config_manager.set(
+            createConfigManager({
+                next: (newConfigs) => {
+                    newConfigs.sort((a, b) => {
+                        let ai = configs.findIndex((e) => e.id === a.id);
+                        let bi = configs.findIndex((e) => e.id === b.id);
+                        return ai - bi;
+                    });
+                    configs = newConfigs;
+                }
+            })
+        );
         window.addEventListener("message", editorMessageListener);
-
-        configManager = createConfigManager({
-            next: (newConfigs) => {
-                newConfigs.sort((a, b) => {
-                    let ai = configs.findIndex((e) => e.id === a.id);
-                    let bi = configs.findIndex((e) => e.id === b.id);
-                    return ai - bi;
-                });
-                configs = newConfigs;
-            }
-        });
     });
 
     onDestroy(() => {
+        const cm = get(config_manager);
         window.removeEventListener("message", editorMessageListener);
-        configManager?.cancel();
-        configManager = undefined;
+        cm?.cancel();
+        config_manager.set(undefined);
     });
 
     function handleConfigurationSaverCloseClicked() {
@@ -475,21 +298,21 @@
                     />
                 </div>
             {:else}
-                <Filter
-                    bind:this={filter}
-                    visible={isSearchSortingShows}
-                    {configs}
-                    on:filter={handleFilter}
-                    display={"editor"}
-                >
-                    <button
-                        class="text-2xl px-8 dark:bg-primary-700 dark:hover:bg-secondary"
-                        on:click={handleOpenconfigurationSave}
-                    >
-                        +
-                    </button>
-                </Filter>
-                <MeltCheckbox bind:target={showSupportedOnly} title="Only show supported" />
+                <div class="w-full flex flex-col gap-x-2 gap-y-2 items-center">
+                    <div class="flex flex-row w-full gap-2">
+                        <Filter />
+                        <button
+                            class="text-2xl px-8 dark:bg-primary-700 dark:hover:bg-secondary"
+                            on:click={handleOpenconfigurationSave}
+                        >
+                            <span>+</span>
+                        </button>
+                    </div>
+                    <div class="flex w-full">
+                        <Sorter />
+                    </div>
+                </div>
+                <MeltCheckbox bind:target={$show_supported_only} title="Only show supported" />
             {/if}
         </div>
 
@@ -504,37 +327,17 @@
                 class="h-full w-full"
             >
                 <Pane size={60}>
-                    <div
-                        class="flex flex-col max-h-full h-full overflow-hidden pb-3 px-4 bg-lime-800"
-                    >
-                        {#each treeData as data}
-                            <ConfigTree
-                                {data}
-                                on:select={handleConfigurationSelected}
-                                hideRoot={false}
-                            />
-                        {/each}
+                    <div class="flex h-full w-full pb-3 px-4">
+                        <ConfigTree {configs} on:select={handleConfigurationSelected} />
                     </div></Pane
                 >
                 <Pane size={40}>
                     <div class="grid grid-rows-[1fr_auto] h-full w-full">
                         <ConfigCardDisplay
                             on:delete-config={async () => {
-                                const config = filteredConfigs.find(
-                                    (e) => e.id === $selected_config
-                                );
-                                configManager?.deleteConfig(config);
-
-                                const index =
-                                    filteredConfigs.length > 0
-                                        ? Math.max(
-                                              filteredConfigs.findIndex(
-                                                  (e) => e.id === $selected_config
-                                              ) - 1,
-                                              0
-                                          )
-                                        : -1;
-                                $selected_config = filteredConfigs[index]?.id;
+                                const config = configs.find((e) => e.id === $selected_config);
+                                const cm = get(config_manager);
+                                cm?.deleteConfig(config);
                                 provideSelectedConfigForEditor(undefined);
                                 submitAnalytics({
                                     eventName: "Cloud Action",
@@ -545,15 +348,14 @@
                             }}
                             on:description-change={(e) => {
                                 const { newDescription } = e.detail;
-                                const config = filteredConfigs.find(
-                                    (e) => e.id === $selected_config
-                                );
+                                const config = configs.find((e) => e.id === $selected_config);
                                 let oldDescription = config.description;
                                 let newConfig = {
                                     ...config,
                                     description: newDescription
                                 };
-                                configManager?.saveConfig(newConfig, false);
+                                const cm = get(config_manager);
+                                cm?.saveConfig(newConfig, false);
                                 submitAnalytics({
                                     eventName: "Cloud Action",
                                     payload: {
@@ -563,15 +365,14 @@
                             }}
                             on:name-change={(e) => {
                                 const { value } = e.detail;
-                                const config = filteredConfigs.find(
-                                    (e) => e.id === $selected_config
-                                );
+                                const config = configs.find((e) => e.id === $selected_config);
                                 let oldConfigName = config.name;
                                 let newConfig = {
                                     ...config,
                                     name: value
                                 };
-                                configManager?.saveConfig(newConfig, false);
+                                const cm = get(config_manager);
+                                cm?.saveConfig(newConfig, false);
                                 submitAnalytics({
                                     eventName: "Cloud Action",
                                     payload: {
@@ -581,14 +382,13 @@
                             }}
                             on:path-change={(e) => {
                                 const { value } = e.detail;
-                                const config = filteredConfigs.find(
-                                    (e) => e.id === $selected_config
-                                );
+                                const config = configs.find((e) => e.id === $selected_config);
                                 let newConfig = {
                                     ...config,
                                     virtualPath: value
                                 };
-                                configManager?.saveConfig(newConfig, false);
+                                const cm = get(config_manager);
+                                cm?.saveConfig(newConfig, false);
 
                                 submitAnalytics({
                                     eventName: "Cloud Action",
@@ -598,22 +398,16 @@
                                 });
                             }}
                             on:overwrite-profile={() => {
-                                const config = filteredConfigs.find(
-                                    (e) => e.id === $selected_config
-                                );
+                                const config = configs.find((e) => e.id === $selected_config);
                                 overwriteConfigWithEditorConfig(config);
                             }}
                             data={{
-                                selectedConfig: filteredConfigs.find(
-                                    (e) => e.id === $selected_config
-                                ),
+                                selectedConfig: configs.find((e) => e.id === $selected_config),
                                 selectedComponentTypes: selectedComponentTypes
                             }}
                         >
                             <svelte:fragment slot="link-button">
-                                {@const config = filteredConfigs.find(
-                                    (e) => e.id === $selected_config
-                                )}
+                                {@const config = configs.find((e) => e.id === $selected_config)}
                                 {#if config?.syncStatus != "local"}
                                     <button
                                         class="relative group flex"
@@ -668,9 +462,7 @@
                                 {/if}
                             </svelte:fragment>
                             <svelte:fragment slot="sync-config-button">
-                                {@const config = filteredConfigs.find(
-                                    (e) => e.id === $selected_config
-                                )}
+                                {@const config = configs.find((e) => e.id === $selected_config)}
                                 {#if config?.syncStatus != "synced" || !config?.isEditable}
                                     <button
                                         on:click|stopPropagation={async () => {
@@ -691,7 +483,8 @@
                                                     id: ""
                                                 };
                                             }
-                                            configManager?.saveConfig(configToSave, true);
+                                            const cm = get(config_manager);
+                                            cm?.saveConfig(configToSave, true);
                                             provideSelectedConfigForEditor(undefined);
                                             submitAnalytics({
                                                 eventName: "Cloud Action",
@@ -726,9 +519,7 @@
                                 {/if}
                             </svelte:fragment>
                             <svelte:fragment slot="split-config-button">
-                                {@const config = filteredConfigs.find(
-                                    (e) => e.id === $selected_config
-                                )}
+                                {@const config = configs.find((e) => e.id === $selected_config)}
                                 {#if config?.configType === "profile"}
                                     <button
                                         on:click|stopPropagation={async () => {
@@ -756,9 +547,7 @@
                                 {/if}
                             </svelte:fragment>
                             <span slot="toggle-accessibility">
-                                {@const config = filteredConfigs.find(
-                                    (e) => e.id === $selected_config
-                                )}
+                                {@const config = configs.find((e) => e.id === $selected_config)}
                                 <ToggleSwitch
                                     checkbox={config?.public}
                                     on:toggle={(e) => {
@@ -768,7 +557,8 @@
                                                 click: "Set config visibility"
                                             }
                                         });
-                                        configManager?.changeCloudVisibility(config, e.detail);
+                                        const cm = get(config_manager);
+                                        cm?.changeCloudVisibility(config, e.detail);
                                     }}
                                 >
                                     <div
