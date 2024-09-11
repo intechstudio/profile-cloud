@@ -17,7 +17,8 @@ export const BaseConfigSchema = z.object({
         .optional(),
     configType: z.enum(["profile", "preset"]),
     configs: z.any(),
-    owner: z.string().optional()
+    owner: z.string().optional(),
+    virtualPath: z.string().optional()
 });
 
 export type BaseConfig = z.infer<typeof BaseConfigSchema>;

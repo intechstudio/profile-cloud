@@ -1,20 +1,20 @@
 <script lang="ts">
+    import { compatible_config_types } from "./EditorLayout";
     import { createEventDispatcher } from "svelte";
     import type { Config } from "$lib/schemas";
 
     const dispatchEvent = createEventDispatcher();
 
-    interface SelectedComponentTypes {
-        selectedComponentTypes: string[] | undefined;
-    }
-
-    interface CompatibleComponentTypes {
-        compatibleTypes: string[];
-    }
-
-    export let data: Config & SelectedComponentTypes & CompatibleComponentTypes;
+    export let data: Config;
     export let isSelected: boolean;
-    let compatible = data.compatibleTypes?.includes(data.type);
+
+    let compatible = false;
+
+    $: handleCompatibleConfigsChange($compatible_config_types);
+
+    function handleCompatibleConfigsChange(types: string[]) {
+        compatible = types.includes(data.type);
+    }
 </script>
 
 <button

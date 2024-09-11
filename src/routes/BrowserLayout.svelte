@@ -1,5 +1,10 @@
 <script lang="ts">
-    import { SvelteComponent, onDestroy, onMount } from "svelte";
+    import { sort_key } from "./Sorter.ts";
+    import { filter_value } from "./Filter.ts";
+    import { sortConfigs } from "./Sorter";
+    import { filterConfigs } from "./Filter";
+    import Sorter from "./Sorter.svelte";
+    import { onDestroy, onMount } from "svelte";
     import type { Config } from "$lib/schemas";
     import Filter from "./Filter.svelte";
     import { type ConfigManager, createConfigManager } from "$lib/configmanager/ConfigManager";
@@ -38,9 +43,8 @@
         configManager = undefined;
     });
 
-    function handleFilter(e: any) {
-        const { configs } = e.detail;
-        filteredConfigs = configs;
+    $: {
+        filteredConfigs = sortConfigs(filterConfigs(configs, $filter_value), $sort_key);
     }
 </script>
 
@@ -59,7 +63,10 @@
             {/if}
         </button>
     </div>
-    <Filter visible={isSearchSortingShows} {configs} on:filter={handleFilter} display={"browser"} />
+    <div class="flex flex-row w-full gap-2" class:hidden={!isSearchSortingShows}>
+        <Filter />
+        <Sorter />
+    </div>
     <div
         class="overflow-y-auto w-full h-full p-2 lg:py-8 grid grid-cols-1 md:grid-cols-2 grid-flow-row lg:grid-cols-3 gap-4"
     >
