@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { grid } from "@intechstudio/grid-protocol";
+    import { ModuleType, ElementType } from "@intechstudio/grid-protocol";
     import { tooltip } from "./../lib/actions/tooltip";
     import { createEventDispatcher } from "svelte";
     import SvgIcon from "$lib/icons/SvgIcon.svelte";
@@ -8,6 +10,7 @@
     import { userCollection } from "$lib/collections";
     import ConfigDescription from "./ConfigDescription.svelte";
     import DataInput from "$lib/components/DataInput.svelte";
+    import { selected_config } from "./EditorLayout";
 
     const dispatchEvent = createEventDispatcher();
 
@@ -43,6 +46,22 @@
             newDescription: value
         });
     }
+
+    let selectedPartialPresetType: ElementType;
+    let partialPresetName: string;
+
+    $: {
+        if (typeof $selected_config !== "undefined" && $selected_config.presetIndex !== -1) {
+            let moduleType = ModuleType[data?.type as keyof typeof ModuleType];
+            let elements = grid.get_module_element_list(moduleType);
+            selectedPartialPresetType = elements[$selected_config.presetIndex];
+            partialPresetName =
+                selectedPartialPresetType[0].toUpperCase() +
+                selectedPartialPresetType.slice(1) +
+                " " +
+                ($selected_config.presetIndex + 1);
+        }
+    }
 </script>
 
 <div class="w-full h-full bg-secondary p-2 overflow-hidden">
@@ -51,8 +70,9 @@
             <div class="w-full flex flex-row gap-2 items-center justify-between">
                 <div class="flex flex-col flex-grow">
                     <DataInput
-                        value={data.name}
-                        disabled={!data.isEditable}
+                        value={data.name +
+                            ($selected_config?.presetIndex === -1 ? "" : ` / ${partialPresetName}`)}
+                        disabled={!data.isEditable || $selected_config?.presetIndex !== -1}
                         placeholder={"Add name"}
                         bold={true}
                         on:change={(e) => {
@@ -67,7 +87,7 @@
                         <span>Folder:</span>
                         <DataInput
                             value={data.virtualPath ?? "Unsorted"}
-                            disabled={!data.isEditable}
+                            disabled={!data.isEditable || $selected_config?.presetIndex !== -1}
                             on:change={(e) => {
                                 const { value } = e.detail;
                                 const path = value.trim();
@@ -189,7 +209,7 @@
             <div class="flex text-white text-opacity-70 overflow-scroll">
                 <ConfigDescription
                     value={data.description}
-                    disabled={!data.isEditable}
+                    disabled={!data.isEditable || $selected_config?.presetIndex !== -1}
                     on:change={handleDescriptionChange}
                 />
             </div>

@@ -19,7 +19,7 @@
 
     async function scrollToSelectedConfig() {
         await tick();
-        const target = document.getElementById($selected_config as string);
+        const target = document.getElementById($selected_config?.id as string);
         if (!target) {
             return;
         }
@@ -50,7 +50,7 @@
             return undefined;
         };
 
-        const selected = get(selected_config);
+        const selected = get(selected_config)?.id;
         let found = undefined;
         for (const root of data) {
             const category = findCategory(selected, root);
@@ -73,7 +73,7 @@
         for (const root of data) {
             const temp = root.toArray();
             if (temp.length > 0) {
-                selected_config.set(temp[0].id);
+                selected_config.set({ id: temp[0].id, presetIndex: -1 });
                 return;
             }
         }

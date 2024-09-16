@@ -34,6 +34,7 @@
     },
     "type": "module",
     "dependencies": {
+        "@intechstudio/grid-protocol": "^1.20240916.1230",
         "@intechstudio/grid-uikit": "^1.20240813.1834",
         "@toast-ui/editor": "^3.2.2",
         "audit": "^0.0.6",

@@ -11,14 +11,6 @@
 
     let open = false;
 
-    function handleSelection(config: Config) {
-        // Temporarily set to a different value to force reactivity
-        // Important to being able to reopen the overlay, when same
-        // Config is clicked, that is currently selected
-        selected_config.set(undefined);
-        selected_config.set(config.id); // Now set to the actual value
-    }
-
     function handleToggleNode() {
         const key = get(tree_key);
         if (isOpen(data, key)) {
@@ -76,9 +68,9 @@
         {#each data.children as child (child.id)}
             <div class="mb-1" style="margin-left: {(indentation + 1) * 15}px;">
                 <ConfigCardEditor
-                    on:click={() => handleSelection(child)}
                     data={child}
-                    isSelected={child.id === $selected_config}
+                    isSelected={child.id === $selected_config?.id &&
+                        $selected_config?.presetIndex === -1}
                 />
             </div>
         {/each}
