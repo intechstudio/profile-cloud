@@ -234,15 +234,17 @@ export function createConfigManager(observer: {
         }
 
         if (createMissingConfigs || appConfigs?.local) {
+            const data = {
+                ...config,
+                id: appConfigs?.local?.id,
+                cloudId: cloudId,
+                fileName: appConfigs?.local?.fileName,
+                owner: currentOwnerId
+            };
             await parentIframeCommunication({
                 windowPostMessageName: "configImportCommunication",
-                dataForParent: {
-                    ...config,
-                    id: appConfigs?.local?.id,
-                    cloudId: cloudId,
-                    fileName: appConfigs?.local?.fileName,
-                    owner: currentOwnerId
-                }
+
+                dataForParent: data
             })
                 .then((result) => {
                     configCreated = true;
@@ -260,7 +262,7 @@ export function createConfigManager(observer: {
                     message: `Config ${config.name} imported successfully`
                 }
             });
-            return Promise.resolve(appConfigs?.local?.id);
+            return Promise.resolve();
         } else if (configError) {
             console.warn(errorDetail);
             parentIframeCommunication({

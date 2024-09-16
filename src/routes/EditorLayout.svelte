@@ -124,6 +124,7 @@
             const cm = get(config_manager);
             cm?.saveConfig(config, true).then((e) => {
                 filter_value.set(new FilterValue());
+                selectLatestConfig();
             });
         }
     }
@@ -229,6 +230,11 @@
         }
     }
 
+    function selectLatestConfig() {
+        configs.sort((a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime());
+        selected_config.set({ id: configs[0].id, presetIndex: -1 });
+    }
+
     onMount(async () => {
         config_manager.set(
             createConfigManager({
@@ -239,8 +245,6 @@
                         return ai - bi;
                     });
                     configs = newConfigs;
-                    configs.sort((a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime());
-                    selected_config.set({ id: configs[0].id, presetIndex: -1 });
                 }
             })
         );
