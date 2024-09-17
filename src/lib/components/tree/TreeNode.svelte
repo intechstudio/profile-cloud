@@ -1,43 +1,36 @@
 <script lang="ts">
+    import { createEventDispatcher } from "svelte";
     import { type Config } from "$lib/schemas";
-    import { TreeNodeData, type TreeKey, tree_key } from "./ConfigTree";
+    import { TreeNodeData } from "./ConfigTree";
     import { selected_config } from "./../../../routes/EditorLayout";
     import { get } from "svelte/store";
     import ConfigCardEditor from "../../../routes/ConfigCardEditor.svelte";
 
+    const dispatch = createEventDispatcher();
+
     export let data: TreeNodeData<Config>;
-    export let hideRoot = false;
     export let indentation = 0;
 
-    let open = false;
-
-    function handleToggleNode() {
-        const key = get(tree_key);
-        if (isOpen(data, key)) {
-            tree_key.set(
-                typeof data.parent === "undefined" ? undefined : { label: data.parent.label }
-            );
+    function toggleNode(current: TreeNodeData<Config>, value: boolean) {
+        if (value) {
+            current.open.set(true);
         } else {
-            tree_key.set({ label: data.label });
+            current.open.set(false);
+            for (const node of current.nodes) {
+                toggleNode(node, false);
+            }
         }
+        dispatch("toggle", { value: get(open) });
     }
 
-    $: handleKeyChange($tree_key);
-
-    function isOpen(node: TreeNodeData<Config>, key: TreeKey): boolean {
-        return key?.label === node.label || node.nodes.some((e) => isOpen(e, key));
-    }
-
-    function handleKeyChange(key: TreeKey) {
-        open = isOpen(data, key);
-    }
+    const open = data.open;
 </script>
 
 <div
     class="flex flex-col mb-1 border-b h-5 border-white/40"
     style="margin-left: {indentation * 15}px;"
 >
-    <button type="button" on:click={handleToggleNode} class="flex items-center">
+    <button type="button" on:click={() => toggleNode(data, !get(open))} class="flex items-center">
         <div class="flex-grow text-left text-white/80 truncate">
             {`${data.label} (${data.children.length})`}
         </div>
@@ -45,7 +38,7 @@
             <svg
                 width="14"
                 height="11"
-                class={open ? "" : "-rotate-90"}
+                class={$open ? "" : "-rotate-90"}
                 viewBox="0 0 14 11"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -55,7 +48,7 @@
         </div>
     </button>
 </div>
-{#if open}
+{#if $open}
     <div
         class="flex flex-col"
         class:max-h-full={indentation === 0}
@@ -63,7 +56,7 @@
         class:pr-1={indentation === 0}
     >
         {#each data.nodes as node}
-            <svelte:self data={node} indentation={indentation + 1} {hideRoot} />
+            <svelte:self data={node} indentation={indentation + 1} />
         {/each}
         {#each data.children as child (child.id)}
             <div class="mb-1" style="margin-left: {(indentation + 1) * 15}px;">

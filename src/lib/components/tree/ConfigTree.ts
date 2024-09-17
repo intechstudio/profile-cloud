@@ -1,10 +1,10 @@
-import { writable, type Writable } from "svelte/store";
-import { get } from "svelte/store";
+import { get, type Writable, writable } from "svelte/store";
 import configuration from "../../../../Configuration.json";
 import { config_manager, compatible_config_types } from "./../../../routes/EditorLayout";
 import { type Config } from "$lib/schemas";
 import { filter_value, FilterValue } from "../../../routes/Filter";
 import { Sort } from "../../../routes/Sorter";
+import { v4 as uuidv4 } from "uuid";
 
 type FilterFunc<T> = (items: T[], filter: FilterValue) => T[];
 type SorterFunc<T> = (items: T[], key: Sort.Key) => void;
@@ -14,12 +14,24 @@ export class TreeNodeData<T> {
     private _children: T[];
     private _nodes: TreeNodeData<T>[];
     private _parent: TreeNodeData<T> | undefined;
+    private _open: Writable<boolean>;
+    private _id: string;
 
     constructor(label: string) {
         this._label = label;
         this._children = [];
         this._nodes = [];
         this._parent = undefined;
+        this._open = writable(false);
+        this._id = uuidv4();
+    }
+
+    get id() {
+        return this._id;
+    }
+
+    get open() {
+        return this._open;
     }
 
     get label() {
@@ -84,9 +96,6 @@ export class TreeNodeData<T> {
 export type TreeOptions = {
     showSupportedOnly: boolean;
 };
-
-export type TreeKey = { label: string } | undefined;
-export const tree_key: Writable<TreeKey> = writable({ label: "My Configs" });
 
 export function createTree(configs: any, showSupportedOnly: boolean): TreeNodeData<Config>[] {
     const [my_configs, recommended_configs, community_configs, other_configs, unsupported_configs] =
