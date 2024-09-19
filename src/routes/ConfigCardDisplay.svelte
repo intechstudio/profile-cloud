@@ -47,19 +47,32 @@
         });
     }
 
-    let selectedPartialPresetType: ElementType;
+    let selectedPartialPreset: { index: number; element: ElementType } | undefined;
     let partialPresetName: string;
 
     $: {
         if (typeof $selected_config !== "undefined" && $selected_config.presetIndex !== -1) {
             let moduleType = ModuleType[data?.type as keyof typeof ModuleType];
-            let elements = grid.get_module_element_list(moduleType);
-            selectedPartialPresetType = elements[$selected_config.presetIndex];
-            partialPresetName =
-                selectedPartialPresetType[0].toUpperCase() +
-                selectedPartialPresetType.slice(1) +
-                " " +
-                ($selected_config.presetIndex + 1);
+            let elements = grid
+                .get_module_element_list(moduleType)
+                .reduce((array: Array<{ index: number; type: ElementType }>, element, index) => {
+                    if (typeof element !== "undefined") {
+                        array.push({ index, type: element });
+                    }
+                    return array;
+                }, []);
+
+            const index = elements.findIndex((e) => e.index === $selected_config.presetIndex);
+
+            // Check if index is valid and the element exists
+            if (index !== -1 && elements[index]?.type) {
+                partialPresetName = `Element ${index} (${
+                    elements[index].type.at(0)?.toUpperCase() + elements[index].type?.slice(1)
+                })`;
+            } else {
+                // Handle case when element or index is not valid
+                throw "Element not found or invalid";
+            }
         }
     }
 </script>

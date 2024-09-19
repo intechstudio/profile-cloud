@@ -67,6 +67,7 @@
                     LocalConfigSchema.parse(config)
                 );
                 updateLocalConfigs(localConfigs);
+                selectLatestConfig();
                 break;
             }
 
@@ -124,7 +125,6 @@
             const cm = get(config_manager);
             cm?.saveConfig(config, true).then((e) => {
                 filter_value.set(new FilterValue());
-                selectLatestConfig();
             });
         }
     }
@@ -289,37 +289,44 @@
         configurationSaveVisible = true;
     }
 
-    $: if ($selected_config) {
-        handleSelectedConfigurationChange($selected_config);
-    }
+    $: handleSelectedConfigurationChange($selected_config);
 
-    function handleSelectedConfigurationChange(value: ConfigSelection) {
-        if (value.presetIndex === -1) {
+    function handleSelectedConfigurationChange(value: ConfigSelection | undefined) {
+        //No config selected
+        if (typeof value === "undefined") {
+            provideSelectedConfigForEditor(undefined);
+            return;
+        }
+
+        //No partial profile is selected
+        if (value?.presetIndex === -1) {
             const config = configs.find((e) => e.id === value.id);
             provideSelectedConfigForEditor(config);
-        } else {
-            let config = configs.find((e: any) => e.id === value.id);
-            let moduleType = ModuleType[config?.type as keyof typeof ModuleType];
-            let elements = grid.get_module_element_list(moduleType);
-
-            if (typeof config === "undefined") {
-                return;
-            }
-
-            const type = elements[value.presetIndex];
-            const events: any = config.configs.find(
-                (e: any) => e.controlElementNumber === value.presetIndex
-            )?.events;
-
-            const preset = {
-                ...config,
-                type: type,
-                configs: events,
-                configType: "preset"
-            } as Config;
-
-            provideSelectedConfigForEditor(preset);
+            return;
         }
+
+        //Partial profile is selected
+        let config = configs.find((e: any) => e.id === value?.id);
+        let moduleType = ModuleType[config?.type as keyof typeof ModuleType];
+        let elements = grid.get_module_element_list(moduleType);
+
+        if (typeof config === "undefined") {
+            return;
+        }
+
+        const type = elements[value.presetIndex];
+        const events: any = config.configs.find(
+            (e: any) => e.controlElementNumber === value.presetIndex
+        )?.events;
+
+        const preset = {
+            ...config,
+            type: type,
+            configs: events,
+            configType: "preset"
+        } as Config;
+
+        provideSelectedConfigForEditor(preset);
     }
 
     async function handleDeleteConfig() {

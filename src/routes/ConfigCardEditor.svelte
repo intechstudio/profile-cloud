@@ -24,6 +24,14 @@
     }
 
     let moduleType = ModuleType[data.type as keyof typeof ModuleType];
+    let elements = grid
+        .get_module_element_list(moduleType)
+        ?.reduce((array: Array<{ index: number; type: ElementType }>, type, index) => {
+            if (typeof type !== "undefined") {
+                array.push({ index, type });
+            }
+            return array;
+        }, []);
 
     function handleSelection(id: string, presetIndex: number) {
         // Temporarily set to a different value to force reactivity
@@ -90,19 +98,15 @@
 
 {#if open}
     <div class="flex flex-col ml-4 gap-1 my-1">
-        {#each data.configs as preset}
-            {@const elementType =
-                grid.get_module_element_list(moduleType)[preset.controlElementNumber]}
+        {#each data.configs as preset, index}
+            {@const element = elements.find((e) => e.index === preset.controlElementNumber)}
             <svelte:self
                 isSelected={preset.controlElementNumber === $selected_config?.presetIndex}
                 data={{
-                    type: elementType,
-                    name:
-                        elementType === ElementType.SYSTEM
-                            ? elementType[0].toUpperCase() + elementType.slice(1)
-                            : `${elementType[0].toUpperCase() + elementType.slice(1)} ${
-                                  preset.controlElementNumber + 1
-                              }`
+                    type: element?.type,
+                    name: `Element ${index} (${
+                        elements[index].type.at(0)?.toUpperCase() + elements[index].type?.slice(1)
+                    })`
                 }}
                 on:click={() => {
                     handleSelection(data.id, preset.controlElementNumber);
