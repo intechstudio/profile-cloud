@@ -322,7 +322,7 @@
         const preset = {
             ...config,
             type: type,
-            configs: events,
+            configs: { events: events },
             configType: "preset"
         } as Config;
 
