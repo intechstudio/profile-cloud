@@ -1,10 +1,13 @@
 <script lang="ts">
+    import { grid } from "@intechstudio/grid-protocol";
+    import { ModuleType } from "@intechstudio/grid-protocol";
     import { filter_value, FilterValue } from "./Filter";
     import {
         selected_config,
         show_supported_only,
         config_manager,
-        selected_component_types
+        selected_component_types,
+        type ConfigSelection
     } from "./EditorLayout";
     import { get } from "svelte/store";
     import ConfigTree from "../lib/components/tree/ConfigTree.svelte";
@@ -64,6 +67,7 @@
                     LocalConfigSchema.parse(config)
                 );
                 updateLocalConfigs(localConfigs);
+                selectLatestConfig();
                 break;
             }
 
@@ -226,6 +230,11 @@
         }
     }
 
+    function selectLatestConfig() {
+        configs.sort((a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime());
+        selected_config.set({ id: configs[0].id, presetIndex: -1 });
+    }
+
     onMount(async () => {
         config_manager.set(
             createConfigManager({
@@ -236,8 +245,6 @@
                         return ai - bi;
                     });
                     configs = newConfigs;
-                    configs.sort((a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime());
-                    selected_config.set(configs[0].id);
                 }
             })
         );
@@ -284,14 +291,46 @@
 
     $: handleSelectedConfigurationChange($selected_config);
 
-    function handleSelectedConfigurationChange(id: string | undefined) {
-        const config = configs.find((e) => e.id === id);
-        console.log(config);
-        provideSelectedConfigForEditor(config);
+    function handleSelectedConfigurationChange(value: ConfigSelection | undefined) {
+        //No config selected
+        if (typeof value === "undefined") {
+            provideSelectedConfigForEditor(undefined);
+            return;
+        }
+
+        //No partial profile is selected
+        if (value?.presetIndex === -1) {
+            const config = configs.find((e) => e.id === value.id);
+            provideSelectedConfigForEditor(config);
+            return;
+        }
+
+        //Partial profile is selected
+        let config = configs.find((e: any) => e.id === value?.id);
+        let moduleType = ModuleType[config?.type as keyof typeof ModuleType];
+        let elements = grid.get_module_element_list(moduleType);
+
+        if (typeof config === "undefined") {
+            return;
+        }
+
+        const type = elements[value.presetIndex];
+        const events: any = config.configs.find(
+            (e: any) => e.controlElementNumber === value.presetIndex
+        )?.events;
+
+        const preset = {
+            ...config,
+            type: type,
+            configs: { events: events },
+            configType: "preset"
+        } as Config;
+
+        provideSelectedConfigForEditor(preset);
     }
 
     async function handleDeleteConfig() {
-        const config = configs.find((e) => e.id === $selected_config);
+        const config = configs.find((e) => e.id === $selected_config?.id);
 
         if (typeof config === "undefined") {
             return;
@@ -310,7 +349,7 @@
 
     async function handleDescriptionChange(e: any) {
         const { newDescription } = e.detail;
-        const config = configs.find((e) => e.id === $selected_config);
+        const config = configs.find((e) => e.id === $selected_config?.id);
 
         if (typeof config === "undefined") {
             return;
@@ -333,7 +372,7 @@
 
     async function handleNameChange(e: any) {
         const { value } = e.detail;
-        const config = configs.find((e) => e.id === $selected_config);
+        const config = configs.find((e) => e.id === $selected_config?.id);
 
         if (typeof config === "undefined") {
             return;
@@ -356,7 +395,7 @@
 
     async function handlePathChange(e: any) {
         const { value } = e.detail;
-        const config = configs.find((e) => e.id === $selected_config);
+        const config = configs.find((e) => e.id === $selected_config?.id);
 
         if (typeof config === "undefined") {
             return;
@@ -378,7 +417,7 @@
     }
 
     function handleOverwriteProfile() {
-        const config = configs.find((e) => e.id === $selected_config);
+        const config = configs.find((e) => e.id === $selected_config?.id);
 
         if (typeof config === "undefined") {
             return;
@@ -441,10 +480,10 @@
                             on:name-change={handleNameChange}
                             on:path-change={handlePathChange}
                             on:overwrite-profile={handleOverwriteProfile}
-                            data={configs.find((e) => e.id === $selected_config)}
+                            data={configs.find((e) => e.id === $selected_config?.id)}
                         >
                             <svelte:fragment slot="link-button">
-                                {@const config = configs.find((e) => e.id === $selected_config)}
+                                {@const config = configs.find((e) => e.id === $selected_config?.id)}
                                 {#if config?.syncStatus != "local"}
                                     <button
                                         class="relative group flex"
@@ -502,7 +541,7 @@
                                 {/if}
                             </svelte:fragment>
                             <svelte:fragment slot="sync-config-button">
-                                {@const config = configs.find((e) => e.id === $selected_config)}
+                                {@const config = configs.find((e) => e.id === $selected_config?.id)}
                                 {#if config?.syncStatus != "synced" || !config?.isEditable}
                                     <button
                                         on:click|stopPropagation={async () => {
@@ -563,7 +602,7 @@
                                 {/if}
                             </svelte:fragment>
                             <svelte:fragment slot="split-config-button">
-                                {@const config = configs.find((e) => e.id === $selected_config)}
+                                {@const config = configs.find((e) => e.id === $selected_config?.id)}
                                 {#if config?.configType === "profile"}
                                     <button
                                         on:click|stopPropagation={async () => {
@@ -590,7 +629,7 @@
                                 {/if}
                             </svelte:fragment>
                             <span slot="toggle-accessibility">
-                                {@const config = configs.find((e) => e.id === $selected_config)}
+                                {@const config = configs.find((e) => e.id === $selected_config?.id)}
                                 <ToggleSwitch
                                     checkbox={config?.public}
                                     on:toggle={(e) => {

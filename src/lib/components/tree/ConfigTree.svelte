@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { tree_key } from "./ConfigTree";
     import { get } from "svelte/store";
     import { filterConfigs } from "./../../../routes/Filter";
     import { sort_key, sortConfigs } from "./../../../routes/Sorter";
@@ -19,7 +18,7 @@
 
     async function scrollToSelectedConfig() {
         await tick();
-        const target = document.getElementById($selected_config as string);
+        const target = document.getElementById($selected_config?.id as string);
         if (!target) {
             return;
         }
@@ -29,41 +28,32 @@
     }
 
     function handleDataChange(data: ConfigTreeData) {
-        const findCategory = (
+        const openContainingCategories = (
             id: string | undefined,
-            root: TreeNodeData<Config>
+            current: TreeNodeData<Config>
         ): string | undefined => {
-            if (typeof id === "undefined") {
-                return undefined;
-            }
-
-            const found = root.children.find((e) => e.id === id);
-            if (found) {
-                return root.label;
-            }
-            for (const node of root.nodes) {
-                const found = findCategory(id, node);
-                if (found) {
-                    return found;
+            for (const node of current.nodes) {
+                const opened = openContainingCategories(id, node);
+                if (opened) {
+                    current.open.set(true);
                 }
             }
-            return undefined;
+
+            const found = current.children.find((e) => e.id === id);
+            if (found) {
+                current.open.set(true);
+            }
+
+            return get(current.open);
         };
 
-        const selected = get(selected_config);
-        let found = undefined;
-        for (const root of data) {
-            const category = findCategory(selected, root);
-            if (typeof category !== "undefined") {
-                found = category;
-                break;
-            }
+        const selected = get(selected_config)?.id;
+        if (typeof selected === "undefined") {
+            return undefined;
         }
 
-        if (found) {
-            tree_key.set({ label: found });
-        } else {
-            selected_config.set(undefined);
+        for (const root of data) {
+            openContainingCategories(selected, root);
         }
 
         scrollToSelectedConfig();
@@ -73,7 +63,7 @@
         for (const root of data) {
             const temp = root.toArray();
             if (temp.length > 0) {
-                selected_config.set(temp[0].id);
+                selected_config.set({ id: temp[0].id, presetIndex: -1 });
                 return;
             }
         }
@@ -98,10 +88,28 @@
     }
 
     $: handleDataChange(data);
+
+    function handleToggle(toggled: TreeNodeData<Config>, value: boolean) {
+        if (value) {
+            for (let node of data) {
+                if (node.id !== toggled.id) {
+                    node.open.set(false);
+                }
+            }
+        }
+    }
 </script>
 
 <div class="flex flex-col w-full h-full max-h-full">
     {#each data as rootNode}
-        <TreeNode data={rootNode} />
+        {#key rootNode.open}
+            <TreeNode
+                data={rootNode}
+                on:toggle={(e) => {
+                    const { value } = e.detail;
+                    handleToggle(rootNode, value);
+                }}
+            />
+        {/key}
     {/each}
 </div>

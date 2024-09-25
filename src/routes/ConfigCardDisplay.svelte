@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { grid } from "@intechstudio/grid-protocol";
+    import { ModuleType, ElementType } from "@intechstudio/grid-protocol";
     import { tooltip } from "./../lib/actions/tooltip";
     import { createEventDispatcher } from "svelte";
     import SvgIcon from "$lib/icons/SvgIcon.svelte";
@@ -8,6 +10,7 @@
     import { userCollection } from "$lib/collections";
     import ConfigDescription from "./ConfigDescription.svelte";
     import DataInput from "$lib/components/DataInput.svelte";
+    import { selected_config } from "./EditorLayout";
 
     const dispatchEvent = createEventDispatcher();
 
@@ -43,6 +46,35 @@
             newDescription: value
         });
     }
+
+    let selectedPartialPreset: { index: number; element: ElementType } | undefined;
+    let partialPresetName: string;
+
+    $: {
+        if (typeof $selected_config !== "undefined" && $selected_config.presetIndex !== -1) {
+            let moduleType = ModuleType[data?.type as keyof typeof ModuleType];
+            let elements = grid
+                .get_module_element_list(moduleType)
+                .reduce((array: Array<{ index: number; type: ElementType }>, element, index) => {
+                    if (typeof element !== "undefined") {
+                        array.push({ index, type: element });
+                    }
+                    return array;
+                }, []);
+
+            const index = elements.findIndex((e) => e.index === $selected_config.presetIndex);
+
+            // Check if index is valid and the element exists
+            if (index !== -1 && elements[index]?.type) {
+                partialPresetName = `Element ${index} (${
+                    elements[index].type.at(0)?.toUpperCase() + elements[index].type?.slice(1)
+                })`;
+            } else {
+                // Handle case when element or index is not valid
+                throw "Element not found or invalid";
+            }
+        }
+    }
 </script>
 
 <div class="w-full h-full bg-secondary p-2 overflow-hidden">
@@ -51,8 +83,9 @@
             <div class="w-full flex flex-row gap-2 items-center justify-between">
                 <div class="flex flex-col flex-grow">
                     <DataInput
-                        value={data.name}
-                        disabled={!data.isEditable}
+                        value={data.name +
+                            ($selected_config?.presetIndex === -1 ? "" : ` / ${partialPresetName}`)}
+                        disabled={!data.isEditable || $selected_config?.presetIndex !== -1}
                         placeholder={"Add name"}
                         bold={true}
                         on:change={(e) => {
@@ -67,7 +100,7 @@
                         <span>Folder:</span>
                         <DataInput
                             value={data.virtualPath ?? "Unsorted"}
-                            disabled={!data.isEditable}
+                            disabled={!data.isEditable || $selected_config?.presetIndex !== -1}
                             on:change={(e) => {
                                 const { value } = e.detail;
                                 const path = value.trim();
@@ -189,7 +222,7 @@
             <div class="flex text-white text-opacity-70 overflow-scroll">
                 <ConfigDescription
                     value={data.description}
-                    disabled={!data.isEditable}
+                    disabled={!data.isEditable || $selected_config?.presetIndex !== -1}
                     on:change={handleDescriptionChange}
                 />
             </div>
