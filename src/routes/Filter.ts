@@ -1,5 +1,5 @@
 import { type Writable, writable } from "svelte/store";
-import { type Config } from "$lib/schemas";
+import { type Config } from "../lib/schemas";
 
 export function stringToTerms(value: string, wholeMatch: boolean, caseMatch: boolean) {
     const terms: Term[] = [];

@@ -1,5 +1,5 @@
 <script>
-    import { parentIframeCommunication } from "$lib/utils";
+    import { parentIframeCommunication } from "../lib/utils";
     import { PUBLIC_APP_ENV } from "$env/static/public";
     import { PUBLIC_CREATION_DATE } from "$env/static/public";
     import { PUBLIC_COMMIT_HASH } from "$env/static/public";

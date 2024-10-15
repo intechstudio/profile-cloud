@@ -5,7 +5,7 @@
     import { filter_value, FilterValue } from "./../../../routes/Filter";
     import { selected_config, show_supported_only } from "./../../../routes/EditorLayout";
     import TreeNode from "./TreeNode.svelte";
-    import { type Config } from "$lib/schemas";
+    import { type Config } from "../../schemas";
     import { TreeNodeData, createTree } from "./ConfigTree";
     import { createEventDispatcher, tick } from "svelte";
 

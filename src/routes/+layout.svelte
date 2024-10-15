@@ -1,6 +1,6 @@
 <script lang="ts">
-    import ToggleSwitch from "$lib/components/atomic/ToggleSwitch.svelte";
-    import DisplayOnWeb from "$lib/components/DisplayOnWeb.svelte";
+    import ToggleSwitch from "../lib/components/atomic/ToggleSwitch.svelte";
+    import DisplayOnWeb from "../lib/components/DisplayOnWeb.svelte";
     import { getContext, setContext } from "svelte";
     import "../app.css";
     import VersionStamp from "./VersionStamp.svelte";

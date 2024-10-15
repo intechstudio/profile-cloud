@@ -1,5 +1,5 @@
 <script lang="ts">
-    import GoogleAuth from "$lib/components/GoogleAuth.svelte";
+    import GoogleAuth from "../../lib/components/GoogleAuth.svelte";
     import configuration from "../../../Configuration.json";
 
     type AuthStatus = {

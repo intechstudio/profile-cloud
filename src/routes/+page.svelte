@@ -1,7 +1,7 @@
 <script lang="ts">
     import { getContext, onMount } from "svelte";
-    import DisplayOnWeb from "$lib/components/DisplayOnWeb.svelte";
-    import { parentIframeCommunication } from "$lib/utils";
+    import DisplayOnWeb from "../lib/components/DisplayOnWeb.svelte";
+    import { parentIframeCommunication } from "../lib/utils";
     import { compareSemVer } from "semver-parser";
     import EditorLayout from "./EditorLayout.svelte";
     import BrowserLayout from "./BrowserLayout.svelte";

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { createEventDispatcher } from "svelte";
-    import { type Config } from "$lib/schemas";
+    import { type Config } from "../../schemas";
     import { TreeNodeData } from "./ConfigTree";
     import { selected_config } from "./../../../routes/EditorLayout";
     import { get } from "svelte/store";

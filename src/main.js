@@ -1,0 +1,1 @@
+import WebComponent from "./WebComponent.svelte";

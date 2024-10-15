@@ -23,4 +23,16 @@ const config = {
     }
 };
 
-export default config;
+export default config; 
+
+/*const config = {
+    preprocess: vitePreprocess(),
+    compilerOptions: {
+        customElement: true,
+    },
+    files: {
+        lib: "src/lib"
+    }
+};
+
+export default config;*/

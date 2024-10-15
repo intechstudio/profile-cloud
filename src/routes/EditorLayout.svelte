@@ -13,14 +13,14 @@
     import ConfigTree from "../lib/components/tree/ConfigTree.svelte";
     import { tooltip } from "./../lib/actions/tooltip";
     import ConfigurationSave, { ConfigurationSaveType } from "./ConfigurationSave.svelte";
-    import { onDestroy, onMount, tick } from "svelte";
-    import { userAccountService } from "$lib/stores";
-    import SvgIcon from "$lib/icons/SvgIcon.svelte";
-    import { type Config, LocalConfigSchema, BaseConfigSchema } from "$lib/schemas";
+    import { onDestroy, onMount } from "svelte";
+    import { userAccountService } from "../lib/stores";
+    import SvgIcon from "../lib/icons/SvgIcon.svelte";
+    import { type Config, LocalConfigSchema, BaseConfigSchema } from "../lib/schemas";
     import { fade } from "svelte/transition";
-    import ToggleSwitch from "$lib/components/atomic/ToggleSwitch.svelte";
-    import { parentIframeCommunication } from "$lib/utils";
-    import { createConfigManager, updateLocalConfigs } from "$lib/configmanager/ConfigManager";
+    import ToggleSwitch from "../lib/components/atomic/ToggleSwitch.svelte";
+    import { parentIframeCommunication } from "../lib/utils";
+    import { createConfigManager, updateLocalConfigs } from "../lib/configmanager/ConfigManager";
     import { submitAnalytics } from "./analytics";
     import UserLogin from "./UserLogin.svelte";
 

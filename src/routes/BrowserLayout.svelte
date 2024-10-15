@@ -1,13 +1,11 @@
 <script lang="ts">
-    import { sort_key } from "./Sorter.ts";
-    import { filter_value } from "./Filter.ts";
-    import { sortConfigs } from "./Sorter";
-    import { filterConfigs } from "./Filter";
+    import { sortConfigs, sort_key } from "./Sorter";
+    import { filterConfigs, filter_value } from "./Filter";
     import Sorter from "./Sorter.svelte";
     import { onDestroy, onMount } from "svelte";
-    import type { Config } from "$lib/schemas";
+    import type { Config } from "../lib/schemas";
     import Filter from "./Filter.svelte";
-    import { type ConfigManager, createConfigManager } from "$lib/configmanager/ConfigManager";
+    import { type ConfigManager, createConfigManager } from "../lib/configmanager/ConfigManager";
     import ConfigCardBrowser from "./ConfigCardBrowser.svelte";
     import configuration from "../../Configuration.json";
 

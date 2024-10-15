@@ -1,6 +1,6 @@
 import { doc, getDoc } from "firebase/firestore";
-import { userCollection } from "$lib/collections";
-import { parentIframeCommunication } from "$lib/utils";
+import { userCollection } from "../lib/collections";
+import { parentIframeCommunication } from "../lib/utils";
 
 export async function getUserNameByUid(uid: string) {
     const userRef = doc(userCollection, uid);

@@ -1,4 +1,4 @@
-import { parentIframeCommunication } from "$lib/utils";
+import { parentIframeCommunication } from "../lib/utils";
 
 export async function submitAnalytics({ eventName, payload }: { eventName: string; payload: any }) {
     await parentIframeCommunication({
