@@ -1,7 +1,9 @@
 const defaultTheme = require("tailwindcss/defaultTheme");
+const colors = require("tailwindcss/colors");
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+    mode: "jit",
     darkMode: "class",
     content: [
         "./src/**/*.{html,js,svelte,ts}",
@@ -10,6 +12,15 @@ module.exports = {
     theme: {
         extend: {
             colors: {
+                black: colors.black,
+                white: colors.white,
+                gray: colors.neutral,
+                green: colors.green,
+                red: colors.rose,
+                yellow: colors.amber,
+                pink: colors.pink,
+                purple: colors.purple,
+                orange: colors.orange,
                 neutral: {
                     950: "#121212"
                 },

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { get } from "svelte/store";
+    import { get, writable, type Writable } from "svelte/store";
     import { filterConfigs } from "./../../../routes/Filter";
     import { sort_key, sortConfigs } from "./../../../routes/Sorter";
     import { filter_value, FilterValue } from "./../../../routes/Filter";
@@ -27,7 +27,7 @@
 
     export let configs: Config[];
 
-    let root: TreeNodeData<Config>;
+    let root: Writable<TreeNodeData<Config>> = writable();
 
     async function scrollToSelectedConfig() {
         await tick();
@@ -41,7 +41,7 @@
     }
 
     function selectClosestMatch() {
-        const temp = root.toArray();
+        const temp = get(root).toArray();
         if (temp.length > 0) {
             selected_config.set({ id: temp[0].id, presetIndex: -1 });
             return;
@@ -53,31 +53,32 @@
     let filterBuffer = new FilterValue();
 
     $: {
-        root = createTree(configs, $show_supported_only);
-        root.filter($filter_value, filterConfigs);
-        root.sort($sort_key, sortConfigs);
+        root.set(createTree(configs, $show_supported_only));
+        get(root).filter($filter_value, filterConfigs);
 
         if (!filterBuffer.isEqual($filter_value)) {
             selectClosestMatch();
+            filterBuffer = $filter_value;
         }
 
-        filterBuffer = $filter_value;
-
-        if ($selected_config) {
-            handleSelectedConfigChange($selected_config.id);
-        }
+        handleSelectedConfigChange();
     }
 
     $: {
-        if ($selected_config) {
-            handleSelectedConfigChange($selected_config.id);
-        }
+        $root.sort($sort_key, sortConfigs);
+        root.update((store) => store);
+        scrollToSelectedConfig();
     }
 
-    function handleSelectedConfigChange(id: string) {
+    function handleSelectedConfigChange() {
+        const selected = $selected_config?.id;
+        if (typeof selected === "undefined") {
+            return;
+        }
+
         expanded.set([]);
-        for (const child of root.children) {
-            toggleIncludingNodes(id, child);
+        for (const child of get(root).children) {
+            toggleIncludingNodes(selected, child);
         }
         scrollToSelectedConfig();
     }
@@ -130,5 +131,5 @@
 </script>
 
 <ul class="flex flex-col w-full h-full max-h-full" {...$tree}>
-    <Tree treeItems={root.children} on:delete-virtual-directory={handleDeleteVirtualDirectory} />
+    <Tree treeItems={$root.children} on:delete-virtual-directory={handleDeleteVirtualDirectory} />
 </ul>

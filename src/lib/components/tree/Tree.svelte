@@ -77,7 +77,6 @@
             class:max-h-full={level === 0}
             class:overflow-y-scroll={level === 0}
             class:pr-1={level === 0}
-            class:ml-2={level > 0}
         >
             {#if child.children}
                 <ul use:melt={$group({ id: child.id })}>
