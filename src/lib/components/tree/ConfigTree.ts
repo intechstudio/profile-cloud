@@ -10,83 +10,63 @@ type FilterFunc<T> = (items: T[], filter: FilterValue) => T[];
 type SorterFunc<T> = (items: T[], key: Sort.Key) => void;
 
 export class TreeNodeData<T> {
-    private _label: string;
-    private _children: T[];
-    private _nodes: TreeNodeData<T>[];
-    private _parent: TreeNodeData<T> | undefined;
-    private _open: Writable<boolean>;
-    private _id: string;
+    public title: string;
+    public items: T[];
+    public children: TreeNodeData<T>[];
+    public parent: TreeNodeData<T> | undefined;
+    public open: Writable<boolean>;
+    public id: string;
 
     constructor(label: string) {
-        this._label = label;
-        this._children = [];
-        this._nodes = [];
-        this._parent = undefined;
-        this._open = writable(false);
-        this._id = uuidv4();
+        this.title = label;
+        this.items = [];
+        this.children = [];
+        this.parent = undefined;
+        this.open = writable(false);
+        this.id = uuidv4();
     }
 
-    get id() {
-        return this._id;
-    }
-
-    get open() {
-        return this._open;
-    }
-
-    get label() {
-        return this._label;
-    }
-
-    get children() {
-        return this._children;
-    }
-
-    set children(value: T[]) {
-        this._children = value;
-    }
-
-    get nodes() {
-        return this._nodes;
-    }
-
-    get parent() {
-        return this._parent;
-    }
-
-    addNode(...nodes: TreeNodeData<T>[]) {
-        for (const node of nodes) {
-            node._parent = this;
+    itemCount() {
+        let sum = this.items.length;
+        for (const child of this.children) {
+            sum += child.itemCount();
         }
-        this._nodes.push(...nodes);
+        return sum;
     }
 
-    addChild(...children: T[]) {
-        this._children.push(...children);
+    addChild(...children: TreeNodeData<T>[]) {
+        for (const child of children) {
+            child.parent = this;
+        }
+        this.children.push(...children);
+    }
+
+    addItem(...items: T[]) {
+        this.items.push(...items);
     }
 
     filter(filter: FilterValue, filterFunc: FilterFunc<T>) {
-        this._children = filterFunc(this._children, filter);
-        this._nodes.forEach((e) => e.filter(filter, filterFunc));
+        this.items = filterFunc(this.items, filter);
+        this.children.forEach((e) => e.filter(filter, filterFunc));
     }
 
     sort(key: Sort.Key, sorterFunc: SorterFunc<T>) {
         const sortByName = (a: TreeNodeData<T>, b: TreeNodeData<T>) => {
-            return a._label
+            return a.title
                 .toLowerCase()
-                .localeCompare(b._label.toLowerCase(), undefined, { numeric: true });
+                .localeCompare(b.title.toLowerCase(), undefined, { numeric: true });
         };
-        this._nodes.sort(sortByName);
+        this.children.sort(sortByName);
 
-        sorterFunc(this._children, key);
+        sorterFunc(this.items, key);
         //node.nodes.sort(); TODO: SORT FOLDERS
-        this._nodes.forEach((e) => e.sort(key, sorterFunc));
+        this.children.forEach((e) => e.sort(key, sorterFunc));
     }
 
     toArray() {
         const res: T[] = [];
-        res.push(...this.children);
-        for (const node of this.nodes) {
+        res.push(...this.items);
+        for (const node of this.children) {
             res.push(...node.toArray());
         }
         return res;
@@ -97,7 +77,8 @@ export type TreeOptions = {
     showSupportedOnly: boolean;
 };
 
-export function createTree(configs: any, showSupportedOnly: boolean): TreeNodeData<Config>[] {
+export function createTree(configs: any, showSupportedOnly: boolean): TreeNodeData<Config> {
+    const root = new TreeNodeData<Config>("Root");
     const [my_configs, recommended_configs, community_configs, other_configs, unsupported_configs] =
         [
             new TreeNodeData<Config>("My Configs"),
@@ -109,13 +90,13 @@ export function createTree(configs: any, showSupportedOnly: boolean): TreeNodeDa
 
     const cm = get(config_manager);
 
-    my_configs.addChild(
+    my_configs.addItem(
         ...configs.filter((e: Config) => {
             const isMyConfig = e.syncStatus == "local" || e.owner === cm?.getCurrentOwnerId();
             return isMyConfig;
         })
     );
-    recommended_configs.addChild(
+    recommended_configs.addItem(
         ...configs.filter((e: Config) => {
             const isMyConfig = e.syncStatus == "local" || e.owner === cm?.getCurrentOwnerId();
             const isOfficialConfig = configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
@@ -127,7 +108,7 @@ export function createTree(configs: any, showSupportedOnly: boolean): TreeNodeDa
             return !isMyConfig && isOfficialConfig && (!showSupportedOnly || cct.includes(e.type));
         })
     );
-    community_configs.addChild(
+    community_configs.addItem(
         ...configs.filter((e: Config) => {
             const isMyConfig = e.syncStatus == "local" || e.owner === cm?.getCurrentOwnerId();
             const isOfficialConfig = configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
@@ -137,14 +118,14 @@ export function createTree(configs: any, showSupportedOnly: boolean): TreeNodeDa
             return !isMyConfig && !isOfficialConfig && (!showSupportedOnly || cct.includes(e.type));
         })
     );
-    other_configs.addChild(
+    other_configs.addItem(
         ...configs.filter((e: Config) => {
             const isMyConfig = e.syncStatus == "local" || e.owner === cm?.getCurrentOwnerId();
             const cct = get(compatible_config_types);
             return !isMyConfig && (!showSupportedOnly || cct.includes(e.type));
         })
     );
-    unsupported_configs.addChild(
+    unsupported_configs.addItem(
         ...configs.filter((e: Config) => {
             const isMyConfig = e.syncStatus == "local" || e.owner === cm?.getCurrentOwnerId();
             const cct = get(compatible_config_types);
@@ -153,46 +134,45 @@ export function createTree(configs: any, showSupportedOnly: boolean): TreeNodeDa
         })
     );
 
-    const data: TreeNodeData<Config>[] = [];
-    data.push(my_configs);
+    root.addChild(my_configs);
 
     const fv = get(filter_value);
     const isFiltering = fv.length > 0;
     if (isFiltering) {
-        data.push(other_configs);
+        root.addChild(other_configs);
     } else {
-        data.push(recommended_configs, community_configs);
+        root.addChild(recommended_configs, community_configs);
     }
 
     if (showSupportedOnly) {
-        data.push(unsupported_configs);
+        root.addChild(unsupported_configs);
     }
 
-    data.forEach((category) => {
-        for (const child of category.children) {
-            const path = child.virtualPath;
+    root.children.forEach((category) => {
+        for (const item of category.items) {
+            const path = item.virtualPath;
             if (typeof path !== "undefined") {
                 const parts = path.split("/");
                 let node = category;
                 for (let i = 0; i < parts.length; ++i) {
                     const part = parts[i];
-                    const found = node.nodes.find((e: any) => e.label === part);
+                    const found = node.children.find((e) => e.title === part);
                     if (found) {
                         node = found;
                     } else {
                         const newNode = new TreeNodeData<Config>(part);
-                        node.addNode(newNode);
+                        node.addChild(newNode);
                         node = newNode;
                     }
                 }
-                node.children.push(child);
+                node.addItem(item);
             }
         }
 
-        category.children = category.children.filter((e: any) => {
+        category.items = category.items.filter((e: any) => {
             return typeof e.virtualPath === "undefined";
         });
     });
 
-    return data;
+    return root;
 }
