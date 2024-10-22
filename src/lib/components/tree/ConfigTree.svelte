@@ -132,7 +132,7 @@
 </script>
 
 <ul class="flex flex-col w-full h-full max-h-full" {...$tree}>
-    <Tree treeItems={$root.children} on:delete-virtual-directory={handleDeleteVirtualDirectory}>
+    <Tree treeItems={$root.children}>
         <svelte:fragment slot="folder" let:child let:isExpanded let:level>
             <div
                 class="flex w-full items-center mb-1 border-b h-5 border-white/40"
