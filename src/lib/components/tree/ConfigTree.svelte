@@ -14,6 +14,8 @@
     import { createTreeView } from "@melt-ui/svelte";
     import { setContext } from "svelte";
     import Tree from "./Tree.svelte";
+    import { contextTarget } from "@intechstudio/grid-uikit";
+    import ConfigCardEditor from "../../../routes/ConfigCardEditor.svelte";
 
     const ctx = createTreeView({
         defaultExpanded: []
@@ -113,8 +115,7 @@
         }
     }
 
-    function handleDeleteVirtualDirectory(e: any) {
-        const { title } = e.detail;
+    function handleDeleteVirtualDirectory(title: string) {
         const cm = get(config_manager);
 
         for (const config of configs) {
@@ -131,5 +132,50 @@
 </script>
 
 <ul class="flex flex-col w-full h-full max-h-full" {...$tree}>
-    <Tree treeItems={$root.children} on:delete-virtual-directory={handleDeleteVirtualDirectory} />
+    <Tree treeItems={$root.children}>
+        <svelte:fragment slot="folder" let:child let:isExpanded let:level>
+            <div
+                class="flex w-full items-center mb-1 border-b h-5 border-white/40"
+                use:contextTarget={{
+                    items: [
+                        {
+                            text: [`Delete virtual directory`, ``],
+                            handler: () => handleDeleteVirtualDirectory(child.title),
+                            isDisabled: () =>
+                                level === 0 || child.items.some((e) => e.syncStatus !== "local")
+                        }
+                    ]
+                }}
+            >
+                <div class="flex-grow text-left text-white/80 truncate">
+                    {`${child.title} (${child.itemCount()})`}
+                </div>
+                <div>
+                    <svg
+                        width="14"
+                        height="11"
+                        class={isExpanded ? "" : "-rotate-90"}
+                        viewBox="0 0 14 11"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                            d="M6.99968 11L0.9375 0.5L13.0619 0.500001L6.99968 11Z"
+                            fill="#D9D9D9"
+                        />
+                    </svg>
+                </div>
+            </div>
+        </svelte:fragment>
+
+        <svelte:fragment slot="file" let:item>
+            <div class="mb-1">
+                <ConfigCardEditor
+                    data={item}
+                    isSelected={item.id === $selected_config?.id &&
+                        $selected_config?.presetIndex === -1}
+                />
+            </div>
+        </svelte:fragment>
+    </Tree>
 </ul>
