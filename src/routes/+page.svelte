@@ -5,7 +5,6 @@
     import { compareSemVer } from "semver-parser";
     import EditorLayout from "./EditorLayout.svelte";
     import BrowserLayout from "./BrowserLayout.svelte";
-    import { PUBLIC_APP_ENV } from "$env/static/public";
 
     const display = getContext("display");
     let isEditorVersionCompatible = true;
@@ -14,7 +13,7 @@
         return await parentIframeCommunication({
             windowPostMessageName: "profileCloudMounted",
             dataForParent: {
-                environment: PUBLIC_APP_ENV
+                environment: import.meta.env.PUBLIC_APP_ENV
             }
         });
     }
@@ -33,8 +32,8 @@
 </script>
 
 <section class="w-full h-full flex-grow bg-neutral-100 dark:bg-primary">
-    <div class="w-full h-full bg-neutral-100 dark:bg-primary/100 flex justify-center">
-        <div class="container flex flex-col max-w-screen-xl h-full">
+    <div class="w-full min-h-full bg-neutral-100 dark:bg-primary/100 flex justify-center">
+        <div class="container flex flex-col max-w-screen-xl min-h-full">
             <DisplayOnWeb>
                 <div
                     class="flex flex-col justify-between pt-8 text-opacity-80 text-black dark:text-opacity-80 dark:text-white"

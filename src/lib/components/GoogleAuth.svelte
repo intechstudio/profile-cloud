@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { PUBLIC_GOOGLE_CLIENT_ID } from "$env/static/public";
     import { createEventDispatcher } from "svelte";
 
     const dispatch = createEventDispatcher();
@@ -12,7 +11,7 @@
 
     function initGapi() {
         google.accounts.id.initialize({
-            client_id: PUBLIC_GOOGLE_CLIENT_ID,
+            client_id: import.meta.env.PUBLIC_GOOGLE_CLIENT_ID,
             callback: callbackFunction
         });
         google.accounts.id.renderButton(

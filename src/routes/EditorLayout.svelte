@@ -231,6 +231,8 @@
     }
 
     function selectLatestConfig() {
+        if (configs.length == 0) return;
+
         configs.sort((a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime());
         selected_config.set({ id: configs[0].id, presetIndex: -1 });
     }
@@ -427,7 +429,7 @@
     }
 </script>
 
-<div id="main" class="flex flex-grow h-screen relative z-0 overflow-hidden">
+<div id="main" class="flex flex-grow h-full relative z-0 overflow-hidden">
     <div class="flex flex-col gap-2 h-full w-full">
         <div class="px-4 pt-4">
             {#if configurationSaveVisible}
