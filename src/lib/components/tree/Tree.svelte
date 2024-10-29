@@ -2,7 +2,7 @@
     import { melt, type TreeView } from "@melt-ui/svelte";
     import { getContext } from "svelte";
     import { TreeNodeData } from "./ConfigTree";
-    import { type Config } from "$lib/schemas";
+    import { type Config } from "../../schemas";
 
     export let treeItems: TreeNodeData<Config>[] = [];
     export let level = 0;
