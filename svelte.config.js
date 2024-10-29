@@ -1,6 +1,5 @@
 import adapter from "@sveltejs/adapter-static";
 import { vitePreprocess } from "@sveltejs/kit/vite";
-import { preprocessMeltUI, sequence } from "@melt-ui/pp";
 
 const config = {
     kit: {
@@ -15,14 +14,7 @@ const config = {
         }),
         prerender: { entries: ["*"] }
     },
-    preprocess: sequence([
-        // ... other preprocessors
-        vitePreprocess(),
-        preprocessMeltUI() // add to the end!
-    ]),
-    compilerOptions: {
-        customElement: true
-    },
+    preprocess: vitePreprocess(),
     files: {
         lib: "src/lib"
     }

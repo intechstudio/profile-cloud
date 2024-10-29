@@ -28,7 +28,8 @@
 {#each treeItems as child}
     <button
         type="button"
-        use:melt={$item({ id: child.id, hasChildren: true })}
+        {...$item({ id: child.id, hasChildren: true })}
+        use:item
         on:click={() => toggleExpand(child.id, level, $isExpanded(child.id))}
         class="flex items-center w-full"
     >
@@ -43,7 +44,7 @@
             class:pr-1={level === 0}
         >
             {#if child.children && child.children.length > 0}
-                <div use:melt={$group({ id: child.id })} class="pl-4">
+                <div {...$group({ id: child.id })} use:group class="pl-4">
                     <svelte:self treeItems={child.children} level={level + 1}>
                         <svelte:fragment slot="folder" let:level let:child let:isExpanded>
                             <slot name="folder" {level} {child} {isExpanded} />
