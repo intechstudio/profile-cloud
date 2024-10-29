@@ -25,7 +25,7 @@ export default defineConfig({
             name: "<<name>>",
             fileName: "components"
         },
-        outDir: "public/wc",
+        outDir: "public/wc"
     },
     envPrefix: "PUBLIC_"
 });
