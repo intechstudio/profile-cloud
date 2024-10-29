@@ -19,8 +19,10 @@ jobs:
                   echo PUBLIC_COMMIT_HASH=$(git log --format="%h" -n 1) >> .env
                   echo PUBLIC_APP_ENV=development >> .env  
                   echo PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.PUBLIC_GOOGLE_CLIENT_ID_DEV }} >> .env
-                   echo PUBLIC_CREATION_DATE=$(git log --format="%cd" --date=format:'%Y-%m-%d' -1) >> .env
-            - run: npm ci && npm run build
+                  echo PUBLIC_CREATION_DATE=$(git log --format="%cd" --date=format:'%Y-%m-%d' -1) >> .env
+            - run: npm ci && npm run build && npm run build:webcomponent
+              env:
+                  WEB_COMPONENT_NAME: profile-cloud-nightly
             - uses: FirebaseExtended/action-hosting-deploy@v0
               with:
                   repoToken: "${{ secrets.GITHUB_TOKEN }}"

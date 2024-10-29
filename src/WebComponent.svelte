@@ -32,6 +32,8 @@
 >
     {#if isEditorVersionCompatible}
         <EditorLayout />
+    {:else}
+        Incompatible Editor Version!
     {/if}
 </profile-cloud-web-component>
 
