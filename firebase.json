@@ -3,6 +3,17 @@
         "target": "profile-cloud",
         "public": "public",
         "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+        "headers": [
+            {
+                "source": "wc/**/*.*",
+                "headers": [
+                    {
+                        "key": "Access-Control-Allow-Origin",
+                        "value": "*"
+                    }
+                ]
+            }
+        ],
         "rewrites": [
             {
                 "source": "**",
