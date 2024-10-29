@@ -6,7 +6,4 @@ node_modules
 .env
 .env.*
 !.env.example
-dist/components.js
-dist/components.js.map
-dist/components.umd.cjs
-dist/components.umd.cjs.map
+dist
