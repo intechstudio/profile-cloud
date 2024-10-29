@@ -24,7 +24,8 @@ export default defineConfig({
             entry: "src/WebComponent.svelte",
             name: "<<name>>",
             fileName: "components"
-        }
+        },
+        outDir: "public/wc",
     },
     envPrefix: "PUBLIC_"
 });
