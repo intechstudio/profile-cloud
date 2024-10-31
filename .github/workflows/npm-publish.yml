@@ -1,0 +1,40 @@
+name: Create Node.js Package
+
+"on":
+    push:
+        branches:
+            - "prod"
+            - "main"
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "18.16.1"
+      - run: npm i
+      - run: npm run test
+  build:
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "18.16.1"
+      - name: Create public env file
+          run: |
+              echo $(git log -5)
+              touch .env
+              echo PUBLIC_COMMIT_HASH=$(git log --format="%h" -n 1) >> .env
+              echo PUBLIC_APP_ENV=production >> .env  
+              echo PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.PUBLIC_GOOGLE_CLIENT_ID_PROD }} >> .env
+              echo PUBLIC_CREATION_DATE=$(git log --format="%cd" --date=format:'%Y-%m-%d' -1) >> .env
+      - run: npm ci && npm run build:webcomponent
+        env:
+          WEB_COMPONENT_NAME: profile-cloud-offline
+      - run: cd ./npm-package && npm version $(date +1.%Y%m%d.%-H%M) --no-git-tag-version
+      - run: cd ./npm-package && npm i && npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.npm_token}}

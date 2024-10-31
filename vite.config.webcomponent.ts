@@ -25,7 +25,10 @@ export default defineConfig({
             name: "<<name>>",
             fileName: "components"
         },
-        outDir: "public/wc"
+        outDir:
+            process.env.WEB_COMPONENT_NAME == "profile-cloud-offline"
+                ? "npm-package/dist"
+                : "public/wc"
     },
     envPrefix: "PUBLIC_"
 });
