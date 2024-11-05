@@ -13,14 +13,14 @@
     import ConfigTree from "../lib/components/tree/ConfigTree.svelte";
     import { tooltip } from "./../lib/actions/tooltip";
     import ConfigurationSave, { ConfigurationSaveType } from "./ConfigurationSave.svelte";
-    import { onDestroy, onMount, tick } from "svelte";
-    import { userAccountService } from "$lib/stores";
-    import SvgIcon from "$lib/icons/SvgIcon.svelte";
-    import { type Config, LocalConfigSchema, BaseConfigSchema } from "$lib/schemas";
+    import { onDestroy, onMount } from "svelte";
+    import { userAccountService } from "../lib/stores";
+    import SvgIcon from "../lib/icons/SvgIcon.svelte";
+    import { type Config, LocalConfigSchema, BaseConfigSchema } from "../lib/schemas";
     import { fade } from "svelte/transition";
-    import ToggleSwitch from "$lib/components/atomic/ToggleSwitch.svelte";
-    import { parentIframeCommunication } from "$lib/utils";
-    import { createConfigManager, updateLocalConfigs } from "$lib/configmanager/ConfigManager";
+    import ToggleSwitch from "../lib/components/atomic/ToggleSwitch.svelte";
+    import { parentIframeCommunication } from "../lib/utils";
+    import { createConfigManager, updateLocalConfigs } from "../lib/configmanager/ConfigManager";
     import { submitAnalytics } from "./analytics";
     import UserLogin from "./UserLogin.svelte";
 
@@ -231,6 +231,8 @@
     }
 
     function selectLatestConfig() {
+        if (configs.length == 0) return;
+
         configs.sort((a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime());
         selected_config.set({ id: configs[0].id, presetIndex: -1 });
     }
@@ -427,7 +429,7 @@
     }
 </script>
 
-<div id="main" class="flex flex-grow h-screen relative z-0 overflow-hidden">
+<div id="main" class="flex flex-grow h-full relative z-0 overflow-hidden">
     <div class="flex flex-col gap-2 h-full w-full">
         <div class="px-4 pt-4">
             {#if configurationSaveVisible}

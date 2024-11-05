@@ -1,4 +1,4 @@
-import { type Config } from "$lib/schemas";
+import { type Config } from "../lib/schemas";
 import { type Writable, writable } from "svelte/store";
 
 export namespace Sort {

@@ -1,7 +1,7 @@
 import { get, type Writable, writable } from "svelte/store";
 import configuration from "../../../../Configuration.json";
 import { config_manager, compatible_config_types } from "./../../../routes/EditorLayout";
-import { type Config } from "$lib/schemas";
+import { type Config } from "../../schemas";
 import { filter_value, FilterValue } from "../../../routes/Filter";
 import { Sort } from "../../../routes/Sorter";
 import { v4 as uuidv4 } from "uuid";

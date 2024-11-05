@@ -1,12 +1,12 @@
 <script lang="ts">
-    import { tooltip } from "./../lib/actions/tooltip.ts";
+    import { tooltip } from "../lib/actions/tooltip";
     import { onDestroy } from "svelte";
-    import { userAccountService } from "$lib/stores";
+    import { userAccountService } from "../lib/stores";
     import { doc, getDoc, writeBatch } from "firebase/firestore";
-    import { userCollection, usernameCollection } from "$lib/collections";
-    import SvgIcon from "$lib/icons/SvgIcon.svelte";
+    import { userCollection, usernameCollection } from "../lib/collections";
+    import SvgIcon from "../lib/icons/SvgIcon.svelte";
     import { get } from "svelte/store";
-    import { firestore } from "$lib/firebase";
+    import { firestore } from "../lib/firebase";
     import { submitAnalytics } from "./analytics";
     import {
         getUserNameByUid,

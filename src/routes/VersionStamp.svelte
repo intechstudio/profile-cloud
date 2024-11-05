@@ -1,8 +1,5 @@
 <script>
-    import { parentIframeCommunication } from "$lib/utils";
-    import { PUBLIC_APP_ENV } from "$env/static/public";
-    import { PUBLIC_CREATION_DATE } from "$env/static/public";
-    import { PUBLIC_COMMIT_HASH } from "$env/static/public";
+    import { parentIframeCommunication } from "../lib/utils";
     import { getContext } from "svelte";
 
     const display = getContext("display");
@@ -24,9 +21,9 @@
 
 <div class="flex flex-row flex-wrap gap-2">
     <span class="text-opacity-40">
-        {PUBLIC_APP_ENV} - {PUBLIC_CREATION_DATE}
+        {import.meta.env.PUBLIC_APP_ENV} - {import.meta.env.PUBLIC_CREATION_DATE}
     </span>
     <button class="hover:text-opacity-75 text-opacity-40" on:click={handleCommitHashClicked}
-        >({PUBLIC_COMMIT_HASH})</button
+        >({import.meta.env.PUBLIC_COMMIT_HASH})</button
     >
 </div>

@@ -1,4 +1,4 @@
-import { userAccountService } from "$lib/stores";
+import { userAccountService } from "../stores";
 import type { Unsubscribe } from "firebase/firestore";
 import {
     or,
@@ -12,16 +12,15 @@ import {
     updateDoc
 } from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
-import { configsCollection } from "$lib/collections";
+import { configsCollection } from "../collections";
 import {
     type CloudConfig,
     type Config,
     type LocalConfig,
     type BaseConfig,
     CloudConfigSchema
-} from "$lib/schemas";
-import { parentIframeCommunication } from "$lib/utils";
-import { selected_config } from "../../routes/EditorLayout";
+} from "../schemas";
+import { parentIframeCommunication } from "../utils";
 
 export interface ConfigManager {
     cancel(): void;

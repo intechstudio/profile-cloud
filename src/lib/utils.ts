@@ -1,4 +1,4 @@
-import type { EditorReturnType } from "$lib/types";
+import type { EditorReturnType } from "./types";
 
 export function applyFocus(el: HTMLElement) {
     el.focus();

@@ -3,13 +3,13 @@
     import { ModuleType, ElementType } from "@intechstudio/grid-protocol";
     import { tooltip } from "./../lib/actions/tooltip";
     import { createEventDispatcher } from "svelte";
-    import SvgIcon from "$lib/icons/SvgIcon.svelte";
-    import type { Config } from "$lib/schemas";
-    import { applyFocus } from "$lib/utils";
+    import SvgIcon from "../lib/icons/SvgIcon.svelte";
+    import type { Config } from "../lib/schemas";
+    import { applyFocus } from "../lib/utils";
     import { doc, getDoc } from "firebase/firestore";
-    import { userCollection } from "$lib/collections";
+    import { userCollection } from "../lib/collections";
     import ConfigDescription from "./ConfigDescription.svelte";
-    import DataInput from "$lib/components/DataInput.svelte";
+    import DataInput from "../lib/components/DataInput.svelte";
     import { selected_config } from "./EditorLayout";
 
     const dispatchEvent = createEventDispatcher();

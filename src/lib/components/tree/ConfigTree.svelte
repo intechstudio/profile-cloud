@@ -8,7 +8,7 @@
         show_supported_only,
         config_manager
     } from "./../../../routes/EditorLayout";
-    import { type Config } from "$lib/schemas";
+    import { type Config } from "../../schemas";
     import { TreeNodeData, createTree } from "./ConfigTree";
     import { tick } from "svelte";
     import { createTreeView } from "@melt-ui/svelte";

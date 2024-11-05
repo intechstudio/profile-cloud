@@ -2,7 +2,7 @@
     import { createEventDispatcher, onMount, tick } from "svelte";
     import { marked } from "marked";
     import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
-    import { firebaseStorage } from "$lib/firebase";
+    import { firebaseStorage } from "../lib/firebase";
     import { v4 as uuidv4 } from "uuid";
 
     const dispatch = createEventDispatcher();

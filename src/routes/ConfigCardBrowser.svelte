@@ -1,11 +1,11 @@
 <script lang="ts">
-    import { tooltip } from "./../lib/actions/tooltip.ts";
+    import { tooltip } from "../lib/actions/tooltip";
     import { createEventDispatcher, getContext, onDestroy, onMount } from "svelte";
-    import SvgIcon from "$lib/icons/SvgIcon.svelte";
-    import type { Config } from "$lib/schemas";
-    import { applyFocus } from "$lib/utils";
+    import SvgIcon from "../lib/icons/SvgIcon.svelte";
+    import type { Config } from "../lib/schemas";
+    import { applyFocus } from "../lib/utils";
     import { doc, getDoc } from "firebase/firestore";
-    import { userCollection } from "$lib/collections";
+    import { userCollection } from "../lib/collections";
 
     const dispatchEvent = createEventDispatcher();
 

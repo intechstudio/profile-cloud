@@ -1,5 +1,4 @@
 <script>
-    import SvgIcon from "$lib/icons/SvgIcon.svelte";
     import { createEventDispatcher } from "svelte";
 
     const dispatch = createEventDispatcher();

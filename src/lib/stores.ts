@@ -1,6 +1,4 @@
 import {
-    EmailAuthProvider,
-    GoogleAuthProvider,
     OAuthProvider,
     onAuthStateChanged,
     signInWithCredential,
@@ -9,8 +7,6 @@ import {
 } from "firebase/auth";
 import { writable } from "svelte/store";
 import { firebaseAuth } from "./firebase";
-
-import { PUBLIC_APP_ENV } from "$env/static/public";
 
 function createUserAccountService() {
     const { subscribe, set, update } = writable<{ account: User | null; credential?: null }>(
@@ -39,7 +35,7 @@ function createUserAccountService() {
             return;
         }
         const provider = new OAuthProvider(
-            PUBLIC_APP_ENV === "production" ? "oidc.is-auth" : "oidc.is-auth-dev"
+            import.meta.env.PUBLIC_APP_ENV === "production" ? "oidc.is-auth" : "oidc.is-auth-dev"
         );
         cred = provider.credential({
             idToken: credential.idToken

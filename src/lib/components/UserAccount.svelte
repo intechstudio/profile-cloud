@@ -1,10 +1,8 @@
 <script lang="ts">
-    import { firebaseAuth } from "$lib/firebase";
-    import { signInWithEmailAndPassword } from "firebase/auth";
     import AtomicButton from "./atomic/AtomicButton.svelte";
     import AtomicInput from "./atomic/AtomicInput.svelte";
     import GoogleAuth from "./GoogleAuth.svelte";
-    import { userAccountService } from "$lib/stores";
+    import { userAccountService } from "../stores";
 
     let email = "";
     let password = "";

@@ -3,9 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
 import { getStorage } from "firebase/storage";
-import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
-
-import { PUBLIC_APP_ENV } from "$env/static/public";
+import { getFirestore } from "firebase/firestore";
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -33,7 +31,9 @@ const prodProfileCloudConfig = {
 };
 
 const profileCloudConfig =
-    PUBLIC_APP_ENV === "production" ? prodProfileCloudConfig : devProfileCloudConfig;
+    import.meta.env.PUBLIC_APP_ENV === "production"
+        ? prodProfileCloudConfig
+        : devProfileCloudConfig;
 
 export const firebaseApp = initializeApp(profileCloudConfig, "profile-cloud");
 export const firebaseAnalytics = getAnalytics(firebaseApp);

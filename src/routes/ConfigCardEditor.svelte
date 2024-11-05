@@ -2,7 +2,7 @@
     import { selected_config } from "./EditorLayout";
     import { compatible_config_types } from "./EditorLayout";
     import { createEventDispatcher } from "svelte";
-    import type { Config } from "$lib/schemas";
+    import type { Config } from "../lib/schemas";
     import { grid, ModuleType, ElementType } from "@intechstudio/grid-protocol";
 
     const dispatch = createEventDispatcher();

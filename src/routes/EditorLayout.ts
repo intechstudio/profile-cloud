@@ -1,5 +1,4 @@
-import { type ConfigManager, createConfigManager } from "$lib/configmanager/ConfigManager";
-import { type Config } from "$lib/schemas";
+import { type ConfigManager } from "../lib/configmanager/ConfigManager";
 import { writable, type Writable } from "svelte/store";
 
 export const compatible_config_types: Writable<string[]> = writable([]);

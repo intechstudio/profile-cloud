@@ -1,6 +1,6 @@
-import { sveltekit } from "@sveltejs/kit/vite";
 import { defineConfig } from "vite";
 import path from "path";
+import { sveltekit } from "@sveltejs/kit/vite";
 
 export default defineConfig({
     plugins: [sveltekit()],
@@ -12,5 +12,6 @@ export default defineConfig({
                 path.resolve(__dirname) // Add the root directory to the allow list
             ]
         }
-    }
+    },
+    envPrefix: "PUBLIC_"
 });
