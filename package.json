@@ -4,6 +4,7 @@
     "private": true,
     "scripts": {
         "dev": "vite dev --port 5200",
+        "dev:webcomponent": "vite build --config vite.config.webcomponent.ts --watch",
         "build": "vite build",
         "build:webcomponent": "vite build --config vite.config.webcomponent.ts",
         "preview": "vite preview",
@@ -50,6 +51,7 @@
         "svelte-markdown-input": "^0.0.2",
         "svelte-splitpanes": "^0.8.0",
         "uuid": "^9.0.0",
+        "ws": "^8.18.0",
         "zod": "^3.21.4"
     }
 }
