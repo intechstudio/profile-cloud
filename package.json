@@ -1,6 +1,6 @@
 {
     "name": "profile-cloud",
-	"description": "Profile Cloud",
+    "description": "Profile Cloud",
     "version": "0.0.1",
     "private": true,
     "scripts": {
@@ -55,7 +55,7 @@
         "ws": "^8.18.0",
         "zod": "^3.21.4"
     },
-	"grid_editor": {
-		"componentsPath": "public/wc/components.js"
-	}
+    "grid_editor": {
+        "componentsPath": "public/wc/components.js"
+    }
 }

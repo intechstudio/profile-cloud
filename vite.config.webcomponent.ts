@@ -3,7 +3,6 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { sveltePreprocess } from "svelte-preprocess";
 import { notifyEditorAfterBuildPlugin } from "./vite.postbuild";
 
-
 export default defineConfig({
     plugins: [
         svelte({
@@ -18,7 +17,7 @@ export default defineConfig({
             },
             emitCss: false
         }),
-        notifyEditorAfterBuildPlugin(),
+        notifyEditorAfterBuildPlugin()
     ],
     build: {
         sourcemap: true,
