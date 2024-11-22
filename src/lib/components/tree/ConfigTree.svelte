@@ -13,8 +13,7 @@
     import { tick } from "svelte";
     import { createTreeView } from "@melt-ui/svelte";
     import { setContext } from "svelte";
-    import Tree from "./Tree.svelte";
-    import { contextTarget } from "@intechstudio/grid-uikit";
+    import { contextTarget, Tree } from "@intechstudio/grid-uikit";
     import ConfigCardEditor from "../../../routes/ConfigCardEditor.svelte";
 
     const ctx = createTreeView({

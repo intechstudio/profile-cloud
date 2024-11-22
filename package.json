@@ -41,7 +41,7 @@
     "type": "module",
     "dependencies": {
         "@intechstudio/grid-protocol": "1.20241030.1609",
-        "@intechstudio/grid-uikit": "1.20241017.2206",
+        "@intechstudio/grid-uikit": "1.20241122.1635",
         "@melt-ui/svelte": "^0.83.0",
         "@toast-ui/editor": "^3.2.2",
         "audit": "^0.0.6",
