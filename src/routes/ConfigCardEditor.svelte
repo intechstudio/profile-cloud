@@ -40,6 +40,14 @@
         selected_config.set(undefined);
         selected_config.set({ id, presetIndex }); // Now set to the actual value
     }
+
+    function getPresetName(preset: any) {
+        const initConfig = preset.events.find((e: any) => e.event === 0).config;
+        const regex = /--\[\[@sn\]\] self:gen\(["']([^"']+)["']\)/;
+
+        const value = initConfig.match(regex)?.at(1);
+        return value;
+    }
 </script>
 
 <button
@@ -100,13 +108,18 @@
     <div class="flex flex-col ml-4 gap-1 my-1">
         {#each data.configs as preset, index}
             {@const element = elements.find((e) => e.index === preset.controlElementNumber)}
+            {@const elementName = getPresetName(preset)}
             <svelte:self
                 isSelected={preset.controlElementNumber === $selected_config?.presetIndex}
                 data={{
                     type: element?.type,
-                    name: `Element ${index} (${
-                        elements[index].type.at(0)?.toUpperCase() + elements[index].type?.slice(1)
-                    })`
+                    name:
+                        typeof elementName !== "undefined"
+                            ? elementName
+                            : `Element ${index} (${
+                                  elements[index].type.at(0)?.toUpperCase() +
+                                  elements[index].type?.slice(1)
+                              })`
                 }}
                 on:click={() => {
                     handleSelection(data.id, preset.controlElementNumber);
