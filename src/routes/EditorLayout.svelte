@@ -32,6 +32,7 @@
     import { MeltCheckbox } from "@intechstudio/grid-uikit";
     import { compatible_config_types } from "./EditorLayout";
     import Sorter from "./Sorter.svelte";
+    import { dragTarget } from "../lib/actions/drag.action";
 
     let configs: Config[] = [];
 
@@ -98,6 +99,12 @@
 
             case "compatibleTypes": {
                 compatible_config_types.set(event.data.compatibleTypes);
+                break;
+            }
+
+            case "configDragTargetChange": {
+                dragTarget.set(event.data.target);
+                console.log(get(dragTarget));
                 break;
             }
         }

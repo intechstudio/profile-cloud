@@ -1,9 +1,12 @@
 <script lang="ts">
-    import { selected_config } from "./EditorLayout";
+    import { config_manager, selected_config } from "./EditorLayout";
     import { compatible_config_types } from "./EditorLayout";
     import { createEventDispatcher } from "svelte";
     import type { Config } from "../lib/schemas";
     import { grid, ModuleType, ElementType } from "@intechstudio/grid-protocol";
+    import { parentIframeCommunication } from "../lib/utils";
+    import { get } from "svelte/store";
+    import { dragTarget } from "../lib/actions/drag.action";
 
     const dispatch = createEventDispatcher();
 
@@ -48,6 +51,52 @@
         const value = initConfig.match(regex)?.at(1);
         return value;
     }
+
+    function handleDragStart(e: DragEvent) {
+        const cm = get(config_manager);
+
+        if (!cm) {
+            throw new Error("Config manager is not initialized...");
+        }
+
+        if (!e.dataTransfer) {
+            throw new Error("Data transfer is not available...");
+        }
+        const configs: Config[] = get(cm.configs);
+        const dragged = configs.find((e) => e.id === data.id);
+
+        console.log(dragged);
+
+        parentIframeCommunication({
+            windowPostMessageName: "configDragChange",
+            dataForParent: {
+                drag: "start",
+                config: dragged
+            }
+        });
+    }
+
+    function handleDragEnd(e: DragEvent) {
+        const cm = get(config_manager);
+
+        if (!cm) {
+            throw new Error("Config manager is not initialized...");
+        }
+
+        const configs: Config[] = get(cm.configs);
+        const dragged = configs.find((e) => e.id === data.id);
+
+        parentIframeCommunication({
+            windowPostMessageName: "configDragChange",
+            dataForParent: {
+                drag: "end",
+                config: dragged,
+                target: get(dragTarget)
+            }
+        });
+
+        dragTarget.set(undefined);
+    }
 </script>
 
 <button
@@ -64,6 +113,9 @@
     class="{isSelected
         ? 'border-emerald-500'
         : 'border-white/10'} flex flex-row items-center w-full bg-white border shadow dark:bg-secondary"
+    draggable="true"
+    on:dragstart={handleDragStart}
+    on:dragend={handleDragEnd}
 >
     <div class="w-1 h-8 grid grid-rows-2">
         <div
@@ -109,18 +161,20 @@
         {#each data.configs as preset, index}
             {@const element = elements.find((e) => e.index === preset.controlElementNumber)}
             {@const elementName = getPresetName(preset)}
+            {@const partialData = {
+                ...structuredClone(preset),
+                type: element?.type,
+                name:
+                    typeof elementName !== "undefined"
+                        ? elementName
+                        : `Element ${index} (${
+                              elements[index].type.at(0)?.toUpperCase() +
+                              elements[index].type?.slice(1)
+                          })`
+            }}
             <svelte:self
                 isSelected={preset.controlElementNumber === $selected_config?.presetIndex}
-                data={{
-                    type: element?.type,
-                    name:
-                        typeof elementName !== "undefined"
-                            ? elementName
-                            : `Element ${index} (${
-                                  elements[index].type.at(0)?.toUpperCase() +
-                                  elements[index].type?.slice(1)
-                              })`
-                }}
+                data={partialData}
                 on:click={() => {
                     handleSelection(data.id, preset.controlElementNumber);
                 }}
