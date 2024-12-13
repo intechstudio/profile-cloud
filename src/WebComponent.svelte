@@ -28,7 +28,7 @@
 </script>
 
 <profile-cloud-web-component
-    class="dark bg-primary/100 text-white transition duration-200 min-h-full"
+    class="dark bg-primary/100 text-white transition duration-200 h-full"
 >
     {#if isEditorVersionCompatible}
         <EditorLayout />
