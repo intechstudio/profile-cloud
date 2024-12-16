@@ -10,7 +10,7 @@
 
     const dispatch = createEventDispatcher();
 
-    export let data: Config;
+    export let data: Config & { module: ModuleType };
     export let isSelected: boolean;
 
     let compatible = false;
@@ -36,14 +36,6 @@
             return array;
         }, []);
 
-    function handleSelection(id: string, presetIndex: number) {
-        // Temporarily set to a different value to force reactivity
-        // Important to being able to reopen the overlay, when same
-        // Config is clicked, that is currently selected
-        selected_config.set(undefined);
-        selected_config.set({ id, presetIndex }); // Now set to the actual value
-    }
-
     function getPresetName(preset: any) {
         const initConfig = preset.events.find((e: any) => e.event === 0).config;
         const regex = /--\[\[@sn\]\] self:gen\(["']([^"']+)["']\)/;
@@ -53,57 +45,56 @@
     }
 
     function handleDragStart(e: DragEvent) {
-        const cm = get(config_manager);
-
-        if (!cm) {
-            throw new Error("Config manager is not initialized...");
-        }
-
-        if (!e.dataTransfer) {
-            throw new Error("Data transfer is not available...");
-        }
-        const configs: Config[] = get(cm.configs);
-        const dragged = configs.find((e) => e.id === data.id);
-
-        console.log(dragged);
-
         parentIframeCommunication({
             windowPostMessageName: "configDragChange",
             dataForParent: {
                 drag: "start",
-                config: dragged
+                config: data
             }
         });
     }
 
     function handleDragEnd(e: DragEvent) {
-        const cm = get(config_manager);
-
-        if (!cm) {
-            throw new Error("Config manager is not initialized...");
-        }
-
-        const configs: Config[] = get(cm.configs);
-        const dragged = configs.find((e) => e.id === data.id);
-
         parentIframeCommunication({
             windowPostMessageName: "configDragChange",
             dataForParent: {
                 drag: "end",
-                config: dragged,
+                config: data,
                 target: get(dragTarget)
             }
         });
 
         dragTarget.set(undefined);
     }
+
+    function handleConfigurationClicked(configId: string, presetIndex?: string) {
+        const index = typeof presetIndex !== "undefined" ? parseInt(presetIndex) : -1;
+        selected_config.set({ id: configId, presetIndex: index });
+
+        if (index === -1) {
+            //No partial profile is selected
+            dispatch("config-selected", { config: data });
+        } else {
+            //Partial profile is selected
+            let moduleType = ModuleType[data.module as keyof typeof ModuleType];
+            let elements = grid.get_module_element_list(moduleType);
+            const type = elements[index];
+
+            const preset = {
+                ...data,
+                type: type,
+                configType: "preset"
+            } as Config;
+
+            dispatch("config-selected", { config: preset });
+        }
+    }
 </script>
 
 <button
     id={data.id}
     on:click={() => {
-        handleSelection(data.id, -1);
-        dispatch("click");
+        handleConfigurationClicked(data.id.split("#")[0], data.id.split("#")[1]);
     }}
     on:focusout={(e) => {
         if (e.relatedTarget == null) {
@@ -162,7 +153,9 @@
             {@const element = elements.find((e) => e.index === preset.controlElementNumber)}
             {@const elementName = getPresetName(preset)}
             {@const partialData = {
-                ...structuredClone(preset),
+                configs: structuredClone(preset),
+                id: `${data.id}#${preset.controlElementNumber}`,
+                module: data.type,
                 type: element?.type,
                 name:
                     typeof elementName !== "undefined"
@@ -170,14 +163,13 @@
                         : `Element ${index} (${
                               elements[index].type.at(0)?.toUpperCase() +
                               elements[index].type?.slice(1)
-                          })`
+                          })`,
+                configType: "preset"
             }}
             <svelte:self
                 isSelected={preset.controlElementNumber === $selected_config?.presetIndex}
                 data={partialData}
-                on:click={() => {
-                    handleSelection(data.id, preset.controlElementNumber);
-                }}
+                on:config-selected={(e) => dispatch("config-selected", e.detail)}
                 on:focusout={(e) => {
                     if (e.relatedTarget == null) {
                         dispatch("focusout");

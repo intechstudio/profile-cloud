@@ -104,7 +104,6 @@
 
             case "configDragTargetChange": {
                 dragTarget.set(event.data.target);
-                console.log(get(dragTarget));
                 break;
             }
         }
@@ -114,6 +113,11 @@
         await parentIframeCommunication({
             windowPostMessageName: "provideSelectedConfigForEditor",
             dataForParent: { config: config ?? undefined }
+        });
+
+        await parentIframeCommunication({
+            windowPostMessageName: "showOverlay",
+            dataForParent: { value: typeof config !== "undefined" }
         });
     }
 
@@ -296,46 +300,6 @@
     function handleOpenconfigurationSave() {
         provideSelectedConfigForEditor(undefined);
         configurationSaveVisible = true;
-    }
-
-    $: handleSelectedConfigurationChange($selected_config);
-
-    function handleSelectedConfigurationChange(value: ConfigSelection | undefined) {
-        //No config selected
-        if (typeof value === "undefined") {
-            provideSelectedConfigForEditor(undefined);
-            return;
-        }
-
-        //No partial profile is selected
-        if (value?.presetIndex === -1) {
-            const config = configs.find((e) => e.id === value.id);
-            provideSelectedConfigForEditor(config);
-            return;
-        }
-
-        //Partial profile is selected
-        let config = configs.find((e: any) => e.id === value?.id);
-        let moduleType = ModuleType[config?.type as keyof typeof ModuleType];
-        let elements = grid.get_module_element_list(moduleType);
-
-        if (typeof config === "undefined") {
-            return;
-        }
-
-        const type = elements[value.presetIndex];
-        const events: any = config.configs.find(
-            (e: any) => e.controlElementNumber === value.presetIndex
-        )?.events;
-
-        const preset = {
-            ...config,
-            type: type,
-            configs: { events: events },
-            configType: "preset"
-        } as Config;
-
-        provideSelectedConfigForEditor(preset);
     }
 
     async function handleDeleteConfig() {
