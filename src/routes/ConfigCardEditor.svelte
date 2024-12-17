@@ -37,7 +37,7 @@
         }, []);
 
     function getPresetName(preset: any) {
-        const initConfig = preset.events.find((e: any) => e.event === 0).config;
+        const initConfig = preset.events.find((e: any) => parseInt(e.event) === 0).config;
         const regex = /--\[\[@sn\]\] self:gen\(["']([^"']+)["']\)/;
 
         const value = initConfig.match(regex)?.at(1);
