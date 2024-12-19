@@ -21,6 +21,7 @@ import {
     CloudConfigSchema
 } from "../schemas";
 import { parentIframeCommunication } from "../utils";
+import { derived, type Readable, writable, type Writable } from "svelte/store";
 
 export interface ConfigManager {
     cancel(): void;
@@ -30,6 +31,7 @@ export interface ConfigManager {
     changeCloudVisibility(config: Config, visibility: boolean): Promise<void>;
     getCurrentOwnerId(): string | null | undefined;
     getConfigCloudId(config: Config): string | undefined;
+    configs: Readable<Config[]>;
 }
 
 let latestLocalConfigs: LocalConfig[] = [];
@@ -52,6 +54,7 @@ export function createConfigManager(observer: {
     let localConfigs: LocalConfig[] = latestLocalConfigs;
 
     let currentOwnerId: string | null | undefined = undefined;
+    let configs: Writable<Config[]> = writable();
 
     //Merge the two config sources into a single object
     function updateConfigIdMaps() {
@@ -137,6 +140,7 @@ export function createConfigManager(observer: {
             });
         });
         observer.next?.(mergedConfigs);
+        configs.set(mergedConfigs);
     }
 
     let cloudUnsub: Unsubscribe | undefined = undefined;
@@ -319,6 +323,9 @@ export function createConfigManager(observer: {
         importLinkedConfig,
         changeCloudVisibility,
         getCurrentOwnerId,
-        getConfigCloudId
+        getConfigCloudId,
+        configs: derived(configs, ($configs) => {
+            return $configs.map((item) => Object.freeze({ ...item }));
+        })
     };
 }

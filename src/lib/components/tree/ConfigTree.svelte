@@ -15,6 +15,7 @@
     import { setContext } from "svelte";
     import { contextTarget, Tree } from "@intechstudio/grid-uikit";
     import ConfigCardEditor from "../../../routes/ConfigCardEditor.svelte";
+    import { parentIframeCommunication } from "../../utils";
 
     const ctx = createTreeView({
         defaultExpanded: []
@@ -128,6 +129,19 @@
             }
         }
     }
+
+    async function handleConfigSelected(e: any) {
+        const { config } = e.detail;
+        await parentIframeCommunication({
+            windowPostMessageName: "provideSelectedConfigForEditor",
+            dataForParent: { config: config }
+        });
+
+        await parentIframeCommunication({
+            windowPostMessageName: "showOverlay",
+            dataForParent: { value: true }
+        });
+    }
 </script>
 
 <ul class="flex flex-col w-full h-full max-h-full" {...$tree}>
@@ -170,6 +184,7 @@
         <svelte:fragment slot="file" let:item>
             <div class="mb-1">
                 <ConfigCardEditor
+                    on:config-selected={handleConfigSelected}
                     data={item}
                     isSelected={item.id === $selected_config?.id &&
                         $selected_config?.presetIndex === -1}
