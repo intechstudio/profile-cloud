@@ -52,6 +52,11 @@
                 config: data
             }
         });
+
+        parentIframeCommunication({
+            windowPostMessageName: "showOverlay",
+            dataForParent: { value: false }
+        });
     }
 
     function handleDragEnd(e: DragEvent) {

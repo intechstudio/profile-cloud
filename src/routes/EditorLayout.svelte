@@ -114,11 +114,6 @@
             windowPostMessageName: "provideSelectedConfigForEditor",
             dataForParent: { config: config ?? undefined }
         });
-
-        await parentIframeCommunication({
-            windowPostMessageName: "showOverlay",
-            dataForParent: { value: typeof config !== "undefined" }
-        });
     }
 
     async function createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor(
