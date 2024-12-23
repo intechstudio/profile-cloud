@@ -37,6 +37,10 @@
             showSuggestions = false;
         }, 150);
     }
+
+    function handleInput(e: any) {
+        dispatch("input", e.detail);
+    }
 </script>
 
 <div id="searchbar" class="flex flex-col w-full relative">
@@ -99,6 +103,7 @@
             bind:value
             on:focus={handleSearchbarFocus}
             on:blur={handleSearchbarBlur}
+            on:input={handleInput}
             class="flex w-full py-2 px-12 bg-white dark:bg-primary-700
     dark:placeholder-gray-400 text-md focus:outline-none"
             placeholder="Find..."

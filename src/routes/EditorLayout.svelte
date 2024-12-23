@@ -32,6 +32,7 @@
     import { MeltCheckbox } from "@intechstudio/grid-uikit";
     import { compatible_config_types } from "./EditorLayout";
     import Sorter from "./Sorter.svelte";
+    import { dragTarget } from "../lib/actions/drag.action";
 
     let configs: Config[] = [];
 
@@ -98,6 +99,11 @@
 
             case "compatibleTypes": {
                 compatible_config_types.set(event.data.compatibleTypes);
+                break;
+            }
+
+            case "configDragTargetChange": {
+                dragTarget.set(event.data.target);
                 break;
             }
         }
@@ -289,46 +295,6 @@
     function handleOpenconfigurationSave() {
         provideSelectedConfigForEditor(undefined);
         configurationSaveVisible = true;
-    }
-
-    $: handleSelectedConfigurationChange($selected_config);
-
-    function handleSelectedConfigurationChange(value: ConfigSelection | undefined) {
-        //No config selected
-        if (typeof value === "undefined") {
-            provideSelectedConfigForEditor(undefined);
-            return;
-        }
-
-        //No partial profile is selected
-        if (value?.presetIndex === -1) {
-            const config = configs.find((e) => e.id === value.id);
-            provideSelectedConfigForEditor(config);
-            return;
-        }
-
-        //Partial profile is selected
-        let config = configs.find((e: any) => e.id === value?.id);
-        let moduleType = ModuleType[config?.type as keyof typeof ModuleType];
-        let elements = grid.get_module_element_list(moduleType);
-
-        if (typeof config === "undefined") {
-            return;
-        }
-
-        const type = elements[value.presetIndex];
-        const events: any = config.configs.find(
-            (e: any) => e.controlElementNumber === value.presetIndex
-        )?.events;
-
-        const preset = {
-            ...config,
-            type: type,
-            configs: { events: events },
-            configType: "preset"
-        } as Config;
-
-        provideSelectedConfigForEditor(preset);
     }
 
     async function handleDeleteConfig() {

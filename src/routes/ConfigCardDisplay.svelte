@@ -47,7 +47,6 @@
         });
     }
 
-    let selectedPartialPreset: { index: number; element: ElementType } | undefined;
     let partialPresetName: string;
 
     $: {
