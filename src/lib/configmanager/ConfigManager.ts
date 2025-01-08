@@ -134,7 +134,8 @@ export function createConfigManager(observer: {
                 ...latestConfig,
                 id: key,
                 isEditable:
-                    (latestConfig as CloudConfig)?.access?.includes(currentOwnerId ?? "") ?? true,
+                    (latestConfig as CloudConfig)?.access?.includes(currentOwnerId ?? "NO-ID") ??
+                    true,
                 syncStatus: syncStatus,
                 public: value.cloud?.public
             });

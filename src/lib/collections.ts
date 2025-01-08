@@ -7,6 +7,5 @@ const createCollection = <T = DocumentData>(collectionName: string) => {
 };
 
 export const configsCollection = createCollection<CloudConfig>("configs");
-export const configLinksCollection = createCollection<CloudConfig>("configLinks");
 export const userCollection = createCollection("users");
 export const usernameCollection = createCollection("usernames");
