@@ -126,7 +126,9 @@ export function filterConfigs(configs: Config[], filter: FilterValue): Config[] 
         // Check if any term matches any searchable field
         return filter.every((term) => {
             if (term.value.startsWith("$")) {
-                return shorts.some((short) =>
+                const blockNames = shorts.map((e) => grid.ActionBlock.shortToDisplayName(e));
+                console.log(blockNames);
+                return blockNames.some((short) =>
                     matchesTerm(short, {
                         value: term.value.slice(1, term.value.length),
                         caseMatch: false,
