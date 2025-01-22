@@ -127,8 +127,8 @@ export function filterConfigs(configs: Config[], filter: FilterValue): Config[] 
         return filter.every((term) => {
             if (term.value.startsWith("$")) {
                 const blockNames = shorts.map((e) => grid.ActionBlock.shortToDisplayName(e));
-                return blockNames.some((short) =>
-                    matchesTerm(short, {
+                return blockNames.some((e) =>
+                    matchesTerm(e, {
                         value: term.value.slice(1, term.value.length),
                         caseMatch: false,
                         wholeMatch: false
