@@ -126,7 +126,11 @@ export function filterConfigs(configs: Config[], filter: FilterValue): Config[] 
         // Check if any term matches any searchable field
         return filter.every((term) => {
             if (term.value.startsWith("$")) {
-                const blockNames = shorts.map((e) => grid.ActionBlock.shortToDisplayName(e));
+                const blockNames = shorts.map((e) =>
+                    grid.ActionBlock.shortToDisplayName(e)
+                        ?.replaceAll(" ", "")
+                        .replaceAll("$", "And")
+                );
                 return blockNames.some((e) =>
                     matchesTerm(e, {
                         value: term.value.slice(1, term.value.length),
