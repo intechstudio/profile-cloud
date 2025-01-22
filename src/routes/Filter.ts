@@ -127,7 +127,6 @@ export function filterConfigs(configs: Config[], filter: FilterValue): Config[] 
         return filter.every((term) => {
             if (term.value.startsWith("$")) {
                 const blockNames = shorts.map((e) => grid.ActionBlock.shortToDisplayName(e));
-                console.log(blockNames);
                 return blockNames.some((short) =>
                     matchesTerm(short, {
                         value: term.value.slice(1, term.value.length),
