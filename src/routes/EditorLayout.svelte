@@ -117,21 +117,24 @@
     }
 
     async function createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor(
-        type: "profile" | "preset",
+        type: "profile" | "preset" | "snippet",
         name: string
     ) {
-        const configResponse = await parentIframeCommunication({
-            windowPostMessageName: "getCurrenConfigurationFromEditor",
-            dataForParent: { configType: type }
-        });
-        configResponse.data.name = name;
-        if (configResponse.ok) {
+        try {
+            const configResponse = await parentIframeCommunication({
+                windowPostMessageName: "getCurrenConfigurationFromEditor",
+                dataForParent: { configType: type }
+            });
+            configResponse.data.name = name;
+
             const config = BaseConfigSchema.parse(configResponse.data);
             config.createdAt = new Date();
             const cm = get(config_manager);
             cm?.saveConfig(config, true).then((e) => {
                 filter_value.set(new FilterValue());
             });
+        } catch (e) {
+            console.error(e);
         }
     }
 
@@ -279,6 +282,10 @@
             }
             case ConfigurationSaveType.MODULE: {
                 createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor("profile", name);
+                break;
+            }
+            case ConfigurationSaveType.SNIPPET: {
+                createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor("snippet", name);
                 break;
             }
         }
