@@ -49,6 +49,10 @@
                 nameInputValue = `New ${module} Configuration`;
                 break;
             }
+            case ConfigurationSaveType.SNIPPET: {
+                nameInputValue = `New Snippet`;
+                break;
+            }
         }
     }
 
@@ -156,6 +160,8 @@
                     <span>{element} Configuration</span>
                 {:else if selected === ConfigurationSaveType.MODULE}
                     <span>{module} Configuration</span>
+                {:else if selected === ConfigurationSaveType.SNIPPET}
+                    <span>Snippet Name:</span>
                 {/if}
 
                 <input
@@ -164,7 +170,7 @@
                     bind:value={nameInputValue}
                     class="flex w-full p-2 bg-white dark:bg-primary-700
                         dark:placeholder-gray-400 text-md focus:outline-none"
-                    placeholder="Your Profile/Preset name..."
+                    placeholder="My Configuration..."
                 />
             </div>
             <div class="flex flex-col gap-2 w-20">
