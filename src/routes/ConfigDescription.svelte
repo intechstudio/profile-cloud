@@ -119,7 +119,7 @@
             bind:this={textArea}
             contenteditable="true"
             spellcheck="false"
-            class="w-full p-1 h-full overflow-y-auto dark:bg-primary border border-transparent focus:border-emerald-500 text-xs focus:outline-none resize-none"
+            class="w-full p-1 h-full overflow-y-auto dark:bg-primary border border-transparent focus:border-emerald-500 focus:outline-none resize-none"
             class:dark:hover:bg-neutral-800={!disabled}
             on:blur={handleBlur}
             on:paste={handlePaste}
@@ -137,12 +137,103 @@
 </div>
 
 <style>
-    @import "./preview-styles.css";
-
     :global(.markdown-editor img) {
         display: inline;
         vertical-align: middle;
         width: auto;
         height: auto;
+    }
+
+    :global(.markdown-container p) {
+        margin-bottom: 10px;
+    }
+
+    :global(.markdown-container h1) {
+        font-size: 2em;
+        margin: 0.3em 0 0.5em;
+    }
+
+    :global(.markdown-container h2) {
+        font-size: 1.5em;
+        margin: 0.1em 0 0.5em;
+    }
+
+    :global(.markdown-container h3) {
+        font-size: 1.17em;
+        margin: 0.05em 0 0.5em;
+    }
+
+    :global(.markdown-container h4) {
+        font-size: 1em;
+        margin: 0.025 0 0.5em;
+    }
+
+    :global(.markdown-container h5) {
+        font-size: 0.83em;
+        margin: 0.0125em 0 0.5em;
+    }
+
+    :global(.markdown-container h6) {
+        font-size: 0.67em;
+        margin: 0 0 0.5em;
+    }
+
+    :global(.markdown-container ul),
+    :global(.markdown-container ol) {
+        margin: 50 0;
+        padding-left: 2em;
+    }
+
+    :global(.markdown-container ul) {
+        margin: 1em 0;
+        padding-left: 2em;
+        list-style-type: disc;
+    }
+
+    :global(.markdown-container ol) {
+        margin: 1em 0;
+        padding-left: 2em;
+        list-style-type: decimal;
+    }
+
+    /* Styling for inline elements */
+    :global(.markdown-container strong) {
+        font-weight: bold;
+    }
+
+    :global(.markdown-container em) {
+        font-style: italic;
+    }
+
+    :global(.markdown-container code) {
+        font-family: monospace;
+        padding: 0.1em 0.3em;
+        border-radius: 3px;
+    }
+
+    :global(.markdown-container pre) {
+        padding: 1em;
+        border-radius: 5px;
+        overflow-x: auto;
+    }
+
+    :global(.markdown-container a) {
+        color: #0366d6;
+        text-decoration: none;
+    }
+
+    :global(.markdown-container a:hover) {
+        text-decoration: underline;
+    }
+
+    /* Styling for block elements */
+    :global(.markdown-container blockquote) {
+        margin: 1em 0;
+        padding: 0.5em 1em;
+        border-left: 4px solid #ccc;
+    }
+
+    :global(.markdown-container pre) {
+        margin: 1em 0;
     }
 </style>
