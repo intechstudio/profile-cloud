@@ -15,7 +15,7 @@ export const BaseConfigSchema = z.object({
             patch: z.string()
         })
         .optional(),
-    configType: z.enum(["profile", "preset"]),
+    configType: z.enum(["profile", "preset", "snippet"]),
     configs: z.any(),
     owner: z.string().optional(),
     virtualPath: z.string().optional()

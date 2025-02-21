@@ -1,7 +1,8 @@
 <script lang="ts" context="module">
     export enum ConfigurationSaveType {
         MODULE = 0,
-        ELEMENT = 1
+        ELEMENT = 1,
+        SNIPPET = 2
     }
 
     enum ConfigurationSaveState {
@@ -46,6 +47,10 @@
             }
             case ConfigurationSaveType.MODULE: {
                 nameInputValue = `New ${module} Configuration`;
+                break;
+            }
+            case ConfigurationSaveType.SNIPPET: {
+                nameInputValue = `New Snippet`;
                 break;
             }
         }
@@ -104,25 +109,36 @@
 
 <container class="flex w-full">
     {#if state === ConfigurationSaveState.SELECT}
-        <div class="grid grid-cols-[1fr_1fr_auto] gap-2 w-full">
-            <button
-                class="flex w-full dark:bg-primary-700 dark:hover:bg-secondary items-center justify-center {selected ===
-                ConfigurationSaveType.ELEMENT
-                    ? 'border-white'
-                    : 'border-transparent'} border-opacity-75 border-2"
-                on:click={() => handleSelectionChange(ConfigurationSaveType.ELEMENT)}
-            >
-                {element} Element
-            </button>
-            <button
-                class="flex w-full dark:bg-primary-700 dark:hover:bg-secondary items-center justify-center {selected ===
-                ConfigurationSaveType.MODULE
-                    ? 'border-white'
-                    : 'border-transparent'} border-opacity-75 border-2"
-                on:click={() => handleSelectionChange(ConfigurationSaveType.MODULE)}
-            >
-                {module} Module
-            </button>
+        <div class="flex flex-row gap-2 w-full">
+            <div class="grid grid-flow-col w-full gap-2">
+                <button
+                    class="flex w-full dark:bg-primary-700 dark:hover:bg-secondary items-center justify-center {selected ===
+                    ConfigurationSaveType.ELEMENT
+                        ? 'border-white'
+                        : 'border-transparent'} border-opacity-75 border-2"
+                    on:click={() => handleSelectionChange(ConfigurationSaveType.ELEMENT)}
+                >
+                    {element} Element
+                </button>
+                <button
+                    class="flex w-full dark:bg-primary-700 dark:hover:bg-secondary items-center justify-center {selected ===
+                    ConfigurationSaveType.MODULE
+                        ? 'border-white'
+                        : 'border-transparent'} border-opacity-75 border-2"
+                    on:click={() => handleSelectionChange(ConfigurationSaveType.MODULE)}
+                >
+                    {module} Module
+                </button>
+                <button
+                    class="flex w-full dark:bg-primary-700 dark:hover:bg-secondary items-center justify-center {selected ===
+                    ConfigurationSaveType.SNIPPET
+                        ? 'border-white'
+                        : 'border-transparent'} border-opacity-75 border-2"
+                    on:click={() => handleSelectionChange(ConfigurationSaveType.SNIPPET)}
+                >
+                    Snippet
+                </button>
+            </div>
             <div class="flex flex-col gap-2 w-20">
                 <button
                     class="px-4 py-1 dark:bg-primary-700 dark:hover:bg-secondary"
@@ -144,6 +160,8 @@
                     <span>{element} Configuration</span>
                 {:else if selected === ConfigurationSaveType.MODULE}
                     <span>{module} Configuration</span>
+                {:else if selected === ConfigurationSaveType.SNIPPET}
+                    <span>Snippet Name:</span>
                 {/if}
 
                 <input
@@ -152,7 +170,7 @@
                     bind:value={nameInputValue}
                     class="flex w-full p-2 bg-white dark:bg-primary-700
                         dark:placeholder-gray-400 text-md focus:outline-none"
-                    placeholder="Your Profile/Preset name..."
+                    placeholder="My Configuration..."
                 />
             </div>
             <div class="flex flex-col gap-2 w-20">

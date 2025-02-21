@@ -19,7 +19,11 @@
     $: handleCompatibleConfigsChange($compatible_config_types);
 
     function handleCompatibleConfigsChange(types: string[]) {
-        compatible = types.includes(data.type);
+        if (data.configType === "snippet") {
+            compatible = true;
+        } else {
+            compatible = types.includes(data.type);
+        }
     }
 
     function handleToggle() {
