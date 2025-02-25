@@ -6,7 +6,6 @@
     import { config_manager, selected_config } from "./EditorLayout.js";
     import { parentIframeCommunication } from "../lib/utils.js";
     import { get } from "svelte/store";
-    import { MeltCombo } from "@intechstudio/grid-uikit";
 
     export let visible: boolean = true;
 
@@ -16,7 +15,7 @@
 
     const dispatch = createEventDispatcher();
 
-    const suggestions = [
+    let searchSuggestions: string[] = [
         "Profile",
         "Preset",
         "BU16",
@@ -31,7 +30,7 @@
         "Fader",
         "System",
         "Endless"
-    ].map((e) => Object({ value: e, info: e }));
+    ];
 
     let searchValue = "";
 
@@ -40,6 +39,11 @@
     function handleSearchValueChange(value: string) {
         const terms = stringToTerms(value.trim(), false, false);
         filter_value.set(new FilterValue(...terms));
+    }
+
+    function handleSuggestionClicked(e: CustomEvent) {
+        const { value } = e.detail;
+        searchValue = value;
     }
 
     function handleInput() {
@@ -55,16 +59,10 @@
 </script>
 
 <container class:hidden={!visible} class="w-full h-full">
-    <!-- <SearchBar
+    <SearchBar
         bind:value={searchValue}
         suggestions={searchSuggestions}
         on:suggestion-clicked={handleSuggestionClicked}
         on:input={handleInput}
-    /> -->
-    <MeltCombo
-        title={"Search"}
-        bind:value={searchValue}
-        {suggestions}
-        on:change={() => dispatch("sync")}
     />
 </container>
