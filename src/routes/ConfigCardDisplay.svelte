@@ -98,7 +98,8 @@
                     <div class="flex flex-row gap-2 items-center">
                         <span>Folder:</span>
                         <DataInput
-                            value={data.virtualPath ?? "Unsorted"}
+                            value={data.virtualPath ?? ""}
+                            placeholder={"Unsorted"}
                             disabled={!data.isEditable || $selected_config?.presetIndex !== -1}
                             on:change={(e) => {
                                 const { value } = e.detail;
