@@ -6,6 +6,7 @@
     import { config_manager, selected_config } from "./EditorLayout.js";
     import { parentIframeCommunication } from "../lib/utils.js";
     import { get } from "svelte/store";
+    import { grid } from "@intechstudio/grid-protocol";
 
     export let visible: boolean = true;
 
@@ -15,7 +16,9 @@
 
     const dispatch = createEventDispatcher();
 
-    let searchSuggestions: string[] = [
+    let searchSuggestions: string[] = [];
+
+    const defaultSuggestions = [
         "Profile",
         "Preset",
         "BU16",
@@ -31,6 +34,7 @@
         "System",
         "Endless"
     ];
+    const blockSuggestions = Object.values(grid.ActionBlock.shortHumanMap);
 
     let searchValue = "";
 
@@ -38,12 +42,24 @@
 
     function handleSearchValueChange(value: string) {
         const terms = stringToTerms(value.trim(), false, false);
+        const isSpecialSearch = typeof terms.find((e) => e.value.startsWith("$")) !== "undefined";
+
+        searchSuggestions = defaultSuggestions;
+
+        if (isSpecialSearch) {
+            searchSuggestions = [...blockSuggestions, ...searchSuggestions];
+        }
+
         filter_value.set(new FilterValue(...terms));
     }
 
     function handleSuggestionClicked(e: CustomEvent) {
         const { value } = e.detail;
-        searchValue = value;
+        if (searchValue.startsWith("$") && blockSuggestions.includes(value)) {
+            searchValue = "$" + value;
+        } else {
+            searchValue = value;
+        }
     }
 
     function handleInput() {

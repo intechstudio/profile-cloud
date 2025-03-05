@@ -13,7 +13,7 @@
 
     $: {
         displayedSuggestions = suggestions.filter((e) =>
-            e.toLowerCase().includes(value.toLocaleLowerCase())
+            e.toLowerCase().includes(value.replaceAll("$", "").toLocaleLowerCase())
         );
     }
 
