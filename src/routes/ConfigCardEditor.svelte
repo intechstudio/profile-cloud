@@ -21,6 +21,8 @@
     function handleCompatibleConfigsChange(types: string[]) {
         if (data.configType === "snippet") {
             compatible = true;
+        } else if (data.type === ModuleType.VSN1L || data.type === ModuleType.VSN1R) {
+            compatible = types.includes(ModuleType.VSN1L) || types.includes(ModuleType.VSN1R);
         } else {
             compatible = types.includes(data.type);
         }
