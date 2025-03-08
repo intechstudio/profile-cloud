@@ -129,7 +129,7 @@ export function filterConfigs(configs: Config[], filter: FilterValue): Config[] 
                 const blockNames = shorts.map((e) =>
                     grid.ActionBlock.shortToDisplayName(e)
                         ?.replaceAll(" ", "")
-                        .replaceAll("$", "And")
+                        .replaceAll("&", "And")
                 );
                 return blockNames.some((e) =>
                     matchesTerm(e, {
