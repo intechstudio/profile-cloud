@@ -1,5 +1,6 @@
 <script lang="ts">
     import { createEventDispatcher } from "svelte";
+    import { stringToTerms, Term } from "./Filter";
 
     const dispatch = createEventDispatcher();
 
@@ -8,23 +9,45 @@
 
     let showSuggestions = false;
     let suggestionContainer: HTMLElement;
+    let input: HTMLInputElement;
 
     let displayedSuggestions: string[] = [];
 
-    $: {
-        displayedSuggestions = suggestions.filter((e) =>
-            e.toLowerCase().includes(value.replaceAll("$", "").toLocaleLowerCase())
-        );
-    }
-
     function handleValueChange(value: string) {
+        const position = input.selectionStart;
+        if (!position) {
+            return;
+        }
+
+        const terms = stringToTerms(value.trim(), false, false);
+        let count = 0;
+        let current: Term | undefined;
+
+        for (const term of terms) {
+            current = term;
+            if (position <= count + term.value.length) {
+                break;
+            } else {
+                count += term.value.length;
+            }
+        }
+
+        if (current) {
+            displayedSuggestions = suggestions.filter((e) =>
+                e.toLowerCase().includes(current.value.replaceAll("$", "").toLocaleLowerCase())
+            );
+        }
+
         dispatch("change", { value: value });
     }
 
-    $: handleValueChange(value);
+    $: if (input) {
+        handleValueChange(value);
+    }
 
     function handleSuggestionClicked(suggestion: string) {
-        dispatch("suggestion-clicked", { value: suggestion });
+        const position = input.selectionStart;
+        dispatch("suggestion-clicked", { value: suggestion, caretPosition: position });
     }
 
     function handleSearchbarFocus() {
@@ -100,6 +123,7 @@
         {/if}
         <input
             type="text"
+            bind:this={input}
             bind:value
             on:focus={handleSearchbarFocus}
             on:blur={handleSearchbarBlur}

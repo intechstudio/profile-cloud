@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { FilterValue } from "./Filter";
+    import { FilterValue, Term } from "./Filter";
     import { filter_value, stringToTerms } from "./Filter";
     import { createEventDispatcher } from "svelte";
     import SearchBar from "./SearchBar.svelte";
@@ -34,7 +34,9 @@
         "System",
         "Endless"
     ];
-    const blockSuggestions = Object.values(grid.ActionBlock.shortHumanMap);
+    const blockSuggestions = Object.values(grid.ActionBlock.shortHumanMap).map((e) =>
+        e.replaceAll(" ", "").replaceAll("&", "And")
+    );
 
     let searchValue = "";
 
@@ -54,11 +56,27 @@
     }
 
     function handleSuggestionClicked(e: CustomEvent) {
-        const { value } = e.detail;
-        if (searchValue.startsWith("$") && blockSuggestions.includes(value)) {
-            searchValue = "$" + value;
-        } else {
-            searchValue = value;
+        const { value, caretPosition } = e.detail;
+        const terms = stringToTerms(searchValue.trim(), false, false);
+        let count = 0;
+        let current: Term | undefined;
+
+        for (const term of terms) {
+            current = term;
+            if (caretPosition <= count + term.value.length) {
+                break;
+            } else {
+                count += term.value.length;
+            }
+        }
+
+        if (current) {
+            if (blockSuggestions.includes(value)) {
+                current.value = "$" + value;
+            } else {
+                current.value = value;
+            }
+            searchValue = terms.map((e) => e.value).join(" ");
         }
     }
 
