@@ -178,8 +178,54 @@
                 }
             }
 
+            if (config.type == "TEK2") {
+                if (configElement.controlElementNumber < 8) {
+                    type = "button";
+                }
+                if ([8, 9].includes(configElement.controlElementNumber)) {
+                    type = "endless";
+                }
+            }
+
+            if (config.type.startsWith("VSN1")) {
+                if (configElement.controlElementNumber < 8) {
+                    type = "button";
+                }
+                if (configElement.controlElementNumber == 8) {
+                    type = "endless";
+                }
+                if ([9, 10, 11, 12].includes(configElement.controlElementNumber)) {
+                    type = "button";
+                }
+                if (configElement.controlElementNumber == 13) {
+                    type = "lcd";
+                }
+            }
+
+            if (config.type == "VSN2") {
+                if ([12, 17].includes(configElement.controlElementNumber)) {
+                    type = "lcd";
+                } else if (
+                    configElement.controlElementNumber < 12 ||
+                    [13, 14, 15, 16].includes(configElement.controlElementNumber)
+                ) {
+                    type = "button";
+                }
+            }
+
             if (configElement.controlElementNumber === 255) {
                 type = "system";
+            }
+
+            if (!type) {
+                parentIframeCommunication({
+                    windowPostMessageName: "sendLogMessage",
+                    dataForParent: {
+                        type: "fail",
+                        message: `Couldn't identify element number ${configElement.controlElementNumber} for type ${config.type}`
+                    }
+                });
+                continue;
             }
 
             const cm = get(config_manager);
