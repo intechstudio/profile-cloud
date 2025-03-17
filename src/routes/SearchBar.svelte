@@ -1,60 +1,60 @@
 <script lang="ts">
-    import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher } from "svelte";
 
-    const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher();
 
-    export let value: string = "";
-    export let suggestions: string[];
+  export let value: string = "";
+  export let suggestions: string[];
 
-    let showSuggestions = false;
-    let suggestionContainer: HTMLElement;
+  let showSuggestions = false;
+  let suggestionContainer: HTMLElement;
 
-    let displayedSuggestions: string[] = [];
+  let displayedSuggestions: string[] = [];
 
-    $: {
-        displayedSuggestions = suggestions.filter((e) =>
-            e.toLowerCase().includes(value.toLocaleLowerCase())
-        );
-    }
+  $: {
+    displayedSuggestions = suggestions.filter((e) =>
+      e.toLowerCase().includes(value.toLocaleLowerCase()),
+    );
+  }
 
-    function handleValueChange(value: string) {
-        dispatch("change", { value: value });
-    }
+  function handleValueChange(value: string) {
+    dispatch("change", { value: value });
+  }
 
-    $: handleValueChange(value);
+  $: handleValueChange(value);
 
-    function handleSuggestionClicked(suggestion: string) {
-        dispatch("suggestion-clicked", { value: suggestion });
-    }
+  function handleSuggestionClicked(suggestion: string) {
+    dispatch("suggestion-clicked", { value: suggestion });
+  }
 
-    function handleSearchbarFocus() {
-        showSuggestions = true;
-    }
+  function handleSearchbarFocus() {
+    showSuggestions = true;
+  }
 
-    function handleSearchbarBlur(event: FocusEvent) {
-        // Delay the update of showSuggestions to ensure that blur event on suggestion container fires first
-        setTimeout(() => {
-            showSuggestions = false;
-        }, 150);
-    }
+  function handleSearchbarBlur(event: FocusEvent) {
+    // Delay the update of showSuggestions to ensure that blur event on suggestion container fires first
+    setTimeout(() => {
+      showSuggestions = false;
+    }, 150);
+  }
 
-    function handleInput(e: any) {
-        dispatch("input", e.detail);
-    }
+  function handleInput(e: any) {
+    dispatch("input", e.detail);
+  }
 </script>
 
 <div id="searchbar" class="flex flex-col w-full relative">
-    <div class="relative w-full">
-        <svg
-            class="absolute left-3 bottom-[28%]"
-            width="14"
-            height="14"
-            viewBox="0 0 18 18"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-        >
-            <path
-                d="M13.2095 11.6374C14.2989 10.1509 14.7868 8.30791 14.5756
+  <div class="relative w-full">
+    <svg
+      class="absolute left-3 bottom-[28%]"
+      width="14"
+      height="14"
+      viewBox="0 0 18 18"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M13.2095 11.6374C14.2989 10.1509 14.7868 8.30791 14.5756
                     6.47715C14.3645 4.64639 13.4699 2.96286 12.0708 1.76338C10.6717
                     0.563893 8.87126 -0.0630888 7.02973 0.0078685C5.1882 0.0788258
                     3.44137 0.84249 2.13872 2.14608C0.83606 3.44967 0.0736462 5.19704
@@ -76,53 +76,56 @@
                     4.09802 2.93707 2.93763C4.09745 1.77725 5.67126 1.12536 7.31229
                     1.12536C8.95332 1.12536 10.5271 1.77725 11.6875 2.93763C12.8479
                     4.09802 13.4998 5.67183 13.4998 7.31286V7.31286Z"
-                fill="#CDCDCD"
-            />
-        </svg>
+        fill="#CDCDCD"
+      />
+    </svg>
 
-        {#if value != ""}
-            <button class="absolute right-2 bottom-[25%]" on:click={() => (value = "")}>
-                <svg
-                    width="28"
-                    height="28"
-                    viewBox="0 0 39 39"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <path
-                        d="M24.25 32.9102L14.75 23.4102M24.25 23.4102L14.75 32.9102"
-                        stroke="#FFF"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                    />
-                </svg>
-            </button>
-        {/if}
-        <input
-            type="text"
-            bind:value
-            on:focus={handleSearchbarFocus}
-            on:blur={handleSearchbarBlur}
-            on:input={handleInput}
-            class="flex w-full py-2 px-12 bg-white dark:bg-primary-700
-    dark:placeholder-gray-400 text-md focus:outline-none"
-            placeholder="Find..."
-        />
-    </div>
-    {#if showSuggestions && displayedSuggestions.length > 0}
-        <div
-            bind:this={suggestionContainer}
-            class="absolute top-full left-0 dark:bg-primary dark:text-white bg-white text-black shadow shadow-black z-[1] p-2 rounded-b flex flex-col w-full max-h-36 overflow-y-auto"
+    {#if value != ""}
+      <button
+        class="absolute right-2 bottom-[25%]"
+        on:click={() => (value = "")}
+      >
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 39 39"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
         >
-            {#each displayedSuggestions as suggestion}
-                <button
-                    on:click={() => handleSuggestionClicked(suggestion)}
-                    class="hover:bg-primary-500/50 text-xs dark:text-primary-100 text-left
-    py-0.5 px-1 h-min"
-                >
-                    {suggestion}
-                </button>
-            {/each}
-        </div>
+          <path
+            d="M24.25 32.9102L14.75 23.4102M24.25 23.4102L14.75 32.9102"
+            stroke="#FFF"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
     {/if}
+    <input
+      type="text"
+      bind:value
+      on:focus={handleSearchbarFocus}
+      on:blur={handleSearchbarBlur}
+      on:input={handleInput}
+      class="flex w-full py-2 px-12 bg-white dark:bg-primary-700
+    dark:placeholder-gray-400 text-md focus:outline-none"
+      placeholder="Find..."
+    />
+  </div>
+  {#if showSuggestions && displayedSuggestions.length > 0}
+    <div
+      bind:this={suggestionContainer}
+      class="absolute top-full left-0 dark:bg-primary dark:text-white bg-white text-black shadow shadow-black z-[1] p-2 rounded-b flex flex-col w-full max-h-36 overflow-y-auto"
+    >
+      {#each displayedSuggestions as suggestion}
+        <button
+          on:click={() => handleSuggestionClicked(suggestion)}
+          class="hover:bg-primary-500/50 text-xs dark:text-primary-100 text-left
+    py-0.5 px-1 h-min"
+        >
+          {suggestion}
+        </button>
+      {/each}
+    </div>
+  {/if}
 </div>
