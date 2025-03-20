@@ -133,8 +133,14 @@
             cm?.saveConfig(config, true).then((e) => {
                 filter_value.set(new FilterValue());
             });
-        } catch (e) {
-            console.error(e);
+        } catch (e: any) {
+            parentIframeCommunication({
+                windowPostMessageName: "sendLogMessage",
+                dataForParent: {
+                    type: "fail",
+                    message: e.data
+                }
+            });
         }
     }
 
