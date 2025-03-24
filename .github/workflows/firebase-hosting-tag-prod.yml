@@ -3,28 +3,28 @@
 
 name: Deploy to Firebase Hosting on tag creation
 "on":
-    push:
-        tags:
-            - "**"
+  push:
+    tags:
+      - "**"
 jobs:
-    build_and_deploy:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v2
-            - name: Create public env file
-              run: |
-                  echo $(git log -5)
-                  touch .env
-                  echo PUBLIC_COMMIT_HASH=$(git log --format="%h" -n 1) >> .env
-                  echo PUBLIC_APP_ENV=production >> .env  
-                  echo PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.PUBLIC_GOOGLE_CLIENT_ID_PROD }} >> .env
-                  echo PUBLIC_CREATION_DATE=$(git log --format="%cd" --date=format:'%Y-%m-%d' -1) >> .env
-            - run: npm ci && npm run build && npm run build:webcomponent
-              env:
-                  WEB_COMPONENT_NAME: profile-cloud-prod
-            - uses: FirebaseExtended/action-hosting-deploy@v0
-              with:
-                  repoToken: "${{ secrets.GITHUB_TOKEN }}"
-                  firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROFILE_CLOUD }}"
-                  channelId: live
-                  projectId: profile-cloud
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Create public env file
+        run: |
+          echo $(git log -5)
+          touch .env
+          echo PUBLIC_COMMIT_HASH=$(git log --format="%h" -n 1) >> .env
+          echo PUBLIC_APP_ENV=production >> .env  
+          echo PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.PUBLIC_GOOGLE_CLIENT_ID_PROD }} >> .env
+          echo PUBLIC_CREATION_DATE=$(git log --format="%cd" --date=format:'%Y-%m-%d' -1) >> .env
+      - run: npm ci && npm run build && npm run build:webcomponent
+        env:
+          WEB_COMPONENT_NAME: profile-cloud-prod
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROFILE_CLOUD }}"
+          channelId: live
+          projectId: profile-cloud

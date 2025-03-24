@@ -1,4 +1,4 @@
 export type EditorReturnType = {
-    ok: boolean;
-    data: any;
+  ok: boolean;
+  data: any;
 };
