@@ -98,7 +98,7 @@ export function createConfigManager(observer: {
     });
 
     var removedConfigIds = [...configIdToAppConfigIdMap.keys()].filter(
-      (id) => !foundConfigIds.has(id)
+      (id) => !foundConfigIds.has(id),
     );
     removedConfigIds.forEach((id) => {
       let appConfigId = configIdToAppConfigIdMap.get(id)!;
@@ -147,7 +147,7 @@ export function createConfigManager(observer: {
         id: key,
         isEditable:
           (latestConfig as CloudConfig)?.access?.includes(
-            currentOwnerId ?? "NO-ID"
+            currentOwnerId ?? "NO-ID",
           ) ?? true,
         syncStatus: syncStatus,
         public: value.cloud?.public,
@@ -166,8 +166,8 @@ export function createConfigManager(observer: {
         configsCollection,
         or(
           where("public", "==", true),
-          where("access", "array-contains", currentOwnerId ?? "")
-        )
+          where("access", "array-contains", currentOwnerId ?? ""),
+        ),
       );
     } else {
       q = query(configsCollection, where("public", "==", true));
@@ -176,7 +176,7 @@ export function createConfigManager(observer: {
     cloudUnsub = onSnapshot(q, {
       next(snapshot) {
         cloudConfigs = snapshot.docs.map((doc) =>
-          CloudConfigSchema.parse(doc.data())
+          CloudConfigSchema.parse(doc.data()),
         );
         configsUpdated();
       },
@@ -300,7 +300,7 @@ export function createConfigManager(observer: {
       doc(configsCollection, appConfigIdToConfigMap.get(config.id)!.cloud!.id),
       {
         public: visibility,
-      }
+      },
     );
   }
 

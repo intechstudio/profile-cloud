@@ -74,7 +74,7 @@
       }
       case "localConfigs": {
         const localConfigs = (event.data.configs as any[]).map((config) =>
-          LocalConfigSchema.parse(config)
+          LocalConfigSchema.parse(config),
         );
         updateLocalConfigs(localConfigs);
         selectLatestConfig();
@@ -89,7 +89,7 @@
       case "configLink": {
         const cm = get(config_manager);
         const linkedConfig = await cm?.importLinkedConfig(
-          event.data.configLinkId
+          event.data.configLinkId,
         );
 
         if (linkedConfig) {
@@ -129,7 +129,7 @@
 
   async function createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor(
     type: "profile" | "preset" | "snippet",
-    name: string
+    name: string,
   ) {
     try {
       const configResponse = await parentIframeCommunication({
@@ -320,7 +320,7 @@
           });
           configs = newConfigs;
         },
-      })
+      }),
     );
     window.addEventListener("message", editorMessageListener);
   });
@@ -342,21 +342,21 @@
       case ConfigurationSaveType.ELEMENT: {
         createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor(
           "preset",
-          name
+          name,
         );
         break;
       }
       case ConfigurationSaveType.MODULE: {
         createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor(
           "profile",
-          name
+          name,
         );
         break;
       }
       case ConfigurationSaveType.SNIPPET: {
         createNewLocalConfigWithTheSelectedModulesConfigurationFromEditor(
           "snippet",
-          name
+          name,
         );
         break;
       }
@@ -534,7 +534,7 @@
             >
               <svelte:fragment slot="link-button">
                 {@const config = configs.find(
-                  (e) => e.id === $selected_config?.id
+                  (e) => e.id === $selected_config?.id,
                 )}
                 {#if config?.syncStatus != "local"}
                   <button
@@ -594,7 +594,7 @@
               </svelte:fragment>
               <svelte:fragment slot="sync-config-button">
                 {@const config = configs.find(
-                  (e) => e.id === $selected_config?.id
+                  (e) => e.id === $selected_config?.id,
                 )}
                 {#if config?.syncStatus != "synced" || !config?.isEditable}
                   <button
@@ -640,8 +640,8 @@
                       text: !config?.isEditable
                         ? "Import"
                         : config.syncStatus === "cloud"
-                        ? "Download"
-                        : "Upload",
+                          ? "Download"
+                          : "Upload",
                     }}
                   >
                     <SvgIcon
@@ -649,15 +649,15 @@
                       iconPath={!config?.isEditable
                         ? "import"
                         : config.syncStatus === "cloud"
-                        ? "download_from_cloud"
-                        : "move_to_cloud_02"}
+                          ? "download_from_cloud"
+                          : "move_to_cloud_02"}
                     />
                   </button>
                 {/if}
               </svelte:fragment>
               <svelte:fragment slot="split-config-button">
                 {@const config = configs.find(
-                  (e) => e.id === $selected_config?.id
+                  (e) => e.id === $selected_config?.id,
                 )}
                 {#if config?.configType === "profile"}
                   <button
@@ -686,7 +686,7 @@
               </svelte:fragment>
               <span slot="toggle-accessibility">
                 {@const config = configs.find(
-                  (e) => e.id === $selected_config?.id
+                  (e) => e.id === $selected_config?.id,
                 )}
                 <ToggleSwitch
                   checkbox={config?.public}

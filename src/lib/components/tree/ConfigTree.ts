@@ -82,7 +82,7 @@ export type TreeOptions = {
 
 export function createTree(
   configs: any,
-  showSupportedOnly: boolean
+  showSupportedOnly: boolean,
 ): TreeNodeData<Config> {
   const root = new TreeNodeData<Config>("Root");
   const [
@@ -106,7 +106,7 @@ export function createTree(
       const isMyConfig =
         e.syncStatus == "local" || e.owner === cm?.getCurrentOwnerId();
       return isMyConfig;
-    })
+    }),
   );
   recommended_configs.addItem(
     ...configs.filter((e: Config) => {
@@ -122,7 +122,7 @@ export function createTree(
         isOfficialConfig &&
         (!showSupportedOnly || cct.includes(e.type))
       );
-    })
+    }),
   );
   community_configs.addItem(
     ...configs.filter((e: Config) => {
@@ -136,7 +136,7 @@ export function createTree(
         !isOfficialConfig &&
         (!showSupportedOnly || cct.includes(e.type))
       );
-    })
+    }),
   );
   other_configs.addItem(
     ...configs.filter((e: Config) => {
@@ -144,7 +144,7 @@ export function createTree(
         e.syncStatus == "local" || e.owner === cm?.getCurrentOwnerId();
       const cct = get(compatible_config_types);
       return !isMyConfig && (!showSupportedOnly || cct.includes(e.type));
-    })
+    }),
   );
   unsupported_configs.addItem(
     ...configs.filter((e: Config) => {
@@ -153,7 +153,7 @@ export function createTree(
       const cct = get(compatible_config_types);
 
       return !isMyConfig && showSupportedOnly && !cct.includes(e.type);
-    })
+    }),
   );
 
   root.addChild(my_configs);

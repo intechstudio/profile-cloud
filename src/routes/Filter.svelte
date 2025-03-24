@@ -38,7 +38,7 @@
     "Endless",
   ];
   const blockSuggestions = Object.values(grid.ActionBlock.shortHumanMap).map(
-    (e) => e.replaceAll(" ", "").replaceAll("&", "And")
+    (e) => e.replaceAll(" ", "").replaceAll("&", "And"),
   );
 
   let searchValue = "";

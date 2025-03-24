@@ -47,7 +47,7 @@
   $: {
     filteredConfigs = sortConfigs(
       filterConfigs(configs, $filter_value),
-      $sort_key
+      $sort_key,
     );
   }
 </script>

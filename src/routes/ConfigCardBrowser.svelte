@@ -105,7 +105,7 @@
           nameInputField.doubleClicked = true;
           nameInputField.element?.setSelectionRange(
             0,
-            nameInputField.element.value.length
+            nameInputField.element.value.length,
           );
           nameInputField.currentSelection = nameInputField.element?.value || "";
         }}
@@ -219,7 +219,7 @@
           descriptionTextarea.doubleClicked = true;
           descriptionTextarea.element?.setSelectionRange(
             0,
-            descriptionTextarea.element.value.length
+            descriptionTextarea.element.value.length,
           );
           descriptionTextarea.currentSelection =
             descriptionTextarea.element?.value || "";
@@ -234,7 +234,7 @@
   >
     <div
       class="dark:text-white text-black text-opacity-80 py-0.5 px-2 dark:border
-                {data.selectedComponentTypes?.includes(data.type) ?? false
+                {(data.selectedComponentTypes?.includes(data.type) ?? false)
         ? 'dark:text-opacity-100 dark:border-white dark:border-opacity-10 dark:bg-white dark:bg-opacity-10'
         : 'dark:text-opacity-70 dark:border-transparent'}"
     >

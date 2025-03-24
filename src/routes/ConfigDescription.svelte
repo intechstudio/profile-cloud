@@ -43,7 +43,7 @@
           let fileName = `${uuidv4()}.${blob.name.split(".").pop()}`;
           let storageReference = ref(
             firebaseStorage,
-            `config_images/${fileName}`
+            `config_images/${fileName}`,
           );
 
           const markdownImage = `![Uploading image ${fileName}]()`;
@@ -53,7 +53,7 @@
           let textBefore = textArea.value.substring(0, startPos);
           let textAfter = textArea.value.substring(
             endPos,
-            textArea.value.length
+            textArea.value.length,
           );
 
           // Set the new value of the textarea
@@ -72,7 +72,7 @@
             .then((snapshot) => {
               getDownloadURL(snapshot.ref).then((url) => {
                 const regex = new RegExp(
-                  `!\\[Uploading image ${fileName}\\]\\(\\)`
+                  `!\\[Uploading image ${fileName}\\]\\(\\)`,
                 );
                 const replacement = `![Image](${url})`;
                 let originalText = textArea.value;

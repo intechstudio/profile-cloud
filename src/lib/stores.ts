@@ -37,7 +37,7 @@ function createUserAccountService() {
     const provider = new OAuthProvider(
       import.meta.env.PUBLIC_APP_ENV === "production"
         ? "oidc.is-auth"
-        : "oidc.is-auth-dev"
+        : "oidc.is-auth-dev",
     );
     cred = provider.credential({
       idToken: credential.idToken,

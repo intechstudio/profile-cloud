@@ -5,7 +5,7 @@ import { grid } from "@intechstudio/grid-protocol";
 export function stringToTerms(
   value: string,
   wholeMatch: boolean,
-  caseMatch: boolean
+  caseMatch: boolean,
 ) {
   const terms: Term[] = [];
 
@@ -36,7 +36,7 @@ export class FilterValue extends Array<Term> {
   // Helper function to compare two objects dynamically
   private areObjectsEqual(
     obj1: Record<string, unknown>,
-    obj2: Record<string, unknown>
+    obj2: Record<string, unknown>,
   ): boolean {
     const keys1 = Object.keys(obj1);
     const keys2 = Object.keys(obj2);
@@ -81,7 +81,7 @@ export const filter_value: Writable<FilterValue> = writable(new FilterValue());
 
 export function filterConfigs(
   configs: Config[],
-  filter: FilterValue
+  filter: FilterValue,
 ): Config[] {
   // Helper function to check if a value matches the term
   const matchesTerm = (value: string | undefined, term: Term): boolean => {
@@ -124,8 +124,8 @@ export function filterConfigs(
         scripts.flatMap((str) => {
           const matches = str.matchAll(regex); // Get all matches
           return Array.from(matches, (match) => match[1]); // Extract matched strings
-        })
-      )
+        }),
+      ),
     );
 
     const searchables = [
@@ -141,14 +141,14 @@ export function filterConfigs(
         const blockNames = shorts.map((e) =>
           grid.ActionBlock.shortToDisplayName(e)
             ?.replaceAll(" ", "")
-            .replaceAll("&", "And")
+            .replaceAll("&", "And"),
         );
         return blockNames.some((e) =>
           matchesTerm(e, {
             value: term.value.slice(1, term.value.length),
             caseMatch: false,
             wholeMatch: false,
-          })
+          }),
         );
       } else {
         return searchables.some((searchable) => matchesTerm(searchable, term));

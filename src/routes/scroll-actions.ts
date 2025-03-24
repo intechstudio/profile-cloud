@@ -2,7 +2,7 @@ import { writable } from "svelte/store";
 
 const createDebouncedStore = (
   initialValue: number | null,
-  debounceTime: number
+  debounceTime: number,
 ) => {
   let timeoutId: any;
   const { subscribe, set } = writable(initialValue);

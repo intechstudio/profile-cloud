@@ -101,9 +101,8 @@
     opacity: 1;
   }
   :global(
-      .splitpanes.modern-theme
-        .splitpanes__splitter.splitpanes__splitter__active
-    ) {
+    .splitpanes.modern-theme .splitpanes__splitter.splitpanes__splitter__active
+  ) {
     z-index: 2;
     /* Fix an issue of overlap fighting with a near hovered splitter */
   }

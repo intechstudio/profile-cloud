@@ -25,7 +25,7 @@ export function notifyEditorAfterBuildPlugin(): PluginOption {
               event: "components-build-complete",
               id: "profile-cloud",
               rootPath: __dirname,
-            })
+            }),
           );
           ws.close();
           clearTimeout(timeout);

@@ -36,7 +36,7 @@
       displayedSuggestions = suggestions.filter((e) =>
         e
           .toLowerCase()
-          .includes(current.value.replaceAll("$", "").toLocaleLowerCase())
+          .includes(current.value.replaceAll("$", "").toLocaleLowerCase()),
       );
     }
 

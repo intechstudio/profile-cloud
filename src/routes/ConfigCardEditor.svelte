@@ -46,12 +46,12 @@
         }
         return array;
       },
-      []
+      [],
     );
 
   function getPresetName(preset: any) {
     const initConfig = preset.events.find(
-      (e: any) => parseInt(e.event) === 0
+      (e: any) => parseInt(e.event) === 0,
     ).config;
     const regex = /--\[\[@sn\]\] self:gen\(["']([^"']+)["']\)/;
 
@@ -179,7 +179,7 @@
   <div class="flex flex-col ml-4 gap-1 my-1">
     {#each data.configs as preset, index}
       {@const element = elements.find(
-        (e) => e.index === preset.controlElementNumber
+        (e) => e.index === preset.controlElementNumber,
       )}
       {@const elementName = getPresetName(preset)}
       {@const partialData = {

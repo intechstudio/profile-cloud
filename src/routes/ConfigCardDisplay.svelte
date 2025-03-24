@@ -61,18 +61,18 @@
           (
             array: Array<{ index: number; type: ElementType }>,
             element,
-            index
+            index,
           ) => {
             if (typeof element !== "undefined") {
               array.push({ index, type: element });
             }
             return array;
           },
-          []
+          [],
         );
 
       const index = elements.findIndex(
-        (e) => e.index === $selected_config.presetIndex
+        (e) => e.index === $selected_config.presetIndex,
       );
 
       // Check if index is valid and the element exists

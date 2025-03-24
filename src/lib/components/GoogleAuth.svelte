@@ -21,7 +21,7 @@
         size: "large",
         width: "240px",
         text: "continue_with",
-      } // customization attributes
+      }, // customization attributes
     );
   }
 </script>

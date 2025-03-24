@@ -5,7 +5,7 @@ import { parentIframeCommunication } from "../lib/utils";
 export async function getUserNameByUid(uid: string) {
   const userRef = doc(userCollection, uid);
   const user: string = await getDoc(userRef).then(
-    (res) => res.data()?.username
+    (res) => res.data()?.username,
   );
   return user;
 }
