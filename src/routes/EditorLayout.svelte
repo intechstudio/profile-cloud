@@ -158,81 +158,13 @@
   function splitConfig(config: Config) {
     if (config.configType !== "profile") return;
 
+    const type = ModuleType[config.type as keyof typeof ModuleType];
+    const elements = grid.get_module_element_list(type);
+
     for (let configElement of config.configs) {
-      let name = `${config.name} - Element ${configElement.controlElementNumber}`;
-      let description = "";
-      let type = "";
-      if (config.type == "BU16") {
-        type = "button";
-      }
-
-      if (config.type == "PO16") {
-        type = "potentiometer";
-      }
-
-      if (config.type == "EN16") {
-        type = "encoder";
-      }
-
-      if (config.type == "EF44") {
-        if ([0, 1, 2, 3].includes(configElement.controlElementNumber)) {
-          type = "encoder";
-        }
-        if ([4, 5, 6, 7].includes(configElement.controlElementNumber)) {
-          type = "fader";
-        }
-      }
-
-      if (config.type == "PBF4") {
-        if ([0, 1, 2, 3].includes(configElement.controlElementNumber)) {
-          type = "potentiometer";
-        }
-        if ([4, 5, 6, 7].includes(configElement.controlElementNumber)) {
-          type = "fader";
-        }
-        if ([8, 9, 10, 11].includes(configElement.controlElementNumber)) {
-          type = "button";
-        }
-      }
-
-      if (config.type == "TEK2") {
-        if (configElement.controlElementNumber < 8) {
-          type = "button";
-        }
-        if ([8, 9].includes(configElement.controlElementNumber)) {
-          type = "endless";
-        }
-      }
-
-      if (config.type.startsWith("VSN1")) {
-        if (configElement.controlElementNumber < 8) {
-          type = "button";
-        }
-        if (configElement.controlElementNumber == 8) {
-          type = "endless";
-        }
-        if ([9, 10, 11, 12].includes(configElement.controlElementNumber)) {
-          type = "button";
-        }
-        if (configElement.controlElementNumber == 13) {
-          type = "lcd";
-        }
-      }
-
-      if (config.type == "VSN2") {
-        if ([12, 17].includes(configElement.controlElementNumber)) {
-          type = "lcd";
-        } else if (
-          configElement.controlElementNumber < 12 ||
-          [13, 14, 15, 16].includes(configElement.controlElementNumber)
-        ) {
-          type = "button";
-        }
-      }
-
-      if (configElement.controlElementNumber === 255) {
-        type = "system";
-      }
+      const name = `${config.name} - Element ${configElement.controlElementNumber}`;
+      const description = "";
+      const type = elements[configElement.controlElementNumber];
 
       if (!type) {
         parentIframeCommunication({
@@ -257,6 +189,7 @@
         },
         id: "", //ID will be generated on save
       };
+
       cm?.saveConfig(BaseConfigSchema.parse(preset), true);
     }
   }
