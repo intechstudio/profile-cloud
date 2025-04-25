@@ -1,13 +1,11 @@
 const defaultTheme = require("tailwindcss/defaultTheme");
 const colors = require("tailwindcss/colors");
-const uiKitConfig = require("@intechstudio/grid-uikit/tailwind.config");
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   mode: "jit",
   darkMode: "class",
   content: ["./src/**/*.{html,js,svelte,ts}"],
-  presets: [uiKitConfig], // Use the UI kit's Tailwind configuration as a preset
   theme: {
     extend: {
       colors: {
@@ -22,6 +20,83 @@ module.exports = {
         orange: colors.orange,
         neutral: {
           950: "#121212",
+        },
+        primary: {
+          DEFAULT: "#1e2628",
+          100: "#d3dcde",
+          200: "#b6c5c8",
+          300: "#99adb2",
+          400: "#7c969d",
+          500: "#627d83",
+          600: "#4d6166",
+          700: "#374549",
+          800: "#212a2c",
+          900: "#0b0e0f",
+        },
+        warning: {
+          DEFAULT: "#EAB308",
+          "desaturate-20": "#FFD2B1",
+          "desaturate-10": "#FAB17C",
+          "saturate-10": "#EF9E4D",
+          "saturate-20": "#EF914D",
+        },
+        error: {
+          DEFAULT: "#DC2626",
+          "desaturate-10": "#DC4B4B",
+          "desaturate-20": "#DC7474",
+          "saturate-10": "#DC0F0F",
+          "saturate-20": "#FF0000",
+        },
+        pick: {
+          DEFAULT: "#6B7AFF",
+          "desaturate-10": "#8591FF",
+          "desaturate-20": "#A9AEFF",
+          "saturate-10": "#5263FF",
+          "saturate-20": "#1F4AC5",
+          complementer: "#FFEE52",
+        },
+        select: {
+          DEFAULT: "#47575F",
+          "saturate-10": "#3E545F",
+          "saturate-20": "#1A2A31",
+          "desaturate-10": "#515A5F",
+          "desaturate-20": "#788991",
+        },
+        commit: {
+          DEFAULT: "#0BA484",
+          "saturate-10": "#00A482",
+          "saturate-20": "#006F53",
+          "desaturate-10": "#1BA487",
+          "desaturate-20": "#5DDCB9",
+        },
+        unsavedchange: {
+          DEFAULT: "#1D4ED8",
+        },
+        secondary: {
+          DEFAULT: "#2a3439",
+          "brightness-90": "#eaebeb",
+          "brightness-80": "#d4d6d7",
+          "brightness-70": "#bfc2c4",
+          "brightness-60": "#aaaeb0",
+          "brightness-50": "#959a9c",
+          "brightness-40": "#7f8588",
+          "brightness-30": "#6a7174",
+          "brightness-20": "#555d61",
+          "brightness-10": "#3f484d",
+          "darkness-10": "#262f33",
+          "darkness-20": "#222a2e",
+          "darkness-30": "#1d2428",
+          "darkness-40": "#191f22",
+          "darkness-50": "#151a1d",
+        },
+        highlight: {
+          DEFAULT: "#CC5B5B",
+          100: "#edc5c5",
+          200: "#e19e9e",
+          300: "#d57777",
+          400: "#c95050",
+          500: "#af3636",
+          600: "#882a2a",
         },
       },
       fontFamily: {
