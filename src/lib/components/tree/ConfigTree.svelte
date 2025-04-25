@@ -11,21 +11,17 @@
   import { type Config } from "../../schemas";
   import { TreeNodeData, createTree } from "./ConfigTree";
   import { tick } from "svelte";
-  import { createTreeView } from "@melt-ui/svelte";
-  import { setContext } from "svelte";
   import { contextTarget, Tree } from "@intechstudio/grid-uikit";
   import ConfigCardEditor from "../../../routes/ConfigCardEditor.svelte";
   import { parentIframeCommunication } from "../../utils";
 
-  const ctx = createTreeView({
-    defaultExpanded: [],
-  });
-  setContext("tree", ctx);
+  let tree = undefined;
+  let expanded = undefined;
 
-  const {
-    elements: { tree },
-    states: { expanded },
-  } = ctx;
+  function handleTreeView(e: any) {
+    tree = e.detail.elements.tree;
+    expanded = e.detail.states.expanded;
+  }
 
   export let configs: Config[];
 
@@ -145,7 +141,7 @@
 </script>
 
 <ul class="flex flex-col w-full h-full max-h-full" {...$tree}>
-  <Tree treeItems={$root.children}>
+  <Tree treeItems={$root.children} on:tree-view={handleTreeView}>
     <svelte:fragment slot="folder" let:child let:isExpanded let:level>
       <div
         class="flex w-full items-center mb-1 border-b h-5 border-white/40"
