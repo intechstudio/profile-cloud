@@ -142,6 +142,12 @@ export function createConfigManager(observer: {
         latestConfig = value.local!;
         syncStatus = "synced";
       }
+
+      //Upgrade compatibility at 2025.04.30, can be removed at a later time
+      if (latestConfig.type == "potentiometer") {
+        latestConfig.type = "potmeter";
+      }
+
       mergedConfigs.push({
         ...latestConfig,
         id: key,
