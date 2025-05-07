@@ -26,3 +26,4 @@ jobs:
           repoToken: "${{ secrets.GITHUB_TOKEN }}"
           firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROFILE_CLOUD_DEV }}"
           projectId: profile-cloud-dev
+          expires: 30d
