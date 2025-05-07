@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FilterValue, Term } from "./Filter";
+  import { FilterValue, type Term } from "./Filter";
   import { filter_value, stringToTerms } from "./Filter";
   import { createEventDispatcher } from "svelte";
   import SearchBar from "./SearchBar.svelte";
