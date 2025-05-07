@@ -32,7 +32,7 @@
     "VSN2",
     "Button",
     "Encoder",
-    "Potentiometer",
+    "Potmeter",
     "Fader",
     "System",
     "Endless",
