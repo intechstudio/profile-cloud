@@ -8,16 +8,17 @@ import { type Config } from "../../schemas";
 import { filter_value, FilterValue } from "../../../routes/Filter";
 import { Sort } from "../../../routes/Sorter";
 import { v4 as uuidv4 } from "uuid";
+import { TreeNodeData } from "@intechstudio/grid-uikit";
 
 type FilterFunc<T> = (items: T[], filter: FilterValue) => T[];
 type SorterFunc<T> = (items: T[], key: Sort.Key) => void;
 
-export class TreeNodeData<T> {
+export class ConfigNode<T> implements TreeNodeData<T> {
   public title: string;
   public items: T[];
-  public children: TreeNodeData<T>[];
-  public parent: TreeNodeData<T> | undefined;
-  public open: Writable<boolean>;
+  public children: ConfigNode<T>[];
+  public parent: ConfigNode<T> | undefined;
+  public expanded: boolean;
   public id: string;
 
   constructor(label: string) {
@@ -25,11 +26,11 @@ export class TreeNodeData<T> {
     this.items = [];
     this.children = [];
     this.parent = undefined;
-    this.open = writable(false);
     this.id = uuidv4();
+    this.expanded = false;
   }
 
-  itemCount() {
+  public itemCount() {
     let sum = this.items.length;
     for (const child of this.children) {
       sum += child.itemCount();
@@ -37,24 +38,24 @@ export class TreeNodeData<T> {
     return sum;
   }
 
-  addChild(...children: TreeNodeData<T>[]) {
+  public addChild(...children: ConfigNode<T>[]) {
     for (const child of children) {
       child.parent = this;
     }
     this.children.push(...children);
   }
 
-  addItem(...items: T[]) {
+  public addItem(...items: T[]) {
     this.items.push(...items);
   }
 
-  filter(filter: FilterValue, filterFunc: FilterFunc<T>) {
+  public filter(filter: FilterValue, filterFunc: FilterFunc<T>) {
     this.items = filterFunc(this.items, filter);
     this.children.forEach((e) => e.filter(filter, filterFunc));
   }
 
-  sort(key: Sort.Key, sorterFunc: SorterFunc<T>) {
-    const sortByName = (a: TreeNodeData<T>, b: TreeNodeData<T>) => {
+  public sort(key: Sort.Key, sorterFunc: SorterFunc<T>) {
+    const sortByName = (a: ConfigNode<T>, b: ConfigNode<T>) => {
       return a.title
         .toLowerCase()
         .localeCompare(b.title.toLowerCase(), undefined, { numeric: true });
@@ -66,7 +67,7 @@ export class TreeNodeData<T> {
     this.children.forEach((e) => e.sort(key, sorterFunc));
   }
 
-  toArray() {
+  public toArray() {
     const res: T[] = [];
     res.push(...this.items);
     for (const node of this.children) {
@@ -83,8 +84,8 @@ export type TreeOptions = {
 export function createTree(
   configs: any,
   showSupportedOnly: boolean,
-): TreeNodeData<Config> {
-  const root = new TreeNodeData<Config>("Root");
+): ConfigNode<Config> {
+  const root = new ConfigNode<Config>("Root");
   const [
     my_configs,
     recommended_configs,
@@ -92,11 +93,11 @@ export function createTree(
     other_configs,
     unsupported_configs,
   ] = [
-    new TreeNodeData<Config>("My Configs"),
-    new TreeNodeData<Config>("Recommended Configs"),
-    new TreeNodeData<Config>("Community Configs"),
-    new TreeNodeData<Config>("Other Configs"),
-    new TreeNodeData<Config>("Unsupported Configs"),
+    new ConfigNode<Config>("My Configs"),
+    new ConfigNode<Config>("Recommended Configs"),
+    new ConfigNode<Config>("Community Configs"),
+    new ConfigNode<Config>("Other Configs"),
+    new ConfigNode<Config>("Unsupported Configs"),
   ];
 
   const cm = get(config_manager);
@@ -182,7 +183,7 @@ export function createTree(
           if (found) {
             node = found;
           } else {
-            const newNode = new TreeNodeData<Config>(part);
+            const newNode = new ConfigNode<Config>(part);
             node.addChild(newNode);
             node = newNode;
           }

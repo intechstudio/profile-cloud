@@ -9,23 +9,20 @@
     config_manager,
   } from "./../../../routes/EditorLayout";
   import { type Config } from "../../schemas";
-  import { TreeNodeData, createTree } from "./ConfigTree";
+  import { ConfigNode, createTree } from "./ConfigTree";
   import { tick } from "svelte";
   import { contextTarget, Tree } from "@intechstudio/grid-uikit";
   import ConfigCardEditor from "../../../routes/ConfigCardEditor.svelte";
   import { parentIframeCommunication } from "../../utils";
 
   let tree = undefined;
-  let expanded = undefined;
-
   function handleTreeView(e: any) {
     tree = e.detail.elements.tree;
-    expanded = e.detail.states.expanded;
   }
 
   export let configs: Config[];
 
-  let root: Writable<TreeNodeData<Config>> = writable();
+  let root: Writable<ConfigNode<Config>> = writable();
 
   async function scrollToSelectedConfig() {
     await tick();
@@ -74,14 +71,14 @@
       return;
     }
 
-    expanded.set([]);
     for (const child of get(root).children) {
       toggleIncludingNodes(selected, child);
     }
+
     scrollToSelectedConfig();
   }
 
-  function nodeIncludesItem(id: string, node: TreeNodeData<Config>) {
+  function nodeIncludesItem(id: string, node: ConfigNode<Config>) {
     if (typeof node.items.find((e) => e.id === id) !== "undefined") {
       return true;
     }
@@ -95,17 +92,13 @@
     return false;
   }
 
-  function toggleIncludingNodes(id: string, node: TreeNodeData<Config>) {
-    const contains = nodeIncludesItem(id, node);
-    if (contains) {
-      expanded.update((store) => {
-        store.push(node.id);
-        return store;
-      });
-    }
+  function toggleIncludingNodes(id: string, node: ConfigNode<Config>) {
+    node.expanded = nodeIncludesItem(id, node) ? true : false;
+    console.log(node.expanded);
 
     if (node.children.length > 0) {
       for (const child of node.children) {
+        ConfigNode;
         toggleIncludingNodes(id, child);
       }
     }
@@ -141,7 +134,7 @@
 </script>
 
 <ul class="flex flex-col w-full h-full max-h-full" {...$tree}>
-  <Tree treeItems={$root.children} on:tree-view={handleTreeView}>
+  <Tree bind:treeItems={$root.children} on:tree-view={handleTreeView}>
     <svelte:fragment slot="folder" let:child let:isExpanded let:level>
       <div
         class="flex w-full items-center mb-1 border-b h-5 border-white/40"
