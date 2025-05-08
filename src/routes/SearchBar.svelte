@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
-  import { stringToTerms, Term } from "./Filter";
+  import { stringToTerms, type Term } from "./Filter";
 
   const dispatch = createEventDispatcher();
 
