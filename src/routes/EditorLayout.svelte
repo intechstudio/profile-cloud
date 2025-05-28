@@ -342,6 +342,7 @@
     };
     const cm = get(config_manager);
     cm?.saveConfig(newConfig, false);
+    provideSelectedConfigForEditor(newConfig);
     submitAnalytics({
       eventName: "Cloud Action",
       payload: {
