@@ -1,32 +1,32 @@
-import * as functions from "firebase-functions";
 import * as firestore from "@google-cloud/firestore";
-const client = new firestore.v1.FirestoreAdminClient();
+import { onSchedule } from "firebase-functions/scheduler";
 
-// Replace BUCKET_NAME
 const bucket = "gs://profile-cloud-firestore-backup";
+const client = new firestore.v1.FirestoreAdminClient();
+const projectId = process.env.GCP_PROJECT || "profile-cloud";
 
-export const scheduledFirestoreExport = functions
-    .region("europe-west3")
-    .pubsub.schedule("every 24 hours")
-    .timeZone("Europe/Zurich")
-    .onRun((context) => {
-        const projectId = process.env.GCP_PROJECT || "profile-cloud";
-        const databaseName = client.databasePath(projectId, "(default)");
-        return client
-            .exportDocuments({
-                name: databaseName,
-                outputUriPrefix: bucket,
-                // Leave collectionIds empty to export all collections
-                // or set to a list of collection IDs to export,
-                // collectionIds: ['users', 'posts']
-                collectionIds: [],
-            })
-            .then((responses) => {
-                const response = responses[0];
-                console.log(`Operation Name: ${response["name"]}`);
-            })
-            .catch((err) => {
-                console.error(err);
-                throw new Error("Export operation failed");
-            });
-    });
+export const scheduledFirestoreExport = onSchedule(
+  {
+    schedule: "every 24 hours",
+    timeZone: "Europe/Zurich",
+    region: "europe-west3",
+  },
+  async (event) => {
+    const databaseName = client.databasePath(projectId, "(default)");
+
+    try {
+      const [response] = await client.exportDocuments({
+        name: databaseName,
+        outputUriPrefix: bucket,
+        // Leave collectionIds empty to export all collections
+        // or set to a list of collection IDs to export,
+        // collectionIds: ['users', 'posts']
+        collectionIds: [],
+      });
+      console.log(`Operation Name: ${response.name}`);
+    } catch (err) {
+      console.error(err);
+      throw new Error("Export operation failed");
+    }
+  }
+);

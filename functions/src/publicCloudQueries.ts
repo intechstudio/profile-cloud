@@ -1,10 +1,37 @@
-import * as functions from "firebase-functions";
+import { Response } from 'express';
 import * as admin from "firebase-admin";
+import {onRequest, Request} from "firebase-functions/v2/https";
+import { defineSecret } from 'firebase-functions/params';
+import { SecretParam } from "firebase-functions/lib/params/types";
+const intechstudioApiKey = defineSecret('X-INTECHSTUDIO-KEY');
 admin.initializeApp();
 const db = admin.firestore();
 
-export const readAllProfiles = functions.https.onRequest((req, res) => {
+// Helper function to validate API key
+function validateApiKey(req: Request, res: Response, apiKeySecret: SecretParam) {
+  // Get the API key from request headers
+  const requestApiKey = req.headers['x-intechstudio-key'] || 
+                        req.get('Authorization')?.replace('Bearer ', '');
+  
+  // Get the expected API key from secret
+  const expectedApiKey = apiKeySecret.value();
+  
+  // If API key doesn't match, return unauthorized
+  if (requestApiKey !== expectedApiKey) {
+    res.status(403).json({ error: 'Unauthorized: Invalid API key' });
+    return false;
+  }
+  
+  return true;
+}
+
+export const readAllProfiles = onRequest({secrets: [intechstudioApiKey]}, (req, res) => {
     // todo in future: limit, orderby, where
+
+    if(!validateApiKey(req, res, intechstudioApiKey)){
+        return;
+    }
+
     db.collection("configs")
         .where("public", "==", true)
         .get()
@@ -17,7 +44,37 @@ export const readAllProfiles = functions.https.onRequest((req, res) => {
         });
 });
 
-export const readSingleProfile = functions.https.onRequest((req, res) => {
+export const readUserProfiles = onRequest((req, res) => {
+
+    if(!validateApiKey(req, res, intechstudioApiKey)){
+        return;
+    }
+
+    const userId = req.query.userId || req.body.userId;
+    
+    if (!userId) {
+        res.status(400).json({message: "userId is required"});
+    }
+    
+    db.collection("configs")
+        .where("owner", "==", userId)
+        .where("public", "==", true)
+        .get()
+        .then((snapshot) => {
+            const data = snapshot.docs.map((doc) => doc.data());
+            res.json(data);
+        })
+        .catch((err) => {
+            res.status(500).json({message: "error", error: err.message});
+        });
+});
+
+export const readSingleProfile = onRequest((req, res) => {
+
+    if(!validateApiKey(req, res, intechstudioApiKey)){
+        return;
+    }
+
     db.collection("configs")
         .where("id", "==", req.body.id)
         .where("public", "==", true)
