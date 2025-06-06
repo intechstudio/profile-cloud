@@ -28,5 +28,5 @@ export const scheduledFirestoreExport = onSchedule(
       console.error(err);
       throw new Error("Export operation failed");
     }
-  }
+  },
 );

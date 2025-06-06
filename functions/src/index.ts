@@ -1,7 +1,13 @@
 import { scheduledFirestoreExport } from "./firestoreBackup";
-import { readAllProfiles } from "./publicCloudQueries";
+import {
+  readAllProfiles,
+  readSingleProfile,
+  readUserProfiles,
+} from "./publicCloudQueries";
 
 export {
   scheduledFirestoreExport,
-  readAllProfiles
+  readAllProfiles,
+  readUserProfiles,
+  readSingleProfile,
 };
