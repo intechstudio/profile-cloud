@@ -5,7 +5,7 @@ export namespace Sort {
   export enum Type {
     NAME = "Name",
     DATE = "Date",
-    MODULE = "Module",
+    TYPE = "Type",
   }
 
   export enum Direction {
@@ -25,39 +25,3 @@ export namespace Sort {
 }
 
 export const sort_key: Writable<Sort.Key> = writable(Sort.DefaultValue);
-
-export function sortConfigs(configs: Config[], key: Sort.Key): Config[] {
-  const { type, direction } = key;
-  const compareFieldsMap = new Map([
-    [
-      Sort.Type.NAME,
-      (a: any, b: any) => {
-        return a.name
-          .toLowerCase()
-          .localeCompare(b.name.toLowerCase(), undefined, { numeric: true });
-      },
-    ],
-    [
-      Sort.Type.MODULE,
-      (a: any, b: any) => {
-        return a.type.localeCompare(b.type, undefined, {
-          numeric: true,
-        });
-      },
-    ],
-    [
-      Sort.Type.DATE,
-      (a: any, b: any) => {
-        return a.modifiedAt - b.modifiedAt;
-      },
-    ],
-  ]);
-
-  configs.sort(compareFieldsMap.get(type));
-
-  if (direction === Sort.Direction.DESC) {
-    configs.reverse();
-  }
-
-  return configs;
-}

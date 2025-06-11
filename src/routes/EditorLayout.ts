@@ -1,11 +1,10 @@
+import { type Config } from "../lib/schemas";
 import { type ConfigManager } from "../lib/configmanager/ConfigManager";
 import { writable, type Writable } from "svelte/store";
 
 export const compatible_config_types: Writable<string[]> = writable([]);
 
-export type ConfigSelection = { id: string; presetIndex: number };
-export const selected_config: Writable<ConfigSelection | undefined> =
-  writable();
+export const selected_config: Writable<Config | undefined> = writable();
 
 export const show_supported_only: Writable<boolean> = writable(false);
 
