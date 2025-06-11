@@ -1,20 +1,22 @@
 <script lang="ts">
   import { get } from "svelte/store";
   import { Sort, sort_key } from "./../../../routes/Sorter";
-  import { filter_value, FilterValue } from "./../../../routes/Filter";
+  import {
+    filter_value,
+    filterConfigs,
+    FilterValue,
+  } from "./../../../routes/Filter";
   import {
     selected_config,
     show_supported_only,
     config_manager,
     compatible_config_types,
+    selectClosestMatch,
   } from "./../../../routes/EditorLayout";
   import { type Config } from "../../schemas";
   import { Tree } from "./ConfigTree";
-  import { createEventDispatcher, onMount } from "svelte";
-  import ConfigCardEditor from "./ConfigCardEditor.svelte";
+  import { createEventDispatcher } from "svelte";
   import { parentIframeCommunication } from "../../utils";
-  import TreeComponent from "./Tree.svelte";
-  import TreeFolder from "./TreeFolder.svelte";
   import { ModuleType } from "@intechstudio/grid-protocol";
   import { dragTarget } from "../../actions/drag.action";
   import {
@@ -22,7 +24,10 @@
     type AbstractItemData,
     AbstractTreeNode,
     TreeItemType,
-  } from "./TreeNode.svelte";
+    TreeFolder,
+    Tree as TreeComponent,
+    TreeCard,
+  } from "@intechstudio/grid-uikit";
 
   const dispatch = createEventDispatcher();
 
@@ -30,72 +35,36 @@
 
   let root: Tree.Node;
   let expanded: string[];
+  let selected: string | undefined;
 
-  $: handleConfigChange(configs);
+  $: root = buildRoot(configs, $filter_value, $sort_key, $show_supported_only);
 
-  function handleConfigChange(configs: Config[]) {
-    const node = Tree.create(configs, {
-      showSupportedOnly: $show_supported_only,
-    });
-    const first = configs[0];
-    selected_config.set(first);
-    if (typeof first !== "undefined") {
-      expanded = getIncludingNodes(first.id, node);
-      const selected = node.findChild(first.id);
+  function buildRoot(
+    configs: Config[],
+    filter: FilterValue,
+    key: Sort.Key,
+    supported: boolean,
+  ) {
+    const filteredConfigs = filterConfigs(configs, filter);
+    const node = Tree.create(filteredConfigs, {
+      showSupportedOnly: supported,
+    }).sort(key);
 
-      selected?.update((s) => {
-        s.selected = true;
-        return s;
-      });
+    selectClosestMatch($selected_config, filteredConfigs);
+    selected = $selected_config?.id;
+    expanded = getIncludingNodes($selected_config?.id, node);
+
+    return node;
+  }
+
+  function getIncludingNodes(
+    id: string | undefined,
+    node: Tree.Node,
+  ): string[] {
+    if (typeof id === "undefined") {
+      return [];
     }
 
-    root = node;
-  }
-
-  $: filterNode(root, $filter_value);
-
-  $: sortNode(root, $sort_key);
-
-  function filterNode(node: Tree.Node, value: FilterValue) {
-    node.filter(value);
-
-    selectClosestMatch(get(selected_config), node);
-  }
-
-  function selectClosestMatch(selected: Config | undefined, node: Tree.Node) {
-    node.setAll("selected", false);
-    const current =
-      typeof selected?.id !== "undefined"
-        ? root.findChild(selected?.id)
-        : undefined;
-
-    if (typeof current === "undefined" || get(current).hidden) {
-      const first = root.find((e) => {
-        const { type, hidden } = get(e);
-        return type === TreeItemType.ITEM && !hidden;
-      });
-
-      const config: Config | undefined =
-        typeof first === "undefined"
-          ? undefined
-          : (get(first).data as AbstractItemData<Config>).item;
-      selected_config.set(config);
-
-      if (typeof config !== "undefined") {
-        expanded = getIncludingNodes(config.id, root);
-        first?.update((s) => {
-          s.selected = true;
-          return s;
-        });
-      }
-    }
-  }
-
-  function sortNode(node: Tree.Node, value: Sort.Key) {
-    node.sort(value);
-  }
-
-  function getIncludingNodes(id: string, node: Tree.Node): string[] {
     const found = typeof node.findChild(id) !== "undefined";
     let res: string[] = [];
     if (found) {
@@ -209,7 +178,7 @@
   }
 </script>
 
-<TreeComponent bind:root bind:expanded>
+<TreeComponent bind:root bind:expanded bind:selected>
   <svelte:fragment slot="folder" let:item let:isExpanded let:level>
     <TreeFolder
       {item}
@@ -219,7 +188,7 @@
   </svelte:fragment>
 
   <svelte:fragment slot="item" let:item let:level let:isExpanded>
-    <ConfigCardEditor
+    <TreeCard
       on:config-selected={handleConfigSelected}
       {item}
       isCompatible={isCompatible(item, $compatible_config_types)}

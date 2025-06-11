@@ -12,7 +12,7 @@ import {
   AbstractTreeNode,
   type AbstractFolderData,
   type AbstractItemData,
-} from "./TreeNode.svelte";
+} from "@intechstudio/grid-uikit";
 import { v4 as uuidv4 } from "uuid";
 import { ElementType, grid, ModuleType } from "@intechstudio/grid-protocol";
 
@@ -109,6 +109,7 @@ export namespace Tree {
 
   function buildVirtualFolders(node: TreeNodeImpl) {
     const { children } = get(node);
+
     for (let i = children.length - 1; i >= 0; i--) {
       const child = children[i] as TreeNodeImpl;
       if (get(child).type !== TreeItemType.ITEM) continue;
@@ -117,7 +118,9 @@ export namespace Tree {
       const { virtualPath } = item;
       if (!virtualPath) continue;
 
-      const [folderName, ...restPath] = virtualPath.split("/");
+      const segments = virtualPath.split("/");
+      const [folderName, ...restPath] = segments;
+      if (!folderName) continue;
 
       let folder = children.find(
         (e) =>
@@ -132,10 +135,21 @@ export namespace Tree {
         node.addChild(folder);
       }
 
-      // Update item's remaining virtual path
-      item.virtualPath = restPath.join("/");
+      // Clone the item with a reduced virtual path for recursion
+      const newItem = {
+        ...item,
+        virtualPath: restPath.join("/"),
+      };
+
+      // Replace the item's data on the child node without mutating the original
+      child.update((s) => {
+        (s.data as AbstractItemData<Config>).item = newItem;
+        return s;
+      });
 
       folder.addChild(child);
+
+      // Remove the child from its original position
       node.update((s) => {
         s.children.splice(i, 1);
         return s;
@@ -381,6 +395,7 @@ export namespace Tree {
       });
 
       get(this.internal).children.forEach((e) => (e as TreeNodeImpl).sort(key));
+      return this;
     }
 
     public filter(filter: FilterValue) {
