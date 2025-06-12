@@ -462,12 +462,10 @@
               on:name-change={handleNameChange}
               on:path-change={handlePathChange}
               on:overwrite-profile={handleOverwriteProfile}
-              data={configs.find((e) => e.id === $selected_config?.id)}
+              data={$selected_config}
             >
               <svelte:fragment slot="link-button">
-                {@const config = configs.find(
-                  (e) => e.id === $selected_config?.id,
-                )}
+                {@const config = $selected_config}
                 {#if config?.syncStatus != "local"}
                   <button
                     class="relative group flex"

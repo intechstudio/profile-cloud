@@ -75,6 +75,8 @@ export namespace Tree {
         public: false,
         modifiedAt: new Date(),
         description: "",
+        createdAt: new Date(),
+        displayName: `${data.name} / ${presetName}`,
       };
 
       res.push(partialData);

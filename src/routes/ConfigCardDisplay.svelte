@@ -51,7 +51,7 @@
       <div class="w-full flex flex-row gap-2 items-center justify-between">
         <div class="flex flex-col flex-grow">
           <DataInput
-            value={data.name}
+            value={data.displayName ?? data.name}
             disabled={!data.isEditable}
             placeholder={"Add name"}
             bold={true}

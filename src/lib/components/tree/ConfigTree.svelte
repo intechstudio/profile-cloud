@@ -141,6 +141,7 @@
 
   function handleClick(node: AbstractTreeNode<any>) {
     const config = (get(node).data as AbstractItemData<Config>).item;
+    console.log(config);
     selected_config.set(config);
     dispatch("config-selected", { config: config });
   }
