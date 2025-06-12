@@ -19,6 +19,7 @@ export const BaseConfigSchema = z.object({
   configs: z.any(),
   owner: z.string().optional(),
   virtualPath: z.string().optional(),
+  displayName: z.string().optional(),
 });
 
 export type BaseConfig = z.infer<typeof BaseConfigSchema>;

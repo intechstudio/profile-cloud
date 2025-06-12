@@ -5,7 +5,7 @@ export namespace Sort {
   export enum Type {
     NAME = "Name",
     DATE = "Date",
-    MODULE = "Module",
+    TYPE = "Type",
   }
 
   export enum Direction {
@@ -38,7 +38,7 @@ export function sortConfigs(configs: Config[], key: Sort.Key): Config[] {
       },
     ],
     [
-      Sort.Type.MODULE,
+      Sort.Type.TYPE,
       (a: any, b: any) => {
         return a.type.localeCompare(b.type, undefined, {
           numeric: true,
