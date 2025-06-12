@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { sort_key } from "./Sorter";
-  import { filter_value } from "./Filter";
+  import { sortConfigs, sort_key } from "./Sorter";
+  import { filterConfigs, filter_value } from "./Filter";
   import Sorter from "./Sorter.svelte";
   import { onDestroy, onMount } from "svelte";
   import type { Config } from "../lib/schemas";
@@ -11,9 +11,6 @@
   } from "../lib/configmanager/ConfigManager";
   import ConfigCardBrowser from "./ConfigCardBrowser.svelte";
   import configuration from "../../Configuration.json";
-  import { Tree } from "../lib/components/tree/ConfigTree";
-  import { get } from "svelte/store";
-  import { type AbstractItemData } from "$lib/components/tree/TreeNode.svelte";
 
   let selectedConfigIndex: number | undefined = undefined;
 
@@ -48,11 +45,9 @@
   });
 
   $: {
-    const node = Tree.createNode(configs);
-    node.filter($filter_value);
-    node.sort($sort_key);
-    filteredConfigs = get(node).children.map(
-      (e) => (get(e).data as AbstractItemData<Config>).item,
+    filteredConfigs = sortConfigs(
+      filterConfigs(configs, $filter_value),
+      $sort_key,
     );
   }
 </script>

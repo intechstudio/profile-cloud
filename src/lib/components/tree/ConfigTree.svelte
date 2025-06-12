@@ -26,55 +26,43 @@
     TreeItemType,
     TreeFolder,
     Tree as TreeComponent,
-    TreeCard,
+    ProfileCloudTreeItem,
+    ContextMenuOptions,
+    type TreeProperties,
   } from "@intechstudio/grid-uikit";
 
   const dispatch = createEventDispatcher();
 
   export let configs: Config[];
 
-  let root: Tree.Node;
-  let expanded: string[];
-  let selected: string | undefined;
+  let treeProps: TreeProperties;
 
-  $: root = buildRoot(configs, $filter_value, $sort_key, $show_supported_only);
+  $: treeProps = buildProps(
+    configs,
+    $filter_value,
+    $sort_key,
+    $show_supported_only,
+  );
 
-  function buildRoot(
+  function buildProps(
     configs: Config[],
     filter: FilterValue,
     key: Sort.Key,
     supported: boolean,
-  ) {
+  ): TreeProperties {
     const filteredConfigs = filterConfigs(configs, filter);
     const node = Tree.create(filteredConfigs, {
       showSupportedOnly: supported,
     }).sort(key);
 
     selectClosestMatch($selected_config, filteredConfigs);
-    selected = $selected_config?.id;
-    expanded = getIncludingNodes($selected_config?.id, node);
 
-    return node;
-  }
-
-  function getIncludingNodes(
-    id: string | undefined,
-    node: Tree.Node,
-  ): string[] {
-    if (typeof id === "undefined") {
-      return [];
-    }
-
-    const found = typeof node.findChild(id) !== "undefined";
-    let res: string[] = [];
-    if (found) {
-      res.push(get(node).id);
-
-      for (const child of get(node).children) {
-        res = [...res, ...getIncludingNodes(id, child as Tree.Node)];
-      }
-    }
-    return res;
+    return {
+      root: node,
+      selected: $selected_config?.id,
+      expanded: node.getIncludingNodes($selected_config?.id),
+      scrollToSelected: true,
+    };
   }
 
   function handleDeleteVirtualDirectory(title: string) {
@@ -151,13 +139,16 @@
     dragTarget.set(undefined);
   }
 
-  function handleConfigurationClicked(node: AbstractTreeNode<any>) {
+  function handleClick(node: AbstractTreeNode<any>) {
     const config = (get(node).data as AbstractItemData<Config>).item;
     selected_config.set(config);
     dispatch("config-selected", { config: config });
   }
 
-  function getfolderCtxOptions(level: number, child: AbstractTreeNode<any>) {
+  function getfolderCtxOptions(
+    level: number,
+    child: AbstractTreeNode<any>,
+  ): ContextMenuOptions {
     const { title } = get(child).data as AbstractFolderData;
     return {
       items: [
@@ -178,25 +169,25 @@
   }
 </script>
 
-<TreeComponent bind:root bind:expanded bind:selected>
-  <svelte:fragment slot="folder" let:item let:isExpanded let:level>
+<TreeComponent {...treeProps}>
+  <svelte:fragment slot="folder" let:item let:expanded let:level>
     <TreeFolder
       {item}
-      {isExpanded}
+      {expanded}
       ctxOptions={getfolderCtxOptions(level, item)}
     />
   </svelte:fragment>
 
-  <svelte:fragment slot="item" let:item let:level let:isExpanded>
-    <TreeCard
+  <svelte:fragment slot="item" let:item let:level let:expanded>
+    <ProfileCloudTreeItem
       on:config-selected={handleConfigSelected}
       {item}
-      isCompatible={isCompatible(item, $compatible_config_types)}
-      isSelected={get(item).id === $selected_config?.id}
-      {isExpanded}
+      compatible={isCompatible(item, $compatible_config_types)}
+      selected={get(item).id === $selected_config?.id}
+      {expanded}
       on:drag-start={() => handleDragStart(item)}
       on:drag-end={() => handleDragEnd(item)}
-      on:click={() => handleConfigurationClicked(item)}
+      on:click={() => handleClick(item)}
     />
   </svelte:fragment>
 </TreeComponent>

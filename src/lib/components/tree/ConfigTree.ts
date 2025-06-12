@@ -289,18 +289,6 @@ export namespace Tree {
     return root;
   }
 
-  export function createNode(configs: Config[]) {
-    const node = new TreeNodeImpl(undefined, TreeItemType.FOLDER, {
-      title: "Root",
-    });
-    node.addChild(
-      ...configs.map(
-        (e) => new TreeNodeImpl(undefined, TreeItemType.ITEM, { item: e }),
-      ),
-    );
-    return node;
-  }
-
   class TreeNodeImpl extends AbstractTreeNode<Config> {
     public constructor(
       parent: TreeNodeImpl | undefined,
@@ -318,6 +306,23 @@ export namespace Tree {
           break;
         }
       }
+    }
+
+    public getIncludingNodes(id: string | undefined): string[] {
+      if (typeof id === "undefined") {
+        return [];
+      }
+
+      const found = typeof this.findChild(id) !== "undefined";
+      let res: string[] = [];
+      if (found) {
+        res.push(get(this.internal).id);
+
+        for (const child of get(this.internal).children) {
+          res = [...res, ...(child as TreeNodeImpl).getIncludingNodes(id)];
+        }
+      }
+      return res;
     }
 
     public sort(key: Sort.Key) {
@@ -396,98 +401,6 @@ export namespace Tree {
 
       get(this.internal).children.forEach((e) => (e as TreeNodeImpl).sort(key));
       return this;
-    }
-
-    public filter(filter: FilterValue) {
-      // Helper function to check if a value matches the term
-      const matchesTerm = (value: string | undefined, term: Term): boolean => {
-        if (value === undefined) return false;
-
-        const searchValue = term.caseMatch ? value : value.toLowerCase();
-        const termValue = term.caseMatch
-          ? term.value
-          : term.value.toLowerCase();
-
-        return term.wholeMatch
-          ? searchValue === termValue
-          : searchValue.includes(termValue);
-      };
-
-      if (filter.length === 0) {
-        return;
-      }
-
-      for (const child of get(this.internal).children as TreeNodeImpl[]) {
-        switch (get(child).type) {
-          case TreeItemType.FOLDER: {
-            if (get(child).type === TreeItemType.FOLDER) {
-              child.filter(filter);
-            }
-            break;
-          }
-          case TreeItemType.ITEM: {
-            const { item } = get(child).data as AbstractItemData<Config>;
-            // Get scripts from Presets/Profiles
-            let scripts: string[] = [];
-            switch (item.configType) {
-              case "preset": {
-                scripts = item.configs.events.map((e: any) => e.config);
-                break;
-              }
-              case "profile": {
-                for (const element of item.configs) {
-                  scripts.push(...element.events.map((e: any) => e.config));
-                }
-                break;
-              }
-            }
-
-            // Regular expression to match --[[@<any string>]]
-            const regex = /--\[\[@(.*?)\]\]/g;
-
-            // Extract all unique shorts from scripts
-            const shorts = Array.from(
-              new Set(
-                scripts.flatMap((str) => {
-                  const matches = str.matchAll(regex); // Get all matches
-                  return Array.from(matches, (match) => match[1]); // Extract matched strings
-                }),
-              ),
-            );
-
-            const searchables = [
-              item.name,
-              item.type,
-              item.configType,
-              item.virtualPath,
-            ].filter((field): field is string => field !== undefined);
-
-            // Check if any term matches any searchable field
-            const match = filter.every((term) => {
-              if (term.value.startsWith("$")) {
-                const blockNames = shorts.map((e) =>
-                  grid.ActionBlock.shortToDisplayName(e)
-                    ?.replaceAll(" ", "")
-                    .replaceAll("&", "And"),
-                );
-                return blockNames.some((e) =>
-                  matchesTerm(e, {
-                    value: term.value.slice(1, term.value.length),
-                    caseMatch: false,
-                    wholeMatch: false,
-                  }),
-                );
-              } else {
-                return searchables.some((searchable) =>
-                  matchesTerm(searchable, term),
-                );
-              }
-            });
-            child.update((s) => Object({ ...s, hidden: !match }));
-            break;
-          }
-        }
-      }
     }
   }
 }
