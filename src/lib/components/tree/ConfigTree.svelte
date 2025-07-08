@@ -5,6 +5,7 @@
     filter_value,
     filterConfigs,
     FilterValue,
+    highlightMatches,
   } from "./../../../routes/Filter";
   import {
     selected_config,
@@ -19,7 +20,10 @@
   import { parentIframeCommunication } from "../../utils";
   import { ModuleType } from "@intechstudio/grid-protocol";
   import { dragTarget } from "../../actions/drag.action";
-  import { ContextMenuOptions } from "@intechstudio/grid-uikit";
+  import {
+    type ContextMenuOptions,
+    ProfileCloudTreeItem,
+  } from "@intechstudio/grid-uikit";
   import TreeComponent, { type TreeProperties } from "./Tree.svelte";
   import {
     AbstractTreeNode,
@@ -28,7 +32,6 @@
     TreeItemType,
   } from "./TreeNode.svelte";
   import TreeFolder from "./TreeFolder.svelte";
-  import ProfileCloudTreeItem from "./ProfileCloudTreeItem.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -140,7 +143,6 @@
 
   function handleClick(node: AbstractTreeNode<any>) {
     const config = (get(node).data as AbstractItemData<Config>).item;
-    console.log(config);
     selected_config.set(config);
     dispatch("config-selected", { config: config });
   }
@@ -188,6 +190,13 @@
       on:drag-start={() => handleDragStart(item)}
       on:drag-end={() => handleDragEnd(item)}
       on:click={() => handleClick(item)}
-    />
+    >
+      <div slot="button-label">
+        {@html highlightMatches(get(item).data.item.name, $filter_value)}
+      </div>
+      <div slot="type-label">
+        {@html highlightMatches(get(item).data.item.type, $filter_value)}
+      </div>
+    </ProfileCloudTreeItem>
   </svelte:fragment>
 </TreeComponent>

@@ -133,6 +133,7 @@ export function filterConfigs(
       config.type,
       config.configType,
       config.virtualPath,
+      config.description,
     ].filter((field): field is string => field !== undefined);
 
     // Check if any term matches any searchable field
@@ -155,4 +156,26 @@ export function filterConfigs(
       }
     });
   });
+}
+
+export function highlightMatches(text: string, filter: FilterValue): string {
+  if (!text || filter.length === 0) return text;
+
+  let result = text;
+
+  for (const term of filter) {
+    if (term.value.startsWith("$")) continue;
+
+    const rawTerm = term.caseMatch ? term.value : term.value.toLowerCase();
+
+    const escaped = rawTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const flags = term.caseMatch ? "g" : "gi";
+    const re = term.wholeMatch
+      ? new RegExp(`\\b${escaped}\\b`, flags)
+      : new RegExp(escaped, flags);
+
+    result = result.replace(re, (match) => `<mark>${match}</mark>`);
+  }
+
+  return result;
 }
