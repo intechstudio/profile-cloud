@@ -18,17 +18,47 @@
 
   $: handleCompatibleConfigsChange($compatible_config_types);
 
-  function handleCompatibleConfigsChange(types: string[]) {
-    if (data.configType === "snippet") {
-      compatible = true;
-    } else if (
-      data.type === ModuleType.VSN1L ||
-      data.type === ModuleType.VSN1R
-    ) {
+  function isElementType(value: string): value is ElementType {
+    return Object.values(ElementType).includes(value as ElementType);
+  }
+
+  function isModuleType(value: string): value is ModuleType {
+    return Object.values(ModuleType).includes(value as ModuleType);
+  }
+
+  function handleCompatibleConfigsChange(
+    types: Array<ElementType | ModuleType>,
+  ) {
+    if (data.type === ModuleType.VSN1L || data.type === ModuleType.VSN1R) {
       compatible =
         types.includes(ModuleType.VSN1L) || types.includes(ModuleType.VSN1R);
     } else {
-      compatible = types.includes(data.type);
+      switch (data.configType) {
+        case "profile": {
+          const moduleTypes = types.filter((t): t is ModuleType =>
+            isModuleType(t),
+          );
+          compatible = moduleTypes.includes(data.type as ModuleType);
+          break;
+        }
+        case "preset": {
+          const elementTypes = types.filter((t): t is ElementType =>
+            isElementType(t),
+          );
+          const leftCompatible = elementTypes.some((e) =>
+            grid.is_element_compatible_with(e, data.type as ElementType),
+          );
+          const rightCompatible = elementTypes.some((e) =>
+            grid.is_element_compatible_with(data.type as ElementType, e),
+          );
+          compatible = leftCompatible || rightCompatible;
+          break;
+        }
+        case "snippet": {
+          compatible = true;
+          break;
+        }
+      }
     }
   }
 
