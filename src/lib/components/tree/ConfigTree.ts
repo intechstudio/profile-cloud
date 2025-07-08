@@ -19,6 +19,7 @@ import {
 export namespace Tree {
   export interface Options {
     showSupportedOnly?: boolean;
+    compatibileTypes: string[];
   }
 
   export type Node = InstanceType<typeof TreeNodeImpl>;
@@ -84,17 +85,33 @@ export namespace Tree {
     return res;
   }
 
-  function buildVirtualPresets(node: TreeNodeImpl) {
+  function isCompatible(config: Config, types: string[]) {
+    if (config.configType === "snippet") {
+      return true;
+    } else if (
+      config.type === ModuleType.VSN1L ||
+      config.type === ModuleType.VSN1R
+    ) {
+      return (
+        types.includes(ModuleType.VSN1L) || types.includes(ModuleType.VSN1R)
+      );
+    } else {
+      return types.includes(config.type);
+    }
+  }
+
+  function buildVirtualPresets(node: TreeNodeImpl, compatibileTypes: string[]) {
     for (const child of get(node).children as TreeNodeImpl[]) {
       const { type, data } = get(child);
       switch (type) {
         case TreeItemType.ITEM: {
-          const { item } = data as AbstractItemData<Config>;
+          const { item } = data as ItemData;
           if (item.configType === "profile") {
             const virtualPresets = generateVirtualPresets(item);
             for (const preset of virtualPresets) {
               const node = new TreeNodeImpl(undefined, TreeItemType.ITEM, {
                 item: preset,
+                compatible: isCompatible(preset, compatibileTypes),
               });
               child.addChild(node);
             }
@@ -102,7 +119,7 @@ export namespace Tree {
           break;
         }
         case TreeItemType.FOLDER: {
-          buildVirtualPresets(child);
+          buildVirtualPresets(child, compatibileTypes);
           break;
         }
       }
@@ -116,7 +133,7 @@ export namespace Tree {
       const child = children[i] as TreeNodeImpl;
       if (get(child).type !== TreeItemType.ITEM) continue;
 
-      const { item } = get(child).data as AbstractItemData<Config>;
+      const { item } = get(child).data as ItemData;
       const { virtualPath } = item;
       if (!virtualPath) continue;
 
@@ -145,7 +162,7 @@ export namespace Tree {
 
       // Replace the item's data on the child node without mutating the original
       child.update((s) => {
-        (s.data as AbstractItemData<Config>).item = newItem;
+        (s.data as ItemData).item = newItem;
         return s;
       });
 
@@ -158,6 +175,15 @@ export namespace Tree {
       });
     }
 
+    //Remove empty folders
+    node.update((s) => {
+      s.children = s.children.filter((child) => {
+        const value = get(child);
+        return value.type !== TreeItemType.FOLDER || value.children.length > 0;
+      });
+      return s;
+    });
+
     // Recurse into folders
     for (const child of get(node).children as TreeNodeImpl[]) {
       if (get(child).type === TreeItemType.FOLDER) {
@@ -166,7 +192,10 @@ export namespace Tree {
     }
   }
 
-  export function create(configs: Config[], options: Options = {}) {
+  export function create(
+    configs: Config[],
+    options: Options = { compatibileTypes: [] },
+  ) {
     const { showSupportedOnly } = options;
     let root = new TreeNodeImpl(undefined, TreeItemType.FOLDER, {
       title: "Root",
@@ -201,7 +230,11 @@ export namespace Tree {
           return isMyConfig;
         })
         .map(
-          (e) => new TreeNodeImpl(undefined, TreeItemType.ITEM, { item: e }),
+          (e) =>
+            new TreeNodeImpl(undefined, TreeItemType.ITEM, {
+              item: e,
+              compatible: isCompatible(e, options.compatibileTypes),
+            }),
         ),
     );
     recommended_configs.addChild(
@@ -223,7 +256,11 @@ export namespace Tree {
           );
         })
         .map(
-          (e) => new TreeNodeImpl(undefined, TreeItemType.ITEM, { item: e }),
+          (e) =>
+            new TreeNodeImpl(undefined, TreeItemType.ITEM, {
+              item: e,
+              compatible: isCompatible(e, options.compatibileTypes),
+            }),
         ),
     );
     community_configs.addChild(
@@ -243,7 +280,11 @@ export namespace Tree {
           );
         })
         .map(
-          (e) => new TreeNodeImpl(undefined, TreeItemType.ITEM, { item: e }),
+          (e) =>
+            new TreeNodeImpl(undefined, TreeItemType.ITEM, {
+              item: e,
+              compatible: isCompatible(e, options.compatibileTypes),
+            }),
         ),
     );
     other_configs.addChild(
@@ -255,7 +296,11 @@ export namespace Tree {
           return !isMyConfig && (!showSupportedOnly || cct.includes(e.type));
         })
         .map(
-          (e) => new TreeNodeImpl(undefined, TreeItemType.ITEM, { item: e }),
+          (e) =>
+            new TreeNodeImpl(undefined, TreeItemType.ITEM, {
+              item: e,
+              compatible: isCompatible(e, options.compatibileTypes),
+            }),
         ),
     );
     unsupported_configs.addChild(
@@ -268,7 +313,11 @@ export namespace Tree {
           return !isMyConfig && showSupportedOnly && !cct.includes(e.type);
         })
         .map(
-          (e) => new TreeNodeImpl(undefined, TreeItemType.ITEM, { item: e }),
+          (e) =>
+            new TreeNodeImpl(undefined, TreeItemType.ITEM, {
+              item: e,
+              compatible: isCompatible(e, options.compatibileTypes),
+            }),
         ),
     );
 
@@ -287,15 +336,19 @@ export namespace Tree {
     }
 
     buildVirtualFolders(root);
-    buildVirtualPresets(root);
+    buildVirtualPresets(root, options.compatibileTypes);
     return root;
+  }
+
+  interface ItemData extends AbstractItemData<Config> {
+    compatible: boolean;
   }
 
   class TreeNodeImpl extends AbstractTreeNode<Config> {
     public constructor(
       parent: TreeNodeImpl | undefined,
       type: TreeItemType,
-      data: AbstractFolderData | AbstractItemData<Config>,
+      data: AbstractFolderData | ItemData,
     ) {
       switch (type) {
         case TreeItemType.FOLDER: {
@@ -303,7 +356,7 @@ export namespace Tree {
           break;
         }
         case TreeItemType.ITEM: {
-          const itemData = data as AbstractItemData<Config>;
+          const itemData = data as ItemData;
           super(parent, itemData.item.id, type, data);
           break;
         }
@@ -334,7 +387,7 @@ export namespace Tree {
           case TreeItemType.FOLDER:
             return (data as AbstractFolderData).title;
           case TreeItemType.ITEM:
-            return (data as AbstractItemData<Config>).item.name;
+            return (data as ItemData).item.name;
           default:
             return "";
         }
@@ -366,8 +419,8 @@ export namespace Tree {
         case Sort.Type.DATE: {
           items.sort((a: TreeNodeImpl, b: TreeNodeImpl) => {
             const [typeA, typeB] = [
-              (get(a).data as AbstractItemData<Config>).item.type,
-              (get(b).data as AbstractItemData<Config>).item.type,
+              (get(a).data as ItemData).item.type,
+              (get(b).data as ItemData).item.type,
             ];
             return typeA.localeCompare(typeB, undefined, {
               numeric: true,
@@ -378,8 +431,8 @@ export namespace Tree {
         case Sort.Type.TYPE: {
           items.sort((a: TreeNodeImpl, b: TreeNodeImpl) => {
             const [dateA, dateB] = [
-              (get(a).data as AbstractItemData<Config>).item.modifiedAt,
-              (get(b).data as AbstractItemData<Config>).item.modifiedAt,
+              (get(a).data as ItemData).item.modifiedAt,
+              (get(b).data as ItemData).item.modifiedAt,
             ];
             return dateA.getTime() - dateB.getTime();
           });

@@ -44,6 +44,7 @@
     $filter_value,
     $sort_key,
     $show_supported_only,
+    $compatible_config_types,
   );
 
   function buildProps(
@@ -51,10 +52,13 @@
     filter: FilterValue,
     key: Sort.Key,
     supported: boolean,
+    compatibileTypes: string[],
   ): TreeProperties {
+    console.log("YAYYY");
     const filteredConfigs = filterConfigs(configs, filter);
     const node = Tree.create(filteredConfigs, {
       showSupportedOnly: supported,
+      compatibileTypes,
     }).sort(key);
 
     selectClosestMatch($selected_config, filteredConfigs);
@@ -93,22 +97,6 @@
       windowPostMessageName: "showOverlay",
       dataForParent: { value: true },
     });
-  }
-
-  function isCompatible(node: AbstractTreeNode<any>, types: string[]) {
-    const data = (get(node).data as AbstractItemData<Config>).item;
-    if (data.configType === "snippet") {
-      return true;
-    } else if (
-      data.type === ModuleType.VSN1L ||
-      data.type === ModuleType.VSN1R
-    ) {
-      return (
-        types.includes(ModuleType.VSN1L) || types.includes(ModuleType.VSN1R)
-      );
-    } else {
-      return types.includes(data.type);
-    }
   }
 
   function handleDragStart(node: AbstractTreeNode<any>) {
@@ -184,7 +172,7 @@
     <ProfileCloudTreeItem
       on:config-selected={handleConfigSelected}
       {item}
-      compatible={isCompatible(item, $compatible_config_types)}
+      compatible={get(item).data.item.compatible}
       selected={get(item).id === $selected_config?.id}
       {expanded}
       on:drag-start={() => handleDragStart(item)}
