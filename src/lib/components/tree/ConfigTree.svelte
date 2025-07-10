@@ -21,17 +21,16 @@
   import { ModuleType } from "@intechstudio/grid-protocol";
   import { dragTarget } from "../../actions/drag.action";
   import {
-    type ContextMenuOptions,
-    ProfileCloudTreeItem,
-  } from "@intechstudio/grid-uikit";
-  import TreeComponent, { type TreeProperties } from "./Tree.svelte";
-  import {
-    AbstractTreeNode,
     type AbstractFolderData,
     type AbstractItemData,
+    AbstractTreeNode,
     TreeItemType,
-  } from "./TreeNode.svelte";
-  import TreeFolder from "./TreeFolder.svelte";
+    TreeFolder,
+    Tree as TreeComponent,
+    ProfileCloudTreeItem,
+    ContextMenuOptions,
+    type TreeProperties,
+  } from "@intechstudio/grid-uikit";
 
   const dispatch = createEventDispatcher();
 
