@@ -126,7 +126,7 @@ export namespace Tree {
     }
   }
 
-  function buildVirtualFolders(node: TreeNodeImpl) {
+  function buildVirtualFolders(node: TreeNodeImpl, level: number = 0) {
     const { children } = get(node);
 
     for (let i = children.length - 1; i >= 0; i--) {
@@ -175,19 +175,23 @@ export namespace Tree {
       });
     }
 
-    //Remove empty folders
-    node.update((s) => {
-      s.children = s.children.filter((child) => {
-        const value = get(child);
-        return value.type !== TreeItemType.FOLDER || value.children.length > 0;
+    //Remove non-main level empty folders
+    if (level > 0) {
+      node.update((s) => {
+        s.children = s.children.filter((child) => {
+          const value = get(child);
+          return (
+            value.type !== TreeItemType.FOLDER || value.children.length > 0
+          );
+        });
+        return s;
       });
-      return s;
-    });
+    }
 
     // Recurse into folders
     for (const child of get(node).children as TreeNodeImpl[]) {
       if (get(child).type === TreeItemType.FOLDER) {
-        buildVirtualFolders(child);
+        buildVirtualFolders(child, level + 1);
       }
     }
   }

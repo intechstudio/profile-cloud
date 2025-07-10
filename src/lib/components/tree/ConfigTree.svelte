@@ -3,7 +3,7 @@
   import { Sort, sort_key } from "./../../../routes/Sorter";
   import {
     filter_value,
-    filterConfigs,
+    matches,
     FilterValue,
     highlightMatches,
   } from "./../../../routes/Filter";
@@ -18,7 +18,6 @@
   import { Tree } from "./ConfigTree";
   import { createEventDispatcher } from "svelte";
   import { parentIframeCommunication } from "../../utils";
-  import { ModuleType } from "@intechstudio/grid-protocol";
   import { dragTarget } from "../../actions/drag.action";
   import {
     type AbstractFolderData,
@@ -28,7 +27,7 @@
     TreeFolder,
     Tree as TreeComponent,
     ProfileCloudTreeItem,
-    ContextMenuOptions,
+    type ContextMenuOptions,
     type TreeProperties,
   } from "@intechstudio/grid-uikit";
 
@@ -46,6 +45,39 @@
     $compatible_config_types,
   );
 
+  function filterNode(node: Tree.Node, filter: FilterValue, level = 0) {
+    const filtered: Tree.Node[] = [];
+    for (const child of get(node).children) {
+      const { children, type, data } = get(child);
+      if (children.length > 0) {
+        filterNode(child as Tree.Node, filter, level + 1);
+      }
+
+      switch (type) {
+        case TreeItemType.FOLDER: {
+          if (get(child).children.length > 0 || level === 0) {
+            filtered.push(child as Tree.Node);
+          }
+          break;
+        }
+        case TreeItemType.ITEM: {
+          if (
+            matches((data as AbstractItemData<Config>).item, filter) ||
+            get(child).children.length > 0
+          ) {
+            filtered.push(child as Tree.Node);
+          }
+          break;
+        }
+      }
+    }
+
+    node.update((s) => {
+      s.children = filtered;
+      return s;
+    });
+  }
+
   function buildProps(
     configs: Config[],
     filter: FilterValue,
@@ -53,19 +85,20 @@
     supported: boolean,
     compatibileTypes: string[],
   ): TreeProperties {
-    console.log("YAYYY");
-    const filteredConfigs = filterConfigs(configs, filter);
-    const node = Tree.create(filteredConfigs, {
+    const filteredConfigs = configs.filter((e) => matches(e, filter));
+    const root = Tree.create(configs, {
       showSupportedOnly: supported,
       compatibileTypes,
     }).sort(key);
 
+    filterNode(root, filter);
+
     selectClosestMatch($selected_config, filteredConfigs);
 
     return {
-      root: node,
+      root: root,
       selected: $selected_config?.id,
-      expanded: node.getIncludingNodes($selected_config?.id),
+      expanded: root.getIncludingNodes($selected_config?.id),
       scrollBehaviour: { scrollToIndex: true, easing: "instant" },
     };
   }
@@ -98,7 +131,7 @@
     });
   }
 
-  function handleDragStart(node: AbstractTreeNode<any>) {
+  function handleDragStart(node: Tree.Node) {
     const config = (get(node).data as AbstractItemData<Config>).item;
     parentIframeCommunication({
       windowPostMessageName: "configDragChange",
@@ -114,7 +147,7 @@
     });
   }
 
-  function handleDragEnd(node: AbstractTreeNode<any>) {
+  function handleDragEnd(node: Tree.Node) {
     const config = (get(node).data as AbstractItemData<Config>).item;
     parentIframeCommunication({
       windowPostMessageName: "configDragChange",
@@ -128,7 +161,7 @@
     dragTarget.set(undefined);
   }
 
-  function handleClick(node: AbstractTreeNode<any>) {
+  function handleClick(node: Tree.Node) {
     const config = (get(node).data as AbstractItemData<Config>).item;
     selected_config.set(config);
     dispatch("config-selected", { config: config });
@@ -136,7 +169,7 @@
 
   function getfolderCtxOptions(
     level: number,
-    child: AbstractTreeNode<any>,
+    child: Tree.Node,
   ): ContextMenuOptions {
     const { title } = get(child).data as AbstractFolderData;
     return {
@@ -156,15 +189,29 @@
       ],
     };
   }
+
+  function getItemCount(item: Tree.Node) {
+    const { type, children } = get(item);
+
+    let count = type === TreeItemType.ITEM ? 1 : 0;
+
+    if (type === TreeItemType.FOLDER) {
+      for (const child of children) {
+        count += getItemCount(child as Tree.Node);
+      }
+    }
+
+    return count;
+  }
 </script>
 
 <TreeComponent {...treeProps}>
   <svelte:fragment slot="folder" let:item let:expanded let:level>
-    <TreeFolder
-      {item}
-      {expanded}
-      ctxOptions={getfolderCtxOptions(level, item)}
-    />
+    <TreeFolder {item} {expanded} ctxOptions={getfolderCtxOptions(level, item)}>
+      <span slot="title-label"
+        >{@html `${highlightMatches(get(item).data.title, $filter_value)} (${getItemCount(item)})`}</span
+      >
+    </TreeFolder>
   </svelte:fragment>
 
   <svelte:fragment slot="item" let:item let:level let:expanded>
