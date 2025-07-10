@@ -66,7 +66,7 @@
       root: node,
       selected: $selected_config?.id,
       expanded: node.getIncludingNodes($selected_config?.id),
-      scrollToSelected: true,
+      scrollBehaviour: { scrollToIndex: true, easing: "instant" },
     };
   }
 
