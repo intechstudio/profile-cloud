@@ -1,8 +1,11 @@
 import { type Config } from "../lib/schemas";
+import { ElementType, ModuleType } from "@intechstudio/grid-protocol";
 import { type ConfigManager } from "../lib/configmanager/ConfigManager";
 import { writable, type Writable } from "svelte/store";
 
-export const compatible_config_types: Writable<string[]> = writable([]);
+export const compatible_config_types: Writable<
+  Array<ElementType | ModuleType>
+> = writable([]);
 
 export const selected_config: Writable<Config | undefined> = writable();
 

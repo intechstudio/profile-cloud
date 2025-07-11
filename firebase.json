@@ -41,6 +41,7 @@
     {
       "source": "functions",
       "codebase": "default",
+      "region": "europe-west3",
       "ignore": [
         "node_modules",
         ".git",

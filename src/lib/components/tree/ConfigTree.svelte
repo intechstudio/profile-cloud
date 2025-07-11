@@ -131,7 +131,7 @@
     });
   }
 
-  function handleDragStart(node: Tree.Node) {
+  function handleDragStart(node: AbstractTreeNode<any>) {
     const config = (get(node).data as AbstractItemData<Config>).item;
     parentIframeCommunication({
       windowPostMessageName: "configDragChange",

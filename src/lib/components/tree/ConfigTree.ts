@@ -5,7 +5,7 @@ import {
   compatible_config_types,
 } from "./../../../routes/EditorLayout";
 import { type Config } from "../../schemas";
-import { filter_value, FilterValue, type Term } from "../../../routes/Filter";
+import { filter_value } from "../../../routes/Filter";
 import { Sort } from "../../../routes/Sorter";
 import {
   TreeItemType,
@@ -85,18 +85,43 @@ export namespace Tree {
     return res;
   }
 
+  function isElementType(value: string): value is ElementType {
+    return Object.values(ElementType).includes(value as ElementType);
+  }
+
+  function isModuleType(value: string): value is ModuleType {
+    return Object.values(ModuleType).includes(value as ModuleType);
+  }
+
   function isCompatible(config: Config, types: string[]) {
-    if (config.configType === "snippet") {
-      return true;
-    } else if (
-      config.type === ModuleType.VSN1L ||
-      config.type === ModuleType.VSN1R
-    ) {
+    if (config.type === ModuleType.VSN1L || config.type === ModuleType.VSN1R) {
       return (
         types.includes(ModuleType.VSN1L) || types.includes(ModuleType.VSN1R)
       );
     } else {
-      return types.includes(config.type);
+      switch (config.configType) {
+        case "profile": {
+          const moduleTypes = types.filter((t): t is ModuleType =>
+            isModuleType(t),
+          );
+          return moduleTypes.includes(config.type as ModuleType);
+        }
+        case "preset": {
+          const elementTypes = types.filter((t): t is ElementType =>
+            isElementType(t),
+          );
+          const leftCompatible = elementTypes.some((e) =>
+            grid.is_element_compatible_with(e, config.type as ElementType),
+          );
+          const rightCompatible = elementTypes.some((e) =>
+            grid.is_element_compatible_with(config.type as ElementType, e),
+          );
+          return leftCompatible || rightCompatible;
+        }
+        case "snippet": {
+          return true;
+        }
+      }
     }
   }
 
