@@ -17,7 +17,7 @@
   import { Tree } from "./ConfigTree";
   import { createEventDispatcher } from "svelte";
   import { parentIframeCommunication } from "../../utils";
-  import { ModuleType } from "@intechstudio/grid-protocol";
+  import { ElementType, grid, ModuleType } from "@intechstudio/grid-protocol";
   import { dragTarget } from "../../actions/drag.action";
   import {
     type AbstractFolderData,
@@ -93,19 +93,44 @@
     });
   }
 
-  function isCompatible(node: AbstractTreeNode<any>, types: string[]) {
-    const data = (get(node).data as AbstractItemData<Config>).item;
-    if (data.configType === "snippet") {
-      return true;
-    } else if (
-      data.type === ModuleType.VSN1L ||
-      data.type === ModuleType.VSN1R
-    ) {
+  function isElementType(value: string): value is ElementType {
+    return Object.values(ElementType).includes(value as ElementType);
+  }
+
+  function isModuleType(value: string): value is ModuleType {
+    return Object.values(ModuleType).includes(value as ModuleType);
+  }
+
+  function isCompatible(node: Tree.Node, types: string[]) {
+    const { item } = get(node).data as AbstractItemData<Config>;
+    if (item.type === ModuleType.VSN1L || item.type === ModuleType.VSN1R) {
       return (
         types.includes(ModuleType.VSN1L) || types.includes(ModuleType.VSN1R)
       );
     } else {
-      return types.includes(data.type);
+      switch (item.configType) {
+        case "profile": {
+          const moduleTypes = types.filter((t): t is ModuleType =>
+            isModuleType(t),
+          );
+          return moduleTypes.includes(item.type as ModuleType);
+        }
+        case "preset": {
+          const elementTypes = types.filter((t): t is ElementType =>
+            isElementType(t),
+          );
+          const leftCompatible = elementTypes.some((e) =>
+            grid.is_element_compatible_with(e, item.type as ElementType),
+          );
+          const rightCompatible = elementTypes.some((e) =>
+            grid.is_element_compatible_with(item.type as ElementType, e),
+          );
+          return leftCompatible || rightCompatible;
+        }
+        case "snippet": {
+          return true;
+        }
+      }
     }
   }
 
