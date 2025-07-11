@@ -369,7 +369,7 @@ export namespace Tree {
     return root;
   }
 
-  interface ItemData extends AbstractItemData<Config> {
+  export interface ItemData extends AbstractItemData<Config> {
     compatible: boolean;
   }
 

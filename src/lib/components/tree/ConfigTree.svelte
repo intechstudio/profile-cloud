@@ -21,7 +21,6 @@
   import { dragTarget } from "../../actions/drag.action";
   import {
     type AbstractFolderData,
-    type AbstractItemData,
     AbstractTreeNode,
     TreeItemType,
     TreeFolder,
@@ -62,7 +61,7 @@
         }
         case TreeItemType.ITEM: {
           if (
-            matches((data as AbstractItemData<Config>).item, filter) ||
+            matches((data as Tree.ItemData).item, filter) ||
             get(child).children.length > 0
           ) {
             filtered.push(child as Tree.Node);
@@ -132,7 +131,7 @@
   }
 
   function handleDragStart(node: AbstractTreeNode<any>) {
-    const config = (get(node).data as AbstractItemData<Config>).item;
+    const config = (get(node).data as Tree.ItemData).item;
     parentIframeCommunication({
       windowPostMessageName: "configDragChange",
       dataForParent: {
@@ -147,8 +146,8 @@
     });
   }
 
-  function handleDragEnd(node: Tree.Node) {
-    const config = (get(node).data as AbstractItemData<Config>).item;
+  function handleDragEnd(node: AbstractTreeNode<any>) {
+    const config = (get(node).data as Tree.ItemData).item;
     parentIframeCommunication({
       windowPostMessageName: "configDragChange",
       dataForParent: {
@@ -161,15 +160,15 @@
     dragTarget.set(undefined);
   }
 
-  function handleClick(node: Tree.Node) {
-    const config = (get(node).data as AbstractItemData<Config>).item;
+  function handleClick(node: AbstractTreeNode<any>) {
+    const config = (get(node).data as Tree.ItemData).item;
     selected_config.set(config);
     dispatch("config-selected", { config: config });
   }
 
   function getfolderCtxOptions(
     level: number,
-    child: Tree.Node,
+    child: AbstractTreeNode<any>,
   ): ContextMenuOptions {
     const { title } = get(child).data as AbstractFolderData;
     return {
@@ -182,15 +181,14 @@
             get(child).children.some(
               (e) =>
                 get(e).type === TreeItemType.ITEM &&
-                (get(e).data as AbstractItemData<Config>).item.syncStatus !==
-                  "local",
+                (get(e).data as Tree.ItemData).item.syncStatus !== "local",
             ),
         },
       ],
     };
   }
 
-  function getItemCount(item: Tree.Node) {
+  function getItemCount(item: AbstractTreeNode<any>) {
     const { type, children } = get(item);
 
     let count = type === TreeItemType.ITEM ? 1 : 0;
@@ -203,33 +201,43 @@
 
     return count;
   }
+
+  function getFolderData(node: AbstractTreeNode<any>) {
+    return get(node).data as AbstractFolderData;
+  }
+
+  function getItemData(node: AbstractTreeNode<any>) {
+    return get(node).data as Tree.ItemData;
+  }
 </script>
 
 <TreeComponent {...treeProps}>
   <svelte:fragment slot="folder" let:item let:expanded let:level>
+    {@const data = getFolderData(item)}
     <TreeFolder {item} {expanded} ctxOptions={getfolderCtxOptions(level, item)}>
       <span slot="title-label"
-        >{@html `${highlightMatches(get(item).data.title, $filter_value)} (${getItemCount(item)})`}</span
+        >{@html `${highlightMatches(data.title, $filter_value)} (${getItemCount(item)})`}</span
       >
     </TreeFolder>
   </svelte:fragment>
 
   <svelte:fragment slot="item" let:item let:level let:expanded>
+    {@const data = getItemData(item)}
     <ProfileCloudTreeItem
       on:config-selected={handleConfigSelected}
       {item}
-      compatible={get(item).data.item.compatible}
-      selected={get(item).id === $selected_config?.id}
+      compatible={data.compatible}
+      selected={data.item.id === $selected_config?.id}
       {expanded}
       on:drag-start={() => handleDragStart(item)}
       on:drag-end={() => handleDragEnd(item)}
       on:click={() => handleClick(item)}
     >
       <div slot="button-label">
-        {@html highlightMatches(get(item).data.item.name, $filter_value)}
+        {@html highlightMatches(data.item.name, $filter_value)}
       </div>
       <div slot="type-label">
-        {@html highlightMatches(get(item).data.item.type, $filter_value)}
+        {@html highlightMatches(data.item.type, $filter_value)}
       </div>
     </ProfileCloudTreeItem>
   </svelte:fragment>
