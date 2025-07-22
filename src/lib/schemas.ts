@@ -8,7 +8,11 @@ export const BaseConfigSchema = z.object({
   createdAt: z.coerce.date().optional(),
   name: z.string(),
   description: z.string(),
-  type: z.union([z.nativeEnum(ElementType), z.nativeEnum(ModuleType)]),
+  type: z.union([
+    z.nativeEnum(ElementType),
+    z.nativeEnum(ModuleType),
+    z.literal("snippet"),
+  ]),
   version: z
     .object({
       major: z.string(),
