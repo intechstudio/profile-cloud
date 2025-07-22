@@ -221,13 +221,22 @@
     </TreeFolder>
   </svelte:fragment>
 
-  <svelte:fragment slot="item" let:item let:level let:expanded>
+  <svelte:fragment
+    slot="item"
+    let:item
+    let:level
+    let:expanded
+    let:itemFunction
+    let:itemProps
+  >
     {@const data = getItemData(item)}
     <ProfileCloudTreeItem
       on:config-selected={handleConfigSelected}
       {item}
       compatible={data.compatible}
       selected={data.item.id === $selected_config?.id}
+      {itemFunction}
+      {itemProps}
       {expanded}
       on:drag-start={() => handleDragStart(item)}
       on:drag-end={() => handleDragEnd(item)}
