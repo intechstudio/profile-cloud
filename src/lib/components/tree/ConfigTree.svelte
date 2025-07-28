@@ -232,11 +232,11 @@
     {@const data = getItemData(item)}
     <ProfileCloudTreeItem
       on:config-selected={handleConfigSelected}
+      {itemFunction}
+      {itemProps}
       {item}
       compatible={data.compatible}
       selected={data.item.id === $selected_config?.id}
-      {itemFunction}
-      {itemProps}
       {expanded}
       on:drag-start={() => handleDragStart(item)}
       on:drag-end={() => handleDragEnd(item)}
