@@ -48,13 +48,19 @@
     const filtered: Tree.Node[] = [];
     for (const child of get(node).children) {
       const { children, type, data } = get(child);
-      if (children.length > 0) {
-        filterNode(child as Tree.Node, filter, level + 1);
-      }
 
       switch (type) {
         case TreeItemType.FOLDER: {
-          if (get(child).children.length > 0 || level === 0) {
+          const { title } = get(child).data as AbstractFolderData;
+          let match = false;
+          if (filter.every((e) => title.includes(e.value))) {
+            match = true;
+          } else {
+            if (children.length > 0) {
+              filterNode(child as Tree.Node, filter, level + 1);
+            }
+          }
+          if (match || get(child).children.length > 0 || level === 0) {
             filtered.push(child as Tree.Node);
           }
           break;
@@ -243,6 +249,7 @@
       on:click={() => handleClick(item)}
     >
       <div slot="button-label">
+        asd
         {@html highlightMatches(data.item.name, $filter_value)}
       </div>
       <div slot="type-label">
