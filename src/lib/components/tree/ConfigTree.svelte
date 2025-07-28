@@ -204,9 +204,18 @@
     />
   </svelte:fragment>
 
-  <svelte:fragment slot="item" let:item let:level let:expanded>
+  <svelte:fragment
+    slot="item"
+    let:item
+    let:level
+    let:expanded
+    let:itemFunction
+    let:itemProps
+  >
     <ProfileCloudTreeItem
       on:config-selected={handleConfigSelected}
+      {itemFunction}
+      {itemProps}
       {item}
       compatible={isCompatible(item, $compatible_config_types)}
       selected={get(item).id === $selected_config?.id}
