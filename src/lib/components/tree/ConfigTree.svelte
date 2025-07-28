@@ -249,7 +249,6 @@
       on:click={() => handleClick(item)}
     >
       <div slot="button-label">
-        asd
         {@html highlightMatches(data.item.name, $filter_value)}
       </div>
       <div slot="type-label">
