@@ -9,6 +9,7 @@
   } from "firebase/storage";
   import { firebaseStorage } from "../lib/firebase";
   import { v4 as uuidv4 } from "uuid";
+  import { filter_value, highlightMatches } from "./Filter";
 
   const dispatch = createEventDispatcher();
 
@@ -144,7 +145,7 @@
       class="markdown-container p-1 flex-grow w-full h-full dark:bg-primary bg-opacity-40 overflow-y-auto"
       on:dblclick={handleDoubleClick}
     >
-      {@html preview}
+      {@html highlightMatches(preview, $filter_value)}
     </div>
   {/if}
 </div>
