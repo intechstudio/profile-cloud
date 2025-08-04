@@ -1,114 +1,68 @@
 <script lang="ts">
-  import { get, writable, type Writable } from "svelte/store";
-  import { filterConfigs } from "./../../../routes/Filter";
-  import { sort_key, sortConfigs } from "./../../../routes/Sorter";
-  import { filter_value, FilterValue } from "./../../../routes/Filter";
+  import { get } from "svelte/store";
+  import { Sort, sort_key } from "./../../../routes/Sorter";
+  import {
+    filter_value,
+    filterConfigs,
+    FilterValue,
+  } from "./../../../routes/Filter";
   import {
     selected_config,
     show_supported_only,
     config_manager,
+    compatible_config_types,
+    selectClosestMatch,
   } from "./../../../routes/EditorLayout";
   import { type Config } from "../../schemas";
-  import { TreeNodeData, createTree } from "./ConfigTree";
-  import { tick } from "svelte";
-  import { contextTarget, Tree } from "@intechstudio/grid-uikit";
-  import ConfigCardEditor from "../../../routes/ConfigCardEditor.svelte";
+  import { Tree } from "./ConfigTree";
+  import { createEventDispatcher } from "svelte";
   import { parentIframeCommunication } from "../../utils";
+  import { ElementType, grid, ModuleType } from "@intechstudio/grid-protocol";
+  import { dragTarget } from "../../actions/drag.action";
+  import {
+    type AbstractFolderData,
+    type AbstractItemData,
+    AbstractTreeNode,
+    TreeItemType,
+    TreeFolder,
+    Tree as TreeComponent,
+    ProfileCloudTreeItem,
+    ContextMenuOptions,
+    type TreeProperties,
+  } from "@intechstudio/grid-uikit";
 
-  let tree = undefined;
-  let expanded = undefined;
-
-  function handleTreeView(e: any) {
-    tree = e.detail.elements.tree;
-    expanded = e.detail.states.expanded;
-  }
+  const dispatch = createEventDispatcher();
 
   export let configs: Config[];
 
-  let root: Writable<TreeNodeData<Config>> = writable();
+  let treeProps: TreeProperties;
 
-  async function scrollToSelectedConfig() {
-    await tick();
-    const target = document.getElementById($selected_config?.id as string);
-    if (!target) {
-      return;
-    }
-    target.scrollIntoView({
-      behavior: "smooth",
-    });
-  }
+  $: treeProps = buildProps(
+    configs,
+    $filter_value,
+    $sort_key,
+    $show_supported_only,
+  );
 
-  function selectClosestMatch() {
-    const temp = get(root).toArray();
-    if (temp.length > 0) {
-      selected_config.set({ id: temp[0].id, presetIndex: -1 });
-      return;
-    } else {
-      selected_config.set(undefined);
-    }
-  }
+  function buildProps(
+    configs: Config[],
+    filter: FilterValue,
+    key: Sort.Key,
+    supported: boolean,
+  ): TreeProperties {
+    const filteredConfigs = filterConfigs(configs, filter);
+    const node = Tree.create(filteredConfigs, {
+      showSupportedOnly: supported,
+    }).sort(key);
 
-  let filterBuffer = new FilterValue();
+    selectClosestMatch($selected_config, filteredConfigs);
 
-  $: {
-    root.set(createTree(configs, $show_supported_only));
-    get(root).filter($filter_value, filterConfigs);
-
-    if (!filterBuffer.isEqual($filter_value)) {
-      selectClosestMatch();
-      filterBuffer = $filter_value;
-    }
-
-    handleSelectedConfigChange();
-  }
-
-  $: {
-    $root.sort($sort_key, sortConfigs);
-    root.update((store) => store);
-    scrollToSelectedConfig();
-  }
-
-  function handleSelectedConfigChange() {
-    const selected = $selected_config?.id;
-    if (typeof selected === "undefined") {
-      return;
-    }
-
-    expanded.set([]);
-    for (const child of get(root).children) {
-      toggleIncludingNodes(selected, child);
-    }
-    scrollToSelectedConfig();
-  }
-
-  function nodeIncludesItem(id: string, node: TreeNodeData<Config>) {
-    if (typeof node.items.find((e) => e.id === id) !== "undefined") {
-      return true;
-    }
-
-    for (const child of node.children) {
-      if (nodeIncludesItem(id, child)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  function toggleIncludingNodes(id: string, node: TreeNodeData<Config>) {
-    const contains = nodeIncludesItem(id, node);
-    if (contains) {
-      expanded.update((store) => {
-        store.push(node.id);
-        return store;
-      });
-    }
-
-    if (node.children.length > 0) {
-      for (const child of node.children) {
-        toggleIncludingNodes(id, child);
-      }
-    }
+    return {
+      root: node,
+      selected: $selected_config?.id,
+      expanded: node.getIncludingNodes($selected_config?.id),
+      scrollBehaviour: { scrollToIndex: true, easing: "instant" },
+    };
   }
 
   function handleDeleteVirtualDirectory(title: string) {
@@ -138,55 +92,137 @@
       dataForParent: { value: true },
     });
   }
+
+  function isElementType(value: string): value is ElementType {
+    return Object.values(ElementType).includes(value as ElementType);
+  }
+
+  function isModuleType(value: string): value is ModuleType {
+    return Object.values(ModuleType).includes(value as ModuleType);
+  }
+
+  function isCompatible(node: Tree.Node, types: string[]) {
+    const { item } = get(node).data as AbstractItemData<Config>;
+    if (item.type === ModuleType.VSN1L || item.type === ModuleType.VSN1R) {
+      return (
+        types.includes(ModuleType.VSN1L) || types.includes(ModuleType.VSN1R)
+      );
+    } else {
+      switch (item.configType) {
+        case "profile": {
+          const moduleTypes = types.filter((t): t is ModuleType =>
+            isModuleType(t),
+          );
+          return moduleTypes.includes(item.type as ModuleType);
+        }
+        case "preset": {
+          const elementTypes = types.filter((t): t is ElementType =>
+            isElementType(t),
+          );
+          const leftCompatible = elementTypes.some((e) =>
+            grid.is_element_compatible_with(e, item.type as ElementType),
+          );
+          const rightCompatible = elementTypes.some((e) =>
+            grid.is_element_compatible_with(item.type as ElementType, e),
+          );
+          return leftCompatible || rightCompatible;
+        }
+        case "snippet": {
+          return true;
+        }
+      }
+    }
+  }
+
+  function handleDragStart(node: AbstractTreeNode<any>) {
+    const config = (get(node).data as AbstractItemData<Config>).item;
+    parentIframeCommunication({
+      windowPostMessageName: "configDragChange",
+      dataForParent: {
+        drag: "start",
+        config,
+      },
+    });
+
+    parentIframeCommunication({
+      windowPostMessageName: "showOverlay",
+      dataForParent: { value: false },
+    });
+  }
+
+  function handleDragEnd(node: AbstractTreeNode<any>) {
+    const config = (get(node).data as AbstractItemData<Config>).item;
+    parentIframeCommunication({
+      windowPostMessageName: "configDragChange",
+      dataForParent: {
+        drag: "end",
+        config,
+        target: get(dragTarget),
+      },
+    });
+
+    dragTarget.set(undefined);
+  }
+
+  function handleClick(node: AbstractTreeNode<any>) {
+    const config = (get(node).data as AbstractItemData<Config>).item;
+    console.log(config);
+    selected_config.set(config);
+    dispatch("config-selected", { config: config });
+  }
+
+  function getfolderCtxOptions(
+    level: number,
+    child: AbstractTreeNode<any>,
+  ): ContextMenuOptions {
+    const { title } = get(child).data as AbstractFolderData;
+    return {
+      items: [
+        {
+          text: [`Delete virtual directory`, ``],
+          handler: () => handleDeleteVirtualDirectory(title),
+          isDisabled: () =>
+            level === 0 ||
+            get(child).children.some(
+              (e) =>
+                get(e).type === TreeItemType.ITEM &&
+                (get(e).data as AbstractItemData<Config>).item.syncStatus !==
+                  "local",
+            ),
+        },
+      ],
+    };
+  }
 </script>
 
-<ul class="flex flex-col w-full h-full max-h-full" {...$tree}>
-  <Tree treeItems={$root.children} on:tree-view={handleTreeView}>
-    <svelte:fragment slot="folder" let:child let:isExpanded let:level>
-      <div
-        class="flex w-full items-center mb-1 border-b h-5 border-white/40"
-        use:contextTarget={{
-          items: [
-            {
-              text: [`Delete virtual directory`, ``],
-              handler: () => handleDeleteVirtualDirectory(child.title),
-              isDisabled: () =>
-                level === 0 ||
-                child.items.some((e) => e.syncStatus !== "local"),
-            },
-          ],
-        }}
-      >
-        <div class="flex-grow text-left text-white/80 truncate">
-          {`${child.title} (${child.itemCount()})`}
-        </div>
-        <div>
-          <svg
-            width="14"
-            height="11"
-            class={isExpanded ? "" : "-rotate-90"}
-            viewBox="0 0 14 11"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M6.99968 11L0.9375 0.5L13.0619 0.500001L6.99968 11Z"
-              fill="#D9D9D9"
-            />
-          </svg>
-        </div>
-      </div>
-    </svelte:fragment>
+<TreeComponent {...treeProps}>
+  <svelte:fragment slot="folder" let:item let:expanded let:level>
+    <TreeFolder
+      {item}
+      {expanded}
+      ctxOptions={getfolderCtxOptions(level, item)}
+    />
+  </svelte:fragment>
 
-    <svelte:fragment slot="file" let:item>
-      <div class="mb-1">
-        <ConfigCardEditor
-          on:config-selected={handleConfigSelected}
-          data={item}
-          isSelected={item.id === $selected_config?.id &&
-            $selected_config?.presetIndex === -1}
-        />
-      </div>
-    </svelte:fragment>
-  </Tree>
-</ul>
+  <svelte:fragment
+    slot="item"
+    let:item
+    let:level
+    let:expanded
+    let:itemFunction
+    let:itemProps
+  >
+    <ProfileCloudTreeItem
+      on:config-selected={handleConfigSelected}
+      {itemFunction}
+      {itemProps}
+      {item}
+      compatible={isCompatible(item, $compatible_config_types)}
+      selected={get(item).id === $selected_config?.id}
+      {expanded}
+      on:drag-start={() => handleDragStart(item)}
+      on:drag-end={() => handleDragEnd(item)}
+      on:click={() => handleClick(item)}
+    />
+  </svelte:fragment>
+</TreeComponent>

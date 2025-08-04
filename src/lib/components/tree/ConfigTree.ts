@@ -1,200 +1,408 @@
-import { get, type Writable, writable } from "svelte/store";
+import { get } from "svelte/store";
 import configuration from "../../../../Configuration.json";
 import {
   config_manager,
   compatible_config_types,
 } from "./../../../routes/EditorLayout";
 import { type Config } from "../../schemas";
-import { filter_value, FilterValue } from "../../../routes/Filter";
+import { filter_value, FilterValue, type Term } from "../../../routes/Filter";
 import { Sort } from "../../../routes/Sorter";
+import {
+  TreeItemType,
+  AbstractTreeNode,
+  type AbstractFolderData,
+  type AbstractItemData,
+} from "@intechstudio/grid-uikit";
 import { v4 as uuidv4 } from "uuid";
+import { ElementType, grid, ModuleType } from "@intechstudio/grid-protocol";
 
-type FilterFunc<T> = (items: T[], filter: FilterValue) => T[];
-type SorterFunc<T> = (items: T[], key: Sort.Key) => void;
-
-export class TreeNodeData<T> {
-  public title: string;
-  public items: T[];
-  public children: TreeNodeData<T>[];
-  public parent: TreeNodeData<T> | undefined;
-  public open: Writable<boolean>;
-  public id: string;
-
-  constructor(label: string) {
-    this.title = label;
-    this.items = [];
-    this.children = [];
-    this.parent = undefined;
-    this.open = writable(false);
-    this.id = uuidv4();
+export namespace Tree {
+  export interface Options {
+    showSupportedOnly?: boolean;
   }
 
-  itemCount() {
-    let sum = this.items.length;
-    for (const child of this.children) {
-      sum += child.itemCount();
-    }
-    return sum;
+  export type Node = InstanceType<typeof TreeNodeImpl>;
+
+  function getPresetName(preset: any) {
+    const initConfig = preset.events.find(
+      (e: any) => parseInt(e.event) === 0,
+    ).config;
+    const regex = /--\[\[@sn\]\] self:gen\(["']([^"']+)["']\)/;
+
+    const value = initConfig.match(regex)?.at(1);
+    return value;
   }
 
-  addChild(...children: TreeNodeData<T>[]) {
-    for (const child of children) {
-      child.parent = this;
-    }
-    this.children.push(...children);
-  }
+  function generateVirtualPresets(data: Config) {
+    let moduleType = ModuleType[data.type as keyof typeof ModuleType];
+    let elements = grid
+      .get_module_element_list(moduleType)
+      ?.reduce(
+        (array: Array<{ index: number; type: ElementType }>, type, index) => {
+          if (typeof type !== "undefined") {
+            array.push({ index, type });
+          }
+          return array;
+        },
+        [],
+      );
 
-  addItem(...items: T[]) {
-    this.items.push(...items);
-  }
+    const res: Config[] = [];
+    for (const preset of data.configs) {
+      const index = preset.controlElementNumber;
+      const element = elements.find((e) => e.index === index);
 
-  filter(filter: FilterValue, filterFunc: FilterFunc<T>) {
-    this.items = filterFunc(this.items, filter);
-    this.children.forEach((e) => e.filter(filter, filterFunc));
-  }
+      if (typeof element === "undefined") {
+        continue;
+      }
 
-  sort(key: Sort.Key, sorterFunc: SorterFunc<T>) {
-    const sortByName = (a: TreeNodeData<T>, b: TreeNodeData<T>) => {
-      return a.title
-        .toLowerCase()
-        .localeCompare(b.title.toLowerCase(), undefined, { numeric: true });
-    };
-    this.children.sort(sortByName);
+      const elementName = getPresetName(preset);
+      const presetName =
+        typeof elementName !== "undefined"
+          ? elementName
+          : `Element ${index} (${
+              element.type.at(0)?.toUpperCase() + element.type?.slice(1)
+            })`;
 
-    sorterFunc(this.items, key);
-    //node.nodes.sort(); TODO: SORT FOLDERS
-    this.children.forEach((e) => e.sort(key, sorterFunc));
-  }
+      const partialData: Config = {
+        configs: structuredClone(preset),
+        id: `${data.id}#${preset.controlElementNumber}`,
+        type: element.type,
+        name: presetName,
+        configType: "preset",
+        isEditable: false,
+        syncStatus: "local",
+        public: false,
+        modifiedAt: new Date(),
+        description: "",
+        createdAt: new Date(),
+        displayName: `${data.name} / ${presetName}`,
+      };
 
-  toArray() {
-    const res: T[] = [];
-    res.push(...this.items);
-    for (const node of this.children) {
-      res.push(...node.toArray());
+      res.push(partialData);
     }
     return res;
   }
-}
 
-export type TreeOptions = {
-  showSupportedOnly: boolean;
-};
-
-export function createTree(
-  configs: any,
-  showSupportedOnly: boolean,
-): TreeNodeData<Config> {
-  const root = new TreeNodeData<Config>("Root");
-  const [
-    my_configs,
-    recommended_configs,
-    community_configs,
-    other_configs,
-    unsupported_configs,
-  ] = [
-    new TreeNodeData<Config>("My Configs"),
-    new TreeNodeData<Config>("Recommended Configs"),
-    new TreeNodeData<Config>("Community Configs"),
-    new TreeNodeData<Config>("Other Configs"),
-    new TreeNodeData<Config>("Unsupported Configs"),
-  ];
-
-  const cm = get(config_manager);
-
-  my_configs.addItem(
-    ...configs.filter((e: Config) => {
-      const isMyConfig =
-        e.syncStatus == "local" || e.owner === cm?.getCurrentOwnerId();
-      return isMyConfig;
-    }),
-  );
-  recommended_configs.addItem(
-    ...configs.filter((e: Config) => {
-      const isMyConfig =
-        e.syncStatus == "local" || e.owner === cm?.getCurrentOwnerId();
-      const isOfficialConfig =
-        configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(e.owner ?? "");
-
-      const cct = get(compatible_config_types);
-
-      return (
-        !isMyConfig &&
-        isOfficialConfig &&
-        (!showSupportedOnly || cct.includes(e.type))
-      );
-    }),
-  );
-  community_configs.addItem(
-    ...configs.filter((e: Config) => {
-      const isMyConfig =
-        e.syncStatus == "local" || e.owner === cm?.getCurrentOwnerId();
-      const isOfficialConfig =
-        configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(e.owner ?? "");
-      const cct = get(compatible_config_types);
-      return (
-        !isMyConfig &&
-        !isOfficialConfig &&
-        (!showSupportedOnly || cct.includes(e.type))
-      );
-    }),
-  );
-  other_configs.addItem(
-    ...configs.filter((e: Config) => {
-      const isMyConfig =
-        e.syncStatus == "local" || e.owner === cm?.getCurrentOwnerId();
-      const cct = get(compatible_config_types);
-      return !isMyConfig && (!showSupportedOnly || cct.includes(e.type));
-    }),
-  );
-  unsupported_configs.addItem(
-    ...configs.filter((e: Config) => {
-      const isMyConfig =
-        e.syncStatus == "local" || e.owner === cm?.getCurrentOwnerId();
-      const cct = get(compatible_config_types);
-
-      return !isMyConfig && showSupportedOnly && !cct.includes(e.type);
-    }),
-  );
-
-  root.addChild(my_configs);
-
-  const fv = get(filter_value);
-  const isFiltering = fv.length > 0;
-  if (isFiltering) {
-    root.addChild(other_configs);
-  } else {
-    root.addChild(recommended_configs, community_configs);
-  }
-
-  if (showSupportedOnly) {
-    root.addChild(unsupported_configs);
-  }
-
-  root.children.forEach((category) => {
-    for (const item of category.items) {
-      const path = item.virtualPath;
-      if (typeof path !== "undefined") {
-        const parts = path.split("/");
-        let node = category;
-        for (let i = 0; i < parts.length; ++i) {
-          const part = parts[i];
-          const found = node.children.find((e) => e.title === part);
-          if (found) {
-            node = found;
-          } else {
-            const newNode = new TreeNodeData<Config>(part);
-            node.addChild(newNode);
-            node = newNode;
+  function buildVirtualPresets(node: TreeNodeImpl) {
+    for (const child of get(node).children as TreeNodeImpl[]) {
+      const { type, data } = get(child);
+      switch (type) {
+        case TreeItemType.ITEM: {
+          const { item } = data as AbstractItemData<Config>;
+          if (item.configType === "profile") {
+            const virtualPresets = generateVirtualPresets(item);
+            for (const preset of virtualPresets) {
+              const node = new TreeNodeImpl(undefined, TreeItemType.ITEM, {
+                item: preset,
+              });
+              child.addChild(node);
+            }
           }
+          break;
         }
-        node.addItem(item);
+        case TreeItemType.FOLDER: {
+          buildVirtualPresets(child);
+          break;
+        }
+      }
+    }
+  }
+
+  function buildVirtualFolders(node: TreeNodeImpl) {
+    const { children } = get(node);
+
+    for (let i = children.length - 1; i >= 0; i--) {
+      const child = children[i] as TreeNodeImpl;
+      if (get(child).type !== TreeItemType.ITEM) continue;
+
+      const { item } = get(child).data as AbstractItemData<Config>;
+      const { virtualPath } = item;
+      if (!virtualPath) continue;
+
+      const segments = virtualPath.split("/");
+      const [folderName, ...restPath] = segments;
+      if (!folderName) continue;
+
+      let folder = children.find(
+        (e) =>
+          get(e).type === TreeItemType.FOLDER &&
+          (get(e).data as AbstractFolderData).title === folderName,
+      );
+
+      if (!folder) {
+        folder = new TreeNodeImpl(undefined, TreeItemType.FOLDER, {
+          title: folderName,
+        });
+        node.addChild(folder);
+      }
+
+      // Clone the item with a reduced virtual path for recursion
+      const newItem = {
+        ...item,
+        virtualPath: restPath.join("/"),
+      };
+
+      // Replace the item's data on the child node without mutating the original
+      child.update((s) => {
+        (s.data as AbstractItemData<Config>).item = newItem;
+        return s;
+      });
+
+      folder.addChild(child);
+
+      // Remove the child from its original position
+      node.update((s) => {
+        s.children.splice(i, 1);
+        return s;
+      });
+    }
+
+    // Recurse into folders
+    for (const child of get(node).children as TreeNodeImpl[]) {
+      if (get(child).type === TreeItemType.FOLDER) {
+        buildVirtualFolders(child);
+      }
+    }
+  }
+
+  export function create(configs: Config[], options: Options = {}) {
+    const { showSupportedOnly } = options;
+    let root = new TreeNodeImpl(undefined, TreeItemType.FOLDER, {
+      title: "Root",
+    });
+    const [
+      my_configs,
+      recommended_configs,
+      community_configs,
+      other_configs,
+      unsupported_configs,
+    ] = [
+      new TreeNodeImpl(root, TreeItemType.FOLDER, { title: "My Configs" }),
+      new TreeNodeImpl(root, TreeItemType.FOLDER, {
+        title: "Recommended Configs",
+      }),
+      new TreeNodeImpl(root, TreeItemType.FOLDER, {
+        title: "Community Configs",
+      }),
+      new TreeNodeImpl(root, TreeItemType.FOLDER, { title: "Other Configs" }),
+      new TreeNodeImpl(root, TreeItemType.FOLDER, {
+        title: "Unsupported Configs",
+      }),
+    ];
+
+    const cm = get(config_manager);
+
+    my_configs.addChild(
+      ...configs
+        .filter((e: Config) => {
+          const isMyConfig =
+            e.syncStatus == "local" || e.owner === cm?.getCurrentOwnerId();
+          return isMyConfig;
+        })
+        .map(
+          (e) => new TreeNodeImpl(undefined, TreeItemType.ITEM, { item: e }),
+        ),
+    );
+    recommended_configs.addChild(
+      ...configs
+        .filter((e: Config) => {
+          const isMyConfig =
+            e.syncStatus == "local" || e.owner === cm?.getCurrentOwnerId();
+          const isOfficialConfig =
+            configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
+              e.owner ?? "",
+            );
+
+          const cct = get(compatible_config_types);
+
+          return (
+            !isMyConfig &&
+            isOfficialConfig &&
+            (!(showSupportedOnly ?? false) || cct.includes(e.type))
+          );
+        })
+        .map(
+          (e) => new TreeNodeImpl(undefined, TreeItemType.ITEM, { item: e }),
+        ),
+    );
+    community_configs.addChild(
+      ...configs
+        .filter((e: Config) => {
+          const isMyConfig =
+            e.syncStatus == "local" || e.owner === cm?.getCurrentOwnerId();
+          const isOfficialConfig =
+            configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
+              e.owner ?? "",
+            );
+          const cct = get(compatible_config_types);
+          return (
+            !isMyConfig &&
+            !isOfficialConfig &&
+            (!showSupportedOnly || cct.includes(e.type))
+          );
+        })
+        .map(
+          (e) => new TreeNodeImpl(undefined, TreeItemType.ITEM, { item: e }),
+        ),
+    );
+    other_configs.addChild(
+      ...configs
+        .filter((e: Config) => {
+          const isMyConfig =
+            e.syncStatus == "local" || e.owner === cm?.getCurrentOwnerId();
+          const cct = get(compatible_config_types);
+          return !isMyConfig && (!showSupportedOnly || cct.includes(e.type));
+        })
+        .map(
+          (e) => new TreeNodeImpl(undefined, TreeItemType.ITEM, { item: e }),
+        ),
+    );
+    unsupported_configs.addChild(
+      ...configs
+        .filter((e: Config) => {
+          const isMyConfig =
+            e.syncStatus == "local" || e.owner === cm?.getCurrentOwnerId();
+          const cct = get(compatible_config_types);
+
+          return !isMyConfig && showSupportedOnly && !cct.includes(e.type);
+        })
+        .map(
+          (e) => new TreeNodeImpl(undefined, TreeItemType.ITEM, { item: e }),
+        ),
+    );
+
+    root.addChild(my_configs);
+
+    const fv = get(filter_value);
+    const isFiltering = fv.length > 0;
+    if (isFiltering) {
+      root.addChild(other_configs);
+    } else {
+      root.addChild(recommended_configs, community_configs);
+    }
+
+    if (showSupportedOnly) {
+      root.addChild(unsupported_configs);
+    }
+
+    buildVirtualFolders(root);
+    buildVirtualPresets(root);
+    return root;
+  }
+
+  class TreeNodeImpl extends AbstractTreeNode<Config> {
+    public constructor(
+      parent: TreeNodeImpl | undefined,
+      type: TreeItemType,
+      data: AbstractFolderData | AbstractItemData<Config>,
+    ) {
+      switch (type) {
+        case TreeItemType.FOLDER: {
+          super(parent, uuidv4(), type, data);
+          break;
+        }
+        case TreeItemType.ITEM: {
+          const itemData = data as AbstractItemData<Config>;
+          super(parent, itemData.item.id, type, data);
+          break;
+        }
       }
     }
 
-    category.items = category.items.filter((e: any) => {
-      return typeof e.virtualPath === "undefined";
-    });
-  });
+    public getIncludingNodes(id: string | undefined): string[] {
+      if (typeof id === "undefined") {
+        return [];
+      }
 
-  return root;
+      const found = typeof this.findChild(id) !== "undefined";
+      let res: string[] = [];
+      if (found) {
+        res.push(get(this.internal).id);
+
+        for (const child of get(this.internal).children) {
+          res = [...res, ...(child as TreeNodeImpl).getIncludingNodes(id)];
+        }
+      }
+      return res;
+    }
+
+    public sort(key: Sort.Key) {
+      const getName = (node: Node) => {
+        const { type, data } = get(node);
+        switch (type) {
+          case TreeItemType.FOLDER:
+            return (data as AbstractFolderData).title;
+          case TreeItemType.ITEM:
+            return (data as AbstractItemData<Config>).item.name;
+          default:
+            return "";
+        }
+      };
+
+      const folders = (get(this.internal).children as TreeNodeImpl[])
+        .filter((e) => get(e).type === TreeItemType.FOLDER)
+        .sort((a: TreeNodeImpl, b: TreeNodeImpl) => {
+          const [nameA, nameB] = [getName(a), getName(b)];
+          return nameA.localeCompare(nameB, undefined, {
+            numeric: true,
+          });
+        });
+
+      const items: TreeNodeImpl[] = (
+        get(this.internal).children as TreeNodeImpl[]
+      ).filter((e) => get(e).type === TreeItemType.ITEM);
+
+      switch (key.type) {
+        case Sort.Type.NAME: {
+          items.sort((a: TreeNodeImpl, b: TreeNodeImpl) => {
+            const [nameA, nameB] = [getName(a), getName(b)];
+            return nameA.localeCompare(nameB, undefined, {
+              numeric: true,
+            });
+          });
+          break;
+        }
+        case Sort.Type.DATE: {
+          items.sort((a: TreeNodeImpl, b: TreeNodeImpl) => {
+            const [typeA, typeB] = [
+              (get(a).data as AbstractItemData<Config>).item.type,
+              (get(b).data as AbstractItemData<Config>).item.type,
+            ];
+            return typeA.localeCompare(typeB, undefined, {
+              numeric: true,
+            });
+          });
+          break;
+        }
+        case Sort.Type.TYPE: {
+          items.sort((a: TreeNodeImpl, b: TreeNodeImpl) => {
+            const [dateA, dateB] = [
+              (get(a).data as AbstractItemData<Config>).item.modifiedAt,
+              (get(b).data as AbstractItemData<Config>).item.modifiedAt,
+            ];
+            return dateA.getTime() - dateB.getTime();
+          });
+          break;
+        }
+      }
+
+      this.update((s) => {
+        switch (key.direction) {
+          case Sort.Direction.ASC: {
+            s.children = [...folders, ...items];
+            break;
+          }
+          case Sort.Direction.DESC: {
+            s.children = [...folders, ...items.reverse()];
+            break;
+          }
+        }
+        return s;
+      });
+
+      get(this.internal).children.forEach((e) => (e as TreeNodeImpl).sort(key));
+      return this;
+    }
+  }
 }

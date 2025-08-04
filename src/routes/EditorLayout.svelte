@@ -7,7 +7,6 @@
     show_supported_only,
     config_manager,
     selected_component_types,
-    type ConfigSelection,
   } from "./EditorLayout";
   import { get } from "svelte/store";
   import ConfigTree from "../lib/components/tree/ConfigTree.svelte";
@@ -239,7 +238,7 @@
     if (configs.length == 0) return;
 
     configs.sort((a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime());
-    selected_config.set({ id: configs[0].id, presetIndex: -1 });
+    selected_config.set(configs[0]);
   }
 
   onMount(async () => {
@@ -464,12 +463,10 @@
               on:name-change={handleNameChange}
               on:path-change={handlePathChange}
               on:overwrite-profile={handleOverwriteProfile}
-              data={configs.find((e) => e.id === $selected_config?.id)}
+              data={$selected_config}
             >
               <svelte:fragment slot="link-button">
-                {@const config = configs.find(
-                  (e) => e.id === $selected_config?.id,
-                )}
+                {@const config = $selected_config}
                 {#if config?.syncStatus != "local"}
                   <button
                     class="relative group flex"
