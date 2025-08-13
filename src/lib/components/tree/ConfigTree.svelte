@@ -52,8 +52,13 @@
       switch (type) {
         case TreeItemType.FOLDER: {
           const { title } = get(child).data as AbstractFolderData;
-
-          if (filter.every((e) => title.includes(e.value))) {
+          if (
+            filter.every((e) =>
+              e.caseMatch
+                ? title.includes(e.value)
+                : title.toLowerCase().includes(e.value.toLowerCase()),
+            )
+          ) {
             filtered.push(child as Tree.Node);
             break;
           }
