@@ -1,6 +1,6 @@
 <script lang="ts">
   import { sortConfigs, sort_key } from "./Sorter";
-  import { filterConfigs, filter_value } from "./Filter";
+  import { matches, filter_value } from "./Filter";
   import Sorter from "./Sorter.svelte";
   import { onDestroy, onMount } from "svelte";
   import type { Config } from "../lib/schemas";
@@ -46,7 +46,7 @@
 
   $: {
     filteredConfigs = sortConfigs(
-      filterConfigs(configs, $filter_value),
+      configs.filter((e) => matches(e, $filter_value)),
       $sort_key,
     );
   }
