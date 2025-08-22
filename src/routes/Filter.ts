@@ -156,12 +156,6 @@ export function matches(config: Config, filter: FilterValue): boolean {
 export function highlightMatches(text: string, filter: FilterValue): string {
   if (!text || filter.length === 0) return text;
 
-  if (
-    !filter.every((e) => text.toLowerCase().includes(e.value.toLowerCase()))
-  ) {
-    return text;
-  }
-
   let result = text;
 
   for (const term of filter) {
