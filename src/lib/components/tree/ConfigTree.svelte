@@ -53,7 +53,7 @@
         case TreeItemType.FOLDER: {
           const { title } = get(child).data as AbstractFolderData;
           if (
-            filter.every((e) =>
+            filter.some((e) =>
               e.caseMatch
                 ? title.includes(e.value)
                 : title.toLowerCase().includes(e.value.toLowerCase()),
