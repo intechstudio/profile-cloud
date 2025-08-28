@@ -36,15 +36,13 @@
 
   let treeProps: TreeProperties;
 
-  $: {
-    treeProps = buildProps(
-      configs,
-      $filter_value,
-      $sort_key,
-      $show_supported_only,
-      $compatible_config_types,
-    );
-  }
+  $: treeProps = buildProps(
+    configs,
+    $filter_value,
+    $sort_key,
+    $show_supported_only,
+    $compatible_config_types,
+  );
 
   function filterNode(node: Tree.Node, filter: FilterValue, level = 0) {
     const filtered: Tree.Node[] = [];
