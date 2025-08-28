@@ -130,19 +130,6 @@
     }
   }
 
-  async function handleConfigSelected(e: any) {
-    const { config } = e.detail;
-    await parentIframeCommunication({
-      windowPostMessageName: "provideSelectedConfigForEditor",
-      dataForParent: { config: config },
-    });
-
-    await parentIframeCommunication({
-      windowPostMessageName: "showOverlay",
-      dataForParent: { value: true },
-    });
-  }
-
   function handleDragStart(node: AbstractTreeNode<any>) {
     const config = (get(node).data as Tree.ItemData).item;
     parentIframeCommunication({
@@ -173,10 +160,18 @@
     dragTarget.set(undefined);
   }
 
-  function handleClick(node: AbstractTreeNode<any>) {
+  async function handleClick(node: AbstractTreeNode<any>) {
     const config = (get(node).data as Tree.ItemData).item;
     selected_config.set(config);
-    dispatch("config-selected", { config: config });
+    await parentIframeCommunication({
+      windowPostMessageName: "provideSelectedConfigForEditor",
+      dataForParent: { config: config },
+    });
+
+    await parentIframeCommunication({
+      windowPostMessageName: "showOverlay",
+      dataForParent: { value: true },
+    });
   }
 
   function getfolderCtxOptions(
@@ -244,7 +239,6 @@
   >
     {@const data = getItemData(item)}
     <ProfileCloudTreeItem
-      on:config-selected={handleConfigSelected}
       {itemFunction}
       {itemProps}
       {item}
