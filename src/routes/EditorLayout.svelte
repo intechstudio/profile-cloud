@@ -42,6 +42,8 @@
   import Sorter from "./Sorter.svelte";
   import { dragTarget } from "../lib/actions/drag.action";
 
+  import DisplayOnWeb from "../lib/components/DisplayOnWeb.svelte";
+
   let configs: Config[] = [];
 
   let linkFlag: string | undefined = undefined;
@@ -586,6 +588,25 @@
                   </button>
                 {/if}
               </svelte:fragment>
+              <svelte:fragment slot="import-config-browser-button">
+                <DisplayOnWeb>
+                  {@const config = configs.find(
+                    (e) => e.id === $selected_config?.id,
+                  )}
+                  <button
+                    on:click={() => {
+                      const configLinkUrl =
+                        `${configuration.DEEPLINK_PROTOCOL_NAME}://?config-link=` +
+                        config?.id;
+                      window.open(configLinkUrl, "_self");
+                    }}
+                    class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
+                  >
+                    Import {config?.id}
+                  </button>
+                </DisplayOnWeb>
+              </svelte:fragment>
+
               <svelte:fragment slot="split-config-button">
                 {@const config = configs.find(
                   (e) => e.id === $selected_config?.id,

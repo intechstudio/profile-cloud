@@ -150,7 +150,6 @@
             <slot name="link-button" />
             <slot name="sync-config-button" />
             <slot name="split-config-button" />
-            <slot name="import-config-browser-button" />
             <div class="flex items-center gap-x-1">
               {#if data.isEditable && data.public !== undefined}
                 <slot name="toggle-accessibility" />
@@ -184,6 +183,7 @@
                 </div>
               {/if}
             </div>
+            <slot name="import-config-browser-button" />
           </div>
         </div>
       </div>

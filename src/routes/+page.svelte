@@ -5,6 +5,7 @@
   import { compareSemVer } from "semver-parser";
   import EditorLayout from "./EditorLayout.svelte";
   import BrowserLayout from "./BrowserLayout.svelte";
+  import { mode_store } from "./mode.store";
 
   const display = getContext("display");
   let isEditorVersionCompatible = true;
@@ -31,11 +32,11 @@
   });
 </script>
 
-<section class="w-full h-full flex-grow bg-neutral-100 dark:bg-primary">
+<section class="w-full flex flex-grow bg-neutral-100 dark:bg-primary">
   <div
-    class="w-full min-h-full bg-neutral-100 dark:bg-primary/100 flex justify-center"
+    class="w-full flex-grow bg-neutral-100 dark:bg-primary/100 flex justify-center"
   >
-    <div class="container flex flex-col max-w-screen-xl h-screen">
+    <div class="container flex flex-col max-w-screen-xl flex-grow">
       <DisplayOnWeb>
         <div
           class="flex flex-col justify-between pt-8 text-opacity-80 text-black dark:text-opacity-80 dark:text-white"
@@ -52,17 +53,17 @@
         </div>
       </DisplayOnWeb>
       {#if display == "editor" && !isEditorVersionCompatible}
-        <div class="flex justify-center items-center h-screen px-4">
+        <div class="flex justify-center items-center flex-grow px-4">
           <p class="text-center text-lg">
             Your Editor is not compatible with the current Profile Cloud
             version. Please update your Editor to the latest version!
           </p>
         </div>
       {/if}
-      {#if display == "editor"}
-        {#if isEditorVersionCompatible}
-          <EditorLayout />
-        {/if}
+      {#if display == "editor" && isEditorVersionCompatible}
+        <EditorLayout />
+      {:else if $mode_store}
+        <EditorLayout />
       {:else}
         <BrowserLayout />
       {/if}

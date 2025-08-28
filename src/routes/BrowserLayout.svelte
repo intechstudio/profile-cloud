@@ -52,7 +52,7 @@
   }
 </script>
 
-<div class="flex-col py-4 h-full">
+<div id="main" class="flex-col relative z-0 overflow-hidden">
   <div class="flex justify-end">
     <button
       on:click={() => {
