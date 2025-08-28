@@ -19,7 +19,7 @@
     setContext("display", "web");
   }
 
-  let darkMode = getContext("display") === "editor" ? true : false;
+  let darkMode = getContext("display") === "editor" ? true : true;
 
   function toggleDarkMode() {
     darkMode = !darkMode;
@@ -55,10 +55,10 @@
             />
           </a>
           <ToggleSwitch on:toggle={toggleDarkMode}>
-            <svelte:fragment slot="on">
+            <svelte:fragment slot="off">
               <img src="/moon_icon.svg" alt="dark mode" class="w-6 h-6" />
             </svelte:fragment>
-            <svelte:fragment slot="off">
+            <svelte:fragment slot="on">
               <img src="/sun_icon.svg" alt="light mode" class="w-6 h-6 p-1" />
             </svelte:fragment>
           </ToggleSwitch>
