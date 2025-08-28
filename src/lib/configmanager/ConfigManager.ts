@@ -147,6 +147,10 @@ export function createConfigManager(observer: {
       if (latestConfig.type == "potentiometer") {
         latestConfig.type = "potmeter";
       }
+      //Upgrade compatibility at 2025.08.28, only used publicly by intech, probably can be removed
+      if (latestConfig.type == "VSN1") {
+        latestConfig.type = "VSN1L";
+      }
 
       mergedConfigs.push({
         ...latestConfig,
