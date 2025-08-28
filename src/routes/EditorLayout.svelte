@@ -108,7 +108,16 @@
       }
 
       case "compatibleTypes": {
-        compatible_config_types.set(event.data.compatibleTypes);
+        const current = get(compatible_config_types) as string[];
+        const next = event.data.compatibleTypes as string[];
+
+        const arraysDiffer =
+          current.length !== next.length ||
+          current.some((v, i) => v !== next[i]);
+
+        if (arraysDiffer) {
+          compatible_config_types.set(event.data.compatibleTypes);
+        }
         break;
       }
 
