@@ -4,6 +4,7 @@
   import { getContext, setContext } from "svelte";
   import "../app.css";
   import VersionStamp from "./VersionStamp.svelte";
+  import { mode_store } from "./mode.store";
 
   function isThisAnIframe() {
     try {
@@ -19,12 +20,20 @@
     setContext("display", "web");
   }
 
-  let darkMode = getContext("display") === "editor" ? true : false;
+  let darkMode = getContext("display") === "editor" ? true : true;
 
   function toggleDarkMode() {
     darkMode = !darkMode;
     // set class on body, so on overscrolling the background will match the app color
     document.body.classList.toggle("bg-primary");
+  }
+
+  let editorMode = false;
+
+  function toggleDisplayMode() {
+    editorMode = !editorMode;
+
+    $mode_store = editorMode;
   }
 
   let fontSize = getContext("display") === "editor" ? "12px" : "16px";
@@ -55,11 +64,27 @@
             />
           </a>
           <ToggleSwitch on:toggle={toggleDarkMode}>
-            <svelte:fragment slot="on">
+            <svelte:fragment slot="off">
               <img src="/moon_icon.svg" alt="dark mode" class="w-6 h-6" />
             </svelte:fragment>
-            <svelte:fragment slot="off">
+            <svelte:fragment slot="on">
               <img src="/sun_icon.svg" alt="light mode" class="w-6 h-6 p-1" />
+            </svelte:fragment>
+          </ToggleSwitch>
+          <ToggleSwitch on:toggle={toggleDisplayMode}>
+            <svelte:fragment slot="off">
+              <img
+                src="/icon-logo-{darkMode ? 'white' : 'black'}-transparent.svg"
+                alt="dark mode"
+                class="w-16 h-16 px-2"
+              />
+            </svelte:fragment>
+            <svelte:fragment slot="on">
+              <img
+                src="/icon-logo-{darkMode ? 'white' : 'black'}-transparent.svg"
+                alt="light mode"
+                class="w-16 h-16 px-2"
+              />
             </svelte:fragment>
           </ToggleSwitch>
         </nav>
