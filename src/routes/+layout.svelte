@@ -6,6 +6,8 @@
   import VersionStamp from "./VersionStamp.svelte";
   import { mode_store } from "./mode.store";
 
+  import "@intechstudio/grid-uikit/theme.css";
+
   function isThisAnIframe() {
     try {
       return window.self !== window.top;
@@ -24,8 +26,14 @@
 
   function toggleDarkMode() {
     darkMode = !darkMode;
+
+    document.documentElement.setAttribute(
+      "color-scheme",
+      darkMode ? "dark" : "light",
+    );
+
     // set class on body, so on overscrolling the background will match the app color
-    document.body.classList.toggle("bg-primary");
+    //document.body.classList.toggle("bg-primary");
   }
 
   let editorMode = false;
@@ -47,12 +55,15 @@
   <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 </svelte:head>
 
-<main style={"font-size: " + fontSize} class={darkMode ? "dark" : ""}>
+<main
+  style="{'font-size: ' +
+    fontSize}; background-color: var(--background); color: var(--foreground);"
+>
   <div
-    class="dark:bg-primary flex flex-col justify-between dark:text-white bg-white text-black transition duration-200 min-h-screen"
+    class="flex flex-col justify-between transition duration-200 min-h-screen"
   >
     <DisplayOnWeb>
-      <div class="dark:bg-neutral-700">
+      <div class="">
         <nav class=" container mx-auto flex w-full justify-between p-4">
           <a href="https://intech.studio">
             <img
@@ -94,16 +105,13 @@
     <slot />
 
     <DisplayOnWeb>
-      <footer class=" bg-emerald-300 dark:bg-emerald-800">
+      <footer class=" bg-emerald-300">
         <div
           class="container mx-auto flex w-full justify-center p-4 text-center"
         >
-          <div
-            class="flex flex-row gap-2 text-sm text-neutral-500 dark:text-white dark:text-opacity-80"
-          >
+          <div class="flex flex-row gap-2 text-sm">
             <p>
               <a
-                class="hover:text-neutral-600 dark:hover:text-opacity-60"
                 href="https://intech.studio"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -119,22 +127,3 @@
     </DisplayOnWeb>
   </div>
 </main>
-
-<style lang="postcss">
-  /**
-	This is the global style for the scrollbar from the editor.
-	*/
-  :global(::-webkit-scrollbar) {
-    height: 0.375rem;
-    width: 0.375rem;
-    @apply dark:rounded-md dark:bg-secondary bg-neutral-100;
-  }
-
-  :global(::-webkit-scrollbar-thumb) {
-    @apply dark:rounded-md dark:bg-neutral-600 bg-neutral-400 dark:shadow;
-  }
-
-  :global(::-webkit-scrollbar-corner) {
-    @apply dark:rounded-md dark:bg-secondary;
-  }
-</style>

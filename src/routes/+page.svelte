@@ -32,22 +32,17 @@
   });
 </script>
 
-<section class="w-full flex flex-grow bg-neutral-100 dark:bg-primary">
-  <div
-    class="w-full flex-grow bg-neutral-100 dark:bg-primary/100 flex justify-center"
-  >
+<section class="w-full flex flex-grow">
+  <div class="w-full flex-grow flex justify-center">
     <div class="container flex flex-col max-w-screen-xl flex-grow">
       <DisplayOnWeb>
         <div
-          class="flex flex-col justify-between pt-8 text-opacity-80 text-black dark:text-opacity-80 dark:text-white"
+          class="flex flex-col justify-between pt-8 text-opacity-80 dark:text-opacity-80"
         >
           <h1 class="text-3xl font-bold pb-2">profile list</h1>
-          <p
-            class="text-opacity-60 text-black dark:text-white dark:text-opacity-60"
-          >
-            <a
-              href="https://links.intech.studio/discord"
-              class="hover:underline text-blue-500">Join the discord channel</a
+          <p class="text-opacity-60 dark:text-opacity-60">
+            <a href="https://links.intech.studio/discord"
+              >Join the discord channel</a
             > to get support.
           </p>
         </div>
