@@ -8,6 +8,7 @@
     "dev:webcomponent": "vite build --config vite.config.webcomponent.ts --watch",
     "build": "vite build",
     "build:webcomponent": "vite build --config vite.config.webcomponent.ts",
+    "transfer-configs": "node ./transfer-configs-to-dev.js",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
