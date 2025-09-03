@@ -41,7 +41,7 @@ export async function logoutFromProfileCloud() {
 }
 
 export interface UserNameInput {
-  element: HTMLInputElement | null;
+  value: string | null;
   exists: boolean;
   valid: boolean;
   active: boolean;
