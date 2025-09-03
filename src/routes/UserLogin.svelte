@@ -25,7 +25,7 @@
         const username = await getUserNameByUid(userAccount.account.uid);
         if (username) {
           usernameInput.exists = true;
-          usernameInput.element!.value = "@" + username;
+          usernameInput.value = "@" + username;
         } else {
           usernameInput.exists = false;
         }
@@ -65,7 +65,7 @@
 
     await batch.commit().then(() => {
       usernameInput.exists = true;
-      usernameInput.element!.value = "@" + username;
+      usernameInput.value = "@" + username;
     });
   }
 
@@ -94,20 +94,19 @@
         </div>
       {:else}
         <div>
-          Profile Cloud - {usernameInput.element?.value}
+          Profile Cloud - {usernameInput.value ?? ""}
         </div>
       {/if}
       <div class="flex items-center">
         <input
           id="display-name"
-          bind:this={usernameInput.element}
           on:input={(event) => {
             checkIfUsernameAvailable(event.target?.value);
           }}
           on:keydown={(event) => {
             if (event.key == "Enter") {
               usernameInput.active = false;
-              setUserName(usernameInput.element?.value);
+              setUserName(usernameInput.value ?? "");
               submitAnalytics({
                 eventName: "Cloud Action",
                 payload: {
@@ -121,13 +120,13 @@
           class="{!usernameInput.exists
             ? 'border-amber-500 focus:border-emerald-500 animate-pulse dark:bg-secondary focus:animate-none'
             : 'border-transparent bg-transparent text-white text-opacity-80 hidden'}  w-full border focus:outline-none"
-          value={usernameInput.element?.value || ""}
+          value={usernameInput.value ?? ""}
         />
         {#if usernameInput.exists == false}
           <button
             on:click={() => {
               usernameInput.active = false;
-              setUserName(usernameInput.element?.value);
+              setUserName(usernameInput.value ?? "");
               submitAnalytics({
                 eventName: "Cloud Action",
                 payload: {
