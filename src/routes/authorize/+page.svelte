@@ -58,7 +58,9 @@
     class="container text-center items-center flex flex-col mx-auto max-w-xl p-4 bg-neutral-50 dark:bg-neutral-800 rounded-md shadow border dark:border-white dark:border-opacity-10 border-black border-opacity-10"
   >
     {#if authStatus.status == 0}
-      <h2 class="text-2xl text-black font-bold pb-4">authorize your social account</h2>
+      <h2 class="text-2xl text-black font-bold pb-4">
+        authorize your social account
+      </h2>
       <h3
         class="pb-4 text-black dark:text-opacity-70 dark:text-white text-opacity-70"
       >
