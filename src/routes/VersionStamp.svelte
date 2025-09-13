@@ -5,7 +5,7 @@
   const display = getContext("display");
 
   function handleCommitHashClicked() {
-    const link = `https://github.com/intechstudio/profile-cloud/commit/${PUBLIC_COMMIT_HASH}`;
+    const link = `https://github.com/intechstudio/profile-cloud/commit/${import.meta.env.PUBLIC_COMMIT_HASH}`;
     if (display === "editor") {
       parentIframeCommunication({
         windowPostMessageName: "openExternalLink",
