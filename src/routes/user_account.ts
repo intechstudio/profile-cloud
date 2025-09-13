@@ -12,12 +12,12 @@ export async function getUserNameByUid(uid: string) {
 
 export function usernameSelectionFeedback(obj: any) {
   let str = "";
-  if (obj.element?.value != undefined && obj.element?.value.length > 0) {
-    if (obj.element?.value.length > 0) {
+  if (obj.value != undefined && obj.value.length > 0) {
+    if (obj.value.length > 0) {
       str += "@";
     }
-    str += obj.element?.value;
-    if (obj.valid == true && obj.element?.value.length > 0) {
+    str += obj.value;
+    if (obj.valid == true && obj.value.length > 0) {
       str += " is available";
     } else if (obj.valid == false) {
       str += " is not available";
