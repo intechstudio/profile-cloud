@@ -52,6 +52,10 @@
   });
 
   async function setUserName(username?: string) {
+    if (!usernameInput.valid) {
+      return;
+    }
+
     const uid = get(userAccountService).account?.uid;
     // Create refs for both documents
     const userDoc = doc(userCollection, uid);
@@ -102,6 +106,7 @@
           id="display-name"
           on:input={(event) => {
             checkIfUsernameAvailable(event.target?.value);
+            usernameInput.value = event.target?.value;
           }}
           on:keydown={(event) => {
             if (event.key == "Enter") {
