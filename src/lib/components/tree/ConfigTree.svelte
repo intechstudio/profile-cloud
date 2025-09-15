@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { get } from "svelte/store";
+  import { get, writable, Writable } from "svelte/store";
   import { Sort, sort_key } from "./../../../routes/Sorter";
   import {
     filter_value,
@@ -36,10 +36,26 @@
 
   let treeProps: TreeProperties;
 
+  export function debounced<T>(store: Writable<T>, delay = 300) {
+    let timeout: ReturnType<typeof setTimeout>;
+    const debouncedStore = writable<T>(get(store));
+
+    store.subscribe((value) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        debouncedStore.set(value);
+      }, delay);
+    });
+
+    return debouncedStore;
+  }
+
+  export const debounced_filter_value = debounced(filter_value, 300);
+
   $: {
     treeProps = buildProps(
       configs,
-      $filter_value,
+      $debounced_filter_value,
       $sort_key,
       $show_supported_only,
       $compatible_config_types,
