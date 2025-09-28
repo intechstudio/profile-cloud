@@ -27,7 +27,7 @@ export default defineConfig({
     target: "modules",
     lib: {
       entry: "src/WebComponent.svelte",
-      name: "<<name>>",
+      name: "profile-cloud-offline",
       fileName: "components",
     },
     outDir:
