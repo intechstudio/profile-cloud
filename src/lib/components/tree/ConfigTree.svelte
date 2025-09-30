@@ -19,16 +19,18 @@
   import { createEventDispatcher } from "svelte";
   import { parentIframeCommunication } from "../../utils";
   import { dragTarget } from "../../actions/drag.action";
+  import ProfileCloudTreeItem from "./ProfileCloudTreeItem.svelte";
   import {
     type AbstractFolderData,
     AbstractTreeNode,
     TreeItemType,
-    TreeFolder,
-    Tree as TreeComponent,
-    ProfileCloudTreeItem,
     type ContextMenuOptions,
     type TreeProperties,
-  } from "@intechstudio/grid-uikit";
+  } from "./TreeNode.svelte";
+
+  import TreeFolder from "./TreeFolder.svelte";
+
+  import TreeComponent from "./TreeComponent.svelte";
 
   const dispatch = createEventDispatcher();
 
