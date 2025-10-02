@@ -84,7 +84,7 @@
         >
           <path
             d="M6.99968 11L0.9375 0.5L13.0619 0.500001L6.99968 11Z"
-            fill="#D9D9D9"
+            fill="var(--foreground-muted)"
           />
         </svg>
       </div>
@@ -99,8 +99,7 @@
     align-items: center;
     width: 100%;
     border-width: 1px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    background-color: #2a3439;
+    background-color: var(--background);
     height: 33px;
     padding: 0;
   }
@@ -110,7 +109,7 @@
   }
 
   .border-unselected {
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: transparent;
   }
 
   .status-indicator {
@@ -154,7 +153,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     text-align: left;
-    color: white;
+    color: var(--foreground);
   }
 
   .label-incompatible {
@@ -162,7 +161,7 @@
   }
 
   .type-label {
-    color: white;
+    color: var(--foreground-muted);
     font-size: inherit;
     padding: 0.125rem 0.5rem;
     border-width: 1px;

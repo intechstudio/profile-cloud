@@ -45,7 +45,10 @@
   }
 </script>
 
-<div class="w-full h-full bg-secondary p-2 overflow-hidden">
+<div
+  style="color: var(--foreground); background: var(--background);"
+  class="w-full h-full p-2 overflow-hidden"
+>
   {#if typeof data !== "undefined"}
     <div class="grid grid-rows-[auto_1fr] gap-1 w-full h-full">
       <div class="w-full flex flex-row gap-2 items-center justify-between">
@@ -80,9 +83,7 @@
           </div>
         </div>
         <div class="flex flex-col items-end">
-          <span class="text-black text-xs dark:text-opacity-70 dark:text-white"
-            >{configOwner}</span
-          >
+          <span class="text-xs">{configOwner}</span>
 
           <div class="relative flex items-center gap-x-1">
             {#if data.isEditable}
@@ -187,7 +188,7 @@
           </div>
         </div>
       </div>
-      <div class="flex text-white text-opacity-70 overflow-scroll">
+      <div style="color: var(--foreground-muted)" class="flex overflow-scroll">
         <ConfigDescription
           value={data.description}
           disabled={!data.isEditable}
@@ -196,10 +197,11 @@
       </div>
     </div>
   {:else}
-    <div class="flex bg-primary h-full items-center justify-center">
-      <span class="text-white text-opacity-70"
-        >No configuration is selected</span
-      >
+    <div
+      style="color: var(--foreground-muted); background: var(--background)"
+      class="flex h-full items-center justify-center"
+    >
+      No configuration is selected
     </div>
   {/if}
 </div>

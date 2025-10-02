@@ -8,6 +8,8 @@
   import { get } from "svelte/store";
   import { firestore } from "../lib/firebase";
   import { submitAnalytics } from "./analytics";
+  import { MoltenPushButton } from "@intechstudio/grid-uikit";
+
   import {
     getUserNameByUid,
     usernameSelectionFeedback,
@@ -194,11 +196,15 @@
 {:else}
   <div class="pt-4">
     <div
-      class="rounded-md border border-amber-500 p-2 bg-secondary/90 flex items-center justify-between"
+      style="background: var(--background-muted); color: var(--foreground);"
+      class="rounded-md dark:border dark:border-amber-500 p-2 flex items-center justify-between"
     >
-      <div class="text-white">Login to save and browse your profiles</div>
-      <button
-        on:click={() => {
+      <div>Login to save and browse your profiles</div>
+
+      <MoltenPushButton
+        text={"Login"}
+        style={"accept"}
+        click={() => {
           loginToProfileCloud();
           submitAnalytics({
             eventName: "Cloud Action",
@@ -208,9 +214,7 @@
           });
         }}
         class="rounded px-4 py-1 border dark:border-emerald-500 dark:hover:bg-emerald-700 font-medium"
-      >
-        Login
-      </button>
+      />
     </div>
   </div>
 {/if}

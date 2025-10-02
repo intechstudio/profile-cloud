@@ -417,7 +417,11 @@
   }
 </script>
 
-<div id="main" class="flex flex-grow h-full relative z-0 overflow-hidden">
+<div
+  style="background-color: var(--background-muted);"
+  id="main"
+  class="flex flex-grow h-full relative z-0 overflow-hidden"
+>
   <div class="flex flex-col gap-2 h-full w-full">
     <div class="px-4 pt-4">
       {#if configurationSaveVisible}

@@ -1,5 +1,6 @@
 <script lang="ts">
   import ToggleSwitch from "../lib/components/atomic/ToggleSwitch.svelte";
+  import { Toggle } from "@intechstudio/grid-uikit";
   import DisplayOnWeb from "../lib/components/DisplayOnWeb.svelte";
   import { getContext, setContext } from "svelte";
   import "../app.css";
@@ -22,26 +23,13 @@
     setContext("display", "web");
   }
 
-  let darkMode = getContext("display") === "editor" ? true : true;
+  let darkMode = true;
 
-  function toggleDarkMode() {
-    darkMode = !darkMode;
-
+  $: {
     document.documentElement.setAttribute(
       "color-scheme",
       darkMode ? "dark" : "light",
     );
-
-    // set class on body, so on overscrolling the background will match the app color
-    //document.body.classList.toggle("bg-primary");
-  }
-
-  let editorMode = false;
-
-  function toggleDisplayMode() {
-    editorMode = !editorMode;
-
-    $mode_store = editorMode;
   }
 
   let fontSize = getContext("display") === "editor" ? "12px" : "16px";
@@ -74,30 +62,8 @@
               class="h-8 p-1"
             />
           </a>
-          <ToggleSwitch on:toggle={toggleDarkMode}>
-            <svelte:fragment slot="off">
-              <img src="/moon_icon.svg" alt="dark mode" class="w-6 h-6" />
-            </svelte:fragment>
-            <svelte:fragment slot="on">
-              <img src="/sun_icon.svg" alt="light mode" class="w-6 h-6 p-1" />
-            </svelte:fragment>
-          </ToggleSwitch>
-          <ToggleSwitch on:toggle={toggleDisplayMode}>
-            <svelte:fragment slot="off">
-              <img
-                src="/icon-logo-{darkMode ? 'white' : 'black'}-transparent.svg"
-                alt="dark mode"
-                class="w-16 h-16 px-2"
-              />
-            </svelte:fragment>
-            <svelte:fragment slot="on">
-              <img
-                src="/icon-logo-{darkMode ? 'white' : 'black'}-transparent.svg"
-                alt="light mode"
-                class="w-16 h-16 px-2"
-              />
-            </svelte:fragment>
-          </ToggleSwitch>
+          <Toggle title="Dark mode" bind:value={darkMode} />
+          <Toggle title="Editor view" bind:value={$mode_store} />
         </nav>
       </div>
     </DisplayOnWeb>
