@@ -42,8 +42,8 @@
   "type": "module",
   "dependencies": {
     "@intechstudio/grid-protocol": "1.20250305.1735",
-    "@intechstudio/grid-uikit": "1.20250722.1811",
-    "@sveltejs/vite-plugin-svelte": "^6.2.1",
+    "@intechstudio/grid-uikit": "1.20250929.2015",
+    "@melt-ui/svelte": "^0.86.6",
     "@toast-ui/editor": "^3.2.2",
     "audit": "^0.0.6",
     "firebase": "^12.2.1",

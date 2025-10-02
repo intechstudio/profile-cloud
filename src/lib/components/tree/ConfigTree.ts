@@ -7,12 +7,15 @@ import {
 import { type Config } from "../../schemas";
 import { filter_value } from "../../../routes/Filter";
 import { Sort } from "../../../routes/Sorter";
+
+import {} from "./TreeNode.svelte";
+
 import {
   TreeItemType,
   AbstractTreeNode,
   type AbstractFolderData,
   type AbstractItemData,
-} from "@intechstudio/grid-uikit";
+} from "./TreeNode.svelte";
 import { v4 as uuidv4 } from "uuid";
 import { ElementType, grid, ModuleType } from "@intechstudio/grid-protocol";
 
