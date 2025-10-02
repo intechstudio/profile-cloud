@@ -1,5 +1,5 @@
 import adapter from "@sveltejs/adapter-static";
-import { vitePreprocess } from "@sveltejs/kit/vite";
+import sveltePreprocess from "svelte-preprocess";
 
 const config = {
   kit: {
@@ -14,7 +14,7 @@ const config = {
     }),
     prerender: { entries: ["*"] },
   },
-  preprocess: vitePreprocess(),
+  preprocess: sveltePreprocess(),
   files: {
     lib: "src/lib",
   },
