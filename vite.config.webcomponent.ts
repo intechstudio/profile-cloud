@@ -10,7 +10,7 @@ export default defineConfig({
         postcss: {},
         replace: [
           [
-            "WEB-COMPONENT-NAME",
+            "web-component-name",
             process.env.WEB_COMPONENT_NAME ?? "profile-cloud-dev",
           ],
         ],
