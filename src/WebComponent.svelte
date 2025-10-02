@@ -1,4 +1,4 @@
-<svelte:options customElement={{ tag: "WEB-COMPONENT-NAME" }} />
+<svelte:options customElement={{ tag: "profile-cloud" }} />
 
 <script>
   import { onMount } from "svelte";
