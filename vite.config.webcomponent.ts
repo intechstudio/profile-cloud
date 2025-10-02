@@ -24,7 +24,7 @@ export default defineConfig({
   ],
   build: {
     sourcemap: true,
-    target: "modules",
+    target: "esnext",
     lib: {
       entry: "src/WebComponent.svelte",
       name: "profile-cloud-offline",
