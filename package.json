@@ -44,16 +44,12 @@
     "@intechstudio/grid-protocol": "1.20250305.1735",
     "@intechstudio/grid-uikit": "1.20250929.2015",
     "@melt-ui/svelte": "^0.86.6",
-    "@toast-ui/editor": "^3.2.2",
-    "audit": "^0.0.6",
     "firebase": "^12.2.1",
     "fix": "^0.0.6",
     "marked": "^12.0.2",
     "semver-parser": "^4.1.4",
-    "svelte-markdown-input": "^0.0.2",
     "svelte-splitpanes": "^8.0.9",
     "uuid": "^9.0.0",
-    "ws": "^8.18.0",
     "zod": "^3.21.4"
   },
   "grid_editor": {
