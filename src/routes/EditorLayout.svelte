@@ -417,7 +417,11 @@
   }
 </script>
 
-<div id="main" class="flex flex-grow h-full relative z-0 overflow-hidden">
+<div
+  style="background-color: var(--background-muted);"
+  id="main"
+  class="flex flex-grow h-full relative z-0 overflow-hidden"
+>
   <div class="flex flex-col gap-2 h-full w-full">
     <div class="px-4 pt-4">
       {#if configurationSaveVisible}
@@ -433,7 +437,8 @@
           <div class="flex flex-row w-full gap-2">
             <Filter />
             <button
-              class="text-2xl px-8 dark:bg-primary-700 dark:hover:bg-secondary"
+              style="background-color: var(--background-soft)"
+              class="text-2xl px-8"
               on:click={handleOpenconfigurationSave}
             >
               <span>+</span>

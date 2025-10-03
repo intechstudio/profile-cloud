@@ -193,3 +193,13 @@
     </div>
   {/if}
 </container>
+
+<style>
+  button {
+    background-color: var(--background-soft);
+  }
+
+  input {
+    background-color: var(--background-soft);
+  }
+</style>

@@ -37,7 +37,7 @@
   >
     <path
       d="M6.99968 11L0.9375 0.5L13.0619 0.500001L6.99968 11Z"
-      fill="#D9D9D9"
+      fill="var(--foreground-muted)"
     />
   </svg>
 </div>
@@ -49,13 +49,13 @@
     align-items: center;
     margin-bottom: 0.25rem;
     height: 1.25rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    border-bottom: 1px solid var(--foreground-disabled);
   }
 
   .title {
     flex-grow: 1;
     text-align: left;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--foreground-muted);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

@@ -30,7 +30,8 @@
 
 <input
   bind:this={element}
-  class="w-full mr-1 border bg-white dark:bg-transparent truncate dark:hover:bg-neutral-800 focus:outline-none {edited
+  style="color: var(--foreground)"
+  class="w-full mr-1 border bg-transparent truncate dark:hover:bg-neutral-800 focus:outline-none {edited
     ? 'border-emerald-500'
     : 'border-transparent'}"
   class:pointer-events-none={disabled}
