@@ -133,8 +133,7 @@
       bind:this={textArea}
       contenteditable="true"
       spellcheck="false"
-      class="w-full p-1 h-full overflow-y-auto dark:bg-primary border border-transparent focus:border-emerald-500 focus:outline-none resize-none"
-      class:dark:hover:bg-neutral-800={!disabled}
+      class="w-full p-1 h-full overflow-y-auto border border-transparent focus:border-emerald-500 focus:outline-none resize-none"
       on:blur={handleBlur}
       on:paste={handlePaste}
       bind:value
@@ -142,7 +141,7 @@
   {:else if mode === "preview"}
     <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div
-      class="markdown-container p-1 flex-grow w-full h-full dark:bg-primary bg-opacity-40 overflow-y-auto"
+      class="markdown-container p-1 flex-grow w-full h-full bg-opacity-40 overflow-y-auto"
       on:dblclick={handleDoubleClick}
     >
       {@html highlightMatches(preview, $filter_value)}

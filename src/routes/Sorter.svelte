@@ -21,18 +21,15 @@
   >
     sort by
   </label>
-  <div class="flex flex-row gap-1 flex-grow flex-nowrap">
+  <div class="flex flex-row gap-1 flex-grow flex-nowrap pb-2">
     <select
-      class="bg-white dark:bg-secondary border-none flex-grow p-1 focus:outline-none min-w-fit"
+      class="border-none flex-grow p-1 focus:outline-none min-w-fit"
       id="sort-select-box"
       name="sorting select"
       bind:value={$sort_key.type}
     >
       {#each Object.values(Sort.Type) as type}
-        <option
-          class="bg-white dark:bg-secondary py-1 border-none"
-          value={type}
-        >
+        <option class="py-1 border-none" value={type}>
           {type}
         </option>
       {/each}
@@ -49,8 +46,7 @@
         >
           <path
             d="M11 11H15M11 15H18M11 19H21M9 7L6 4L3 7M6 6V20"
-            class="stroke-black dark:stroke-white stroke-2"
-            stroke="white"
+            class="stroke-2"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -66,8 +62,7 @@
         >
           <path
             d="M11 5H21M11 9H18M11 13H15M3 17L6 20L9 17M6 18V4"
-            class="stroke-black dark:stroke-white stroke-2"
-            stroke="white"
+            class="stroke-2"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -77,3 +72,13 @@
     </button>
   </div>
 </div>
+
+<style>
+  svg {
+    stroke: var(--foreground);
+  }
+
+  select {
+    background-color: var(--background-soft);
+  }
+</style>

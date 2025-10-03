@@ -136,7 +136,7 @@
       on:focus={handleSearchbarFocus}
       on:blur={handleSearchbarBlur}
       on:input={handleInput}
-      class="flex w-full py-2 px-12 bg-white dark:bg-primary-700
+      class="flex w-full py-2 px-12
   dark:placeholder-gray-400 text-md focus:outline-none"
       placeholder="Find..."
     />
@@ -158,3 +158,13 @@
     </div>
   {/if}
 </div>
+
+<style>
+  input {
+    background-color: var(--background-soft);
+  }
+
+  input::placeholder {
+    color: var(--foreground-soft);
+  }
+</style>

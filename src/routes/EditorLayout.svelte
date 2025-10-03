@@ -437,7 +437,8 @@
           <div class="flex flex-row w-full gap-2">
             <Filter />
             <button
-              class="text-2xl px-8 dark:bg-primary-700 dark:hover:bg-secondary"
+              style="background-color: var(--background-soft)"
+              class="text-2xl px-8"
               on:click={handleOpenconfigurationSave}
             >
               <span>+</span>
