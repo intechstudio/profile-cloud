@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Sort, sort_key } from "./Sorter";
+  import { MeltSelect } from "@intechstudio/grid-uikit";
 
   function handleDirectionChange() {
     sort_key.update((store) => {
@@ -22,18 +23,15 @@
     sort by
   </label>
   <div class="flex flex-row gap-1 flex-grow flex-nowrap pb-2">
-    <select
-      class="border-none flex-grow p-1 focus:outline-none min-w-fit"
-      id="sort-select-box"
-      name="sorting select"
-      bind:value={$sort_key.type}
-    >
-      {#each Object.values(Sort.Type) as type}
-        <option class="py-1 border-none" value={type}>
-          {type}
-        </option>
-      {/each}
-    </select>
+    <MeltSelect
+      bind:target={$sort_key.type}
+      options={[
+        { title: Sort.Type.NAME, value: Sort.Type.NAME },
+        { title: Sort.Type.DATE, value: Sort.Type.DATE },
+        { title: Sort.Type.TYPE, value: Sort.Type.TYPE },
+      ]}
+      disabled={false}
+    />
 
     <button id="sort-order-button" on:click={handleDirectionChange}>
       {#if $sort_key.direction == Sort.Direction.DESC}
@@ -76,9 +74,5 @@
 <style>
   svg {
     stroke: var(--foreground);
-  }
-
-  select {
-    background-color: var(--background-soft);
   }
 </style>

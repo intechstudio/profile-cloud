@@ -144,12 +144,12 @@
   {#if showSuggestions && displayedSuggestions.length > 0}
     <div
       bind:this={suggestionContainer}
-      class="absolute top-full left-0 dark:bg-primary dark:text-white bg-white text-black shadow shadow-black z-[1] p-2 rounded-b flex flex-col w-full max-h-36 overflow-y-auto"
+      class="suggestionbox absolute top-full left-0 z-[1] rounded-b flex flex-col w-full max-h-36 overflow-y-auto"
     >
       {#each displayedSuggestions as suggestion}
         <button
           on:click={() => handleSuggestionClicked(suggestion)}
-          class="hover:bg-primary-500/50 text-xs dark:text-primary-100 text-left
+          class="suggestionbutton text-xs text-left
   py-0.5 px-1 h-min"
         >
           {suggestion}
@@ -166,5 +166,16 @@
 
   input::placeholder {
     color: var(--foreground-soft);
+  }
+
+  div.suggestionbox {
+    border: 1px solid var(--foreground-muted);
+    background-color: var(--popover-background);
+  }
+  button.suggestionbutton {
+    padding: 0.5rem;
+  }
+  button.suggestionbutton:hover {
+    background-color: var(--popover-selection);
   }
 </style>
