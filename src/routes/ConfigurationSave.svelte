@@ -1,8 +1,9 @@
 <script lang="ts" context="module">
   export enum ConfigurationSaveType {
-    MODULE = 0,
-    ELEMENT = 1,
-    SNIPPET = 2,
+    NONE = 0,
+    MODULE = 1,
+    ELEMENT = 2,
+    SNIPPET = 3,
   }
 
   enum ConfigurationSaveState {
@@ -13,6 +14,18 @@
 
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
+  import {
+    MoltenPushButton,
+    MoltenInput,
+    MeltRadio,
+    BlockTitle,
+  } from "@intechstudio/grid-uikit";
+  import {
+    BlockRow,
+    BlockColumn,
+    Block,
+    BlockBody,
+  } from "@intechstudio/grid-uikit";
 
   export let data: string[] | undefined = undefined;
 
@@ -36,7 +49,7 @@
 
   let module: string;
   let element: string;
-  let selected: ConfigurationSaveType | undefined = undefined;
+  let selected: ConfigurationSaveType = ConfigurationSaveType.NONE;
 
   function handleSelectionChange(value: ConfigurationSaveType) {
     selected = value;
@@ -85,121 +98,86 @@
     }
   }
 
-  $: {
-    switch (state) {
-      case ConfigurationSaveState.SELECT: {
-        break;
-      }
-      case ConfigurationSaveState.SAVE: {
-        nameInput?.focus();
-        break;
-      }
-    }
-  }
-
   $: handleStateChange(state);
 
   function handleStateChange(state: ConfigurationSaveState) {
     dispatch("state-change", { state: state });
   }
 
+  $: handleSelectionChange(selected);
+
+  let options = [];
+
+  $: {
+    options = [
+      { title: `${element} Element`, value: ConfigurationSaveType.ELEMENT },
+      { title: `${module} Module`, value: ConfigurationSaveType.MODULE },
+      { title: `Snippet`, value: ConfigurationSaveType.SNIPPET },
+    ];
+  }
+
   let nameInputValue: string;
-  let nameInput: HTMLInputElement | undefined;
 </script>
 
-<container class="flex w-full">
-  {#if state === ConfigurationSaveState.SELECT}
-    <div class="flex flex-row gap-2 w-full">
-      <div class="grid grid-flow-col w-full gap-2">
-        <button
-          class="flex w-full dark:bg-primary-700 dark:hover:bg-secondary items-center justify-center {selected ===
-          ConfigurationSaveType.ELEMENT
-            ? 'border-white'
-            : 'border-transparent'} border-opacity-75 border-2"
-          on:click={() => handleSelectionChange(ConfigurationSaveType.ELEMENT)}
-        >
-          {element} Element
-        </button>
-        <button
-          class="flex w-full dark:bg-primary-700 dark:hover:bg-secondary items-center justify-center {selected ===
-          ConfigurationSaveType.MODULE
-            ? 'border-white'
-            : 'border-transparent'} border-opacity-75 border-2"
-          on:click={() => handleSelectionChange(ConfigurationSaveType.MODULE)}
-        >
-          {module} Module
-        </button>
-        <button
-          class="flex w-full dark:bg-primary-700 dark:hover:bg-secondary items-center justify-center {selected ===
-          ConfigurationSaveType.SNIPPET
-            ? 'border-white'
-            : 'border-transparent'} border-opacity-75 border-2"
-          on:click={() => handleSelectionChange(ConfigurationSaveType.SNIPPET)}
-        >
-          Snippet
-        </button>
-      </div>
-      <div class="flex flex-col gap-2 w-20">
-        <button
-          class="px-4 py-1 dark:bg-primary-700 dark:hover:bg-secondary"
-          on:click={() => handleBackClicked(ConfigurationSaveState.SELECT)}
-          >Cancel</button
-        >
-        <button
-          class="px-4 py-1 dark:bg-emerald-600 font-medium"
-          class:opacity-50={typeof selected === "undefined"}
-          class:dark:hover:bg-emerald-700={typeof selected !== "undefined"}
-          disabled={typeof selected === "undefined"}
-          on:click={() => handleNextClicked(ConfigurationSaveState.SELECT)}
-          >Next</button
-        >
-      </div>
-    </div>
-  {:else if state === ConfigurationSaveState.SAVE}
-    <div class="grid grid-cols-[1fr_auto] gap-2 w-full">
-      <div class="flex flex-col gap-2 w-full">
-        {#if selected === ConfigurationSaveType.ELEMENT}
-          <span>{element} Configuration</span>
-        {:else if selected === ConfigurationSaveType.MODULE}
-          <span>{module} Configuration</span>
-        {:else if selected === ConfigurationSaveType.SNIPPET}
-          <span>Snippet Name:</span>
-        {/if}
+{#if state === ConfigurationSaveState.SELECT}
+  <BlockColumn>
+    <MeltRadio
+      style="button"
+      bind:target={selected}
+      orientation="horizontal"
+      size="full"
+      {options}
+    />
+    <BlockRow>
+      <MoltenPushButton
+        click={() => {
+          handleBackClicked(ConfigurationSaveState.SELECT);
+        }}
+        text={`Back`}
+        style={"normal"}
+      />
 
-        <input
-          type="text"
-          bind:this={nameInput}
-          bind:value={nameInputValue}
-          class="flex w-full p-2 bg-white dark:bg-primary-700
-                        dark:placeholder-gray-400 text-md focus:outline-none"
-          placeholder="My Configuration..."
-        />
-      </div>
-      <div class="flex flex-col gap-2 w-20">
-        <button
-          class="px-4 py-1 dark:bg-primary-700 dark:hover:bg-secondary"
-          on:click={() => handleBackClicked(ConfigurationSaveState.SAVE)}
-          >Back</button
-        >
-        <button
-          class="px-4 py-1 dark:bg-emerald-600 font-medium"
-          class:opacity-50={typeof selected === "undefined"}
-          class:dark:hover:bg-emerald-700={typeof selected !== "undefined"}
-          disabled={typeof selected === "undefined"}
-          on:click={() => handleNextClicked(ConfigurationSaveState.SAVE)}
-          >Save</button
-        >
-      </div>
-    </div>
-  {/if}
-</container>
+      <MoltenPushButton
+        click={() => {
+          handleNextClicked(ConfigurationSaveState.SELECT);
+        }}
+        disabled={selected === ConfigurationSaveType.NONE}
+        text={`Next`}
+        style={"accept"}
+      />
+    </BlockRow>
+  </BlockColumn>
+{:else if state === ConfigurationSaveState.SAVE}
+  <BlockColumn>
+    {#if selected === ConfigurationSaveType.ELEMENT}
+      <BlockTitle>{element} Configuration</BlockTitle>
+    {:else if selected === ConfigurationSaveType.MODULE}
+      <BlockTitle>{module} Configuration</BlockTitle>
+    {:else if selected === ConfigurationSaveType.SNIPPET}
+      <BlockTitle>Snippet Name</BlockTitle>
+    {/if}
+
+    <MoltenInput bind:target={nameInputValue} />
+    <BlockRow>
+      <MoltenPushButton
+        click={() => {
+          handleBackClicked(ConfigurationSaveState.SAVE);
+        }}
+        text={`Back`}
+        style={"normal"}
+      />
+
+      <MoltenPushButton
+        click={() => {
+          handleNextClicked(ConfigurationSaveState.SAVE);
+        }}
+        disabled={selected === ConfigurationSaveType.NONE}
+        text={`Save`}
+        style={"accept"}
+      />
+    </BlockRow>
+  </BlockColumn>
+{/if}
 
 <style>
-  button {
-    background-color: var(--background-soft);
-  }
-
-  input {
-    background-color: var(--background-soft);
-  }
 </style>

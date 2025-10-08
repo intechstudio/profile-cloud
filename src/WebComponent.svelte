@@ -30,12 +30,15 @@
   });
 </script>
 
-<profile-cloud-web-component
-  class="dark bg-primary/100 text-white transition duration-200 h-full"
->
+<profile-cloud-web-component>
   {#if isEditorVersionCompatible}
     <EditorLayout />
   {:else}
     Incompatible Editor Version!
   {/if}
 </profile-cloud-web-component>
+
+<style>
+  profile-cloud-web-component {
+  }
+</style>

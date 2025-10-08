@@ -37,10 +37,16 @@
   import ConfigCardDisplay from "./ConfigCardDisplay.svelte";
   import { Pane, Splitpanes } from "svelte-splitpanes";
   import configuration from "../../Configuration.json";
-  import { MeltCheckbox } from "@intechstudio/grid-uikit";
+  import { MeltCheckbox, MoltenPushButton } from "@intechstudio/grid-uikit";
   import { compatible_config_types } from "./EditorLayout";
   import Sorter from "./Sorter.svelte";
   import { dragTarget } from "../lib/actions/drag.action";
+  import {
+    BlockRow,
+    BlockColumn,
+    Block,
+    BlockBody,
+  } from "@intechstudio/grid-uikit";
 
   import DisplayOnWeb from "../lib/components/DisplayOnWeb.svelte";
 
@@ -423,37 +429,31 @@
   class="flex flex-grow h-full relative z-0 overflow-hidden"
 >
   <div class="flex flex-col gap-2 h-full w-full">
-    <div class="px-4 pt-4">
-      {#if configurationSaveVisible}
-        <div class="pb-[7px]">
-          <ConfigurationSave
-            data={$selected_component_types}
-            on:close={handleConfigurationSaverCloseClicked}
-            on:save={handleConfigurationSaverSaveClicked}
+    {#if configurationSaveVisible}
+      <ConfigurationSave
+        data={$selected_component_types}
+        on:close={handleConfigurationSaverCloseClicked}
+        on:save={handleConfigurationSaverSaveClicked}
+      />
+    {:else}
+      <BlockColumn>
+        <BlockRow>
+          <Filter />
+          <MoltenPushButton
+            click={() => {
+              handleOpenconfigurationSave();
+            }}
+            text={"+"}
+            style={"normal"}
           />
-        </div>
-      {:else}
-        <div class="w-full grid grid-cols-1 gap-x-2 gap-y-2 items-center">
-          <div class="flex flex-row w-full gap-2">
-            <Filter />
-            <button
-              style="background-color: var(--background-soft)"
-              class="text-2xl px-8"
-              on:click={handleOpenconfigurationSave}
-            >
-              <span>+</span>
-            </button>
-          </div>
-          <div class="flex flex-grow">
-            <Sorter />
-          </div>
-        </div>
+        </BlockRow>
+        <Sorter />
         <MeltCheckbox
           bind:target={$show_supported_only}
           title="Only show supported"
         />
-      {/if}
-    </div>
+      </BlockColumn>
+    {/if}
 
     <div
       class="overflow-hidden flex flex-col h-full relative"
@@ -530,7 +530,7 @@
                         transition:fade|global={{
                           duration: 100,
                         }}
-                        class="block font-medium absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
+                        class="block font-medium absolute mt-7 top-0 right-0 border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
                       >
                         Copied to clipboard!
                       </div>

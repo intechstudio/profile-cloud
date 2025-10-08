@@ -32,103 +32,30 @@
   });
 </script>
 
-<section class="w-full flex flex-grow">
-  <div class="w-full flex-grow flex justify-center">
-    <div class="container flex flex-col max-w-screen-xl flex-grow">
-      <DisplayOnWeb>
-        <div
-          class="flex flex-col justify-between pt-8 text-opacity-80 dark:text-opacity-80"
-        >
-          <h1 class="text-3xl font-bold pb-2">profile list</h1>
-          <p class="text-opacity-60 dark:text-opacity-60">
-            <a href="https://links.intech.studio/discord"
-              >Join the discord channel</a
-            > to get support.
-          </p>
-        </div>
-      </DisplayOnWeb>
-      {#if display == "editor" && !isEditorVersionCompatible}
-        <div class="flex justify-center items-center flex-grow px-4">
-          <p class="text-center text-lg">
-            Your Editor is not compatible with the current Profile Cloud
-            version. Please update your Editor to the latest version!
-          </p>
-        </div>
-      {/if}
-      {#if display == "editor" && isEditorVersionCompatible}
-        <EditorLayout />
-      {:else if $mode_store}
-        <EditorLayout />
-      {:else}
-        <BrowserLayout />
-      {/if}
+<section>
+  <DisplayOnWeb>
+    <h1>profile list</h1>
+    <a href="https://links.intech.studio/discord"> Join the discord channel </a>
+    to get support.
+  </DisplayOnWeb>
+
+  {#if display == "editor" && !isEditorVersionCompatible}
+    <div>
+      <p>
+        Your Editor is not compatible with the current Profile Cloud version.
+        Please update your Editor to the latest version!
+      </p>
     </div>
-  </div>
+  {/if}
+
+  {#if display == "editor" && isEditorVersionCompatible}
+    <EditorLayout />
+  {:else if $mode_store}
+    <EditorLayout />
+  {:else}
+    <BrowserLayout />
+  {/if}
 </section>
 
-<style lang="postcss">
-  :global(.splitpanes.modern-theme .splitpanes__pane) {
-    /*  @apply bg-secondary; */
-    position: relative;
-    overflow: visible;
-  }
-
-  /*betty magic selector*/
-  :global(.splitpanes.modern-theme .splitpanes__pane.leftPane) {
-    overflow: hidden;
-  }
-
-  :global(.splitpanes.modern-theme .splitpanes__splitter) {
-    background-color: #4c4c4c;
-    position: relative;
-  }
-  :global(.splitpanes.modern-theme .splitpanes__splitter:before) {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    transition: opacity 0.3s;
-    background-color: #2db9d2;
-    width: 200;
-    opacity: 0;
-    z-index: 1;
-  }
-  :global(.splitpanes.modern-theme .splitpanes__splitter:hover:before) {
-    opacity: 1;
-  }
-  :global(
-    .splitpanes.modern-theme .splitpanes__splitter.splitpanes__splitter__active
-  ) {
-    z-index: 2;
-    /* Fix an issue of overlap fighting with a near hovered splitter */
-  }
-  :global(.modern-theme.splitpanes--vertical > .splitpanes__splitter:before) {
-    left: -3px;
-    right: -3px;
-    height: 100%;
-    cursor: col-resize;
-  }
-  :global(.modern-theme.splitpanes--horizontal > .splitpanes__splitter:before) {
-    top: -3px;
-    bottom: -3px;
-    width: 100%;
-    cursor: row-resize;
-  }
-  :global(.splitpanes.no-splitter .splitpanes__pane) {
-    background-color: #0e100f;
-  }
-  :global(.splitpanes.no-splitter .splitpanes__splitter) {
-    background-color: #4c4c4c;
-    position: relative;
-  }
-  :global(.no-splitter.splitpanes--horizontal > .splitpanes__splitter:before) {
-    width: 0.05rem;
-    pointer-events: none;
-    cursor: none;
-  }
-  :global(.no-splitter.splitpanes--vertical > .splitpanes__splitter:before) {
-    height: 0.05rem;
-    pointer-events: none;
-    cursor: none;
-  }
+<style global>
 </style>
