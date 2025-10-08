@@ -200,7 +200,7 @@
     {/if}
   </div>
 {:else}
-  <Block border="red">
+  <Block border="orange">
     <BlockRow>
       <div class="flex flex-grow">Login to save and browse your profiles</div>
 

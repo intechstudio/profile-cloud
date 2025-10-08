@@ -489,7 +489,7 @@
     horizontal={true}
     theme="modern-theme"
     pushOtherPanes={false}
-    class="h-full w-full"
+    class="flex flex-1 min-h-0 w-full"
   >
     <Pane size={60}>
       <div class="flex h-full w-full pb-3 px-4">
@@ -497,7 +497,7 @@
       </div></Pane
     >
     <Pane size={40}>
-      <div class="grid grid-rows-[1fr_auto] h-full w-full">
+      <div class="flex flex-col h-full w-full">
         <ConfigCardDisplay
           on:delete-config={handleDeleteConfig}
           on:description-change={handleDescriptionChange}
@@ -703,9 +703,8 @@
             </ToggleSwitch>
           </span>
         </ConfigCardDisplay>
-
-        <UserLogin {usernameInput} />
       </div>
     </Pane>
   </Splitpanes>
+  <UserLogin {usernameInput} />
 </div>

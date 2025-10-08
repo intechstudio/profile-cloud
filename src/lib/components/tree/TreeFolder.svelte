@@ -19,7 +19,7 @@
   $: data = $item.data as AbstractFolderData;
 </script>
 
-<div class="header" use:contextTarget={ctxOptions}>
+<div class="header" class:expanded use:contextTarget={ctxOptions}>
   <div class="title">
     <slot name="title-label">
       {`${data.title} (${
@@ -27,19 +27,6 @@
       })`}</slot
     >
   </div>
-  <svg
-    width="14"
-    height="11"
-    class:collapsed={!expanded}
-    viewBox="0 0 14 11"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M6.99968 11L0.9375 0.5L13.0619 0.500001L6.99968 11Z"
-      fill="var(--foreground-muted)"
-    />
-  </svg>
 </div>
 
 <style>
@@ -47,21 +34,24 @@
     display: flex;
     width: 100%;
     align-items: center;
-    margin-bottom: 0.25rem;
-    height: 1.25rem;
-    border-bottom: 1px solid var(--foreground-disabled);
+    padding: 0.25rem;
+    color: var(--foreground-muted);
+  }
+  .header:hover {
+    background-color: var(--background);
+  }
+
+  .expanded {
+    color: var(--foreground);
+    background-color: var(--background2);
+    font-weight: bolder;
   }
 
   .title {
     flex-grow: 1;
     text-align: left;
-    color: var(--foreground-muted);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  .collapsed {
-    transform: rotate(-90deg);
   }
 </style>

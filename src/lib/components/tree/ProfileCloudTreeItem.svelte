@@ -60,7 +60,7 @@
         : "status-inactive"}
     />
   </div>
-  <div class="button-content">
+  <div class="button-content" class:expanded>
     <span class="button-label" class:label-incompatible={compatible}>
       <slot name="button-label">
         {data.name}
@@ -79,13 +79,9 @@
           height="11"
           class:collapsed={!expanded}
           viewBox="0 0 14 11"
-          fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <path
-            d="M6.99968 11L0.9375 0.5L13.0619 0.500001L6.99968 11Z"
-            fill="var(--foreground-muted)"
-          />
+          <path d="M6.99968 11L0.9375 0.5L13.0619 0.500001L6.99968 11Z" />
         </svg>
       </div>
     {/if}
@@ -99,15 +95,30 @@
     align-items: center;
     width: 100%;
     border-width: 1px;
-    background-color: var(--background);
     height: 33px;
     padding: 0;
   }
+  .button-content {
+    color: var(--foreground-muted);
+  }
+  .button-content.expanded {
+    font-weight: bolder;
+    color: var(--foreground);
+  }
+
+  .button:hover {
+    background-color: var(--background);
+  }
 
   .border-selected {
+    background-color: var(--background);
+    font-weight: bolder;
     border-color: #10b981;
   }
 
+  .border-selected > .button-content {
+    color: var(--foreground);
+  }
   .border-unselected {
     border-color: transparent;
   }
@@ -153,7 +164,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     text-align: left;
-    color: var(--foreground);
   }
 
   .label-incompatible {
@@ -186,7 +196,14 @@
     margin-right: 0.5rem;
   }
 
-  .collapsed {
+  svg.collapsed {
     transform: rotate(-90deg);
+  }
+
+  .trigger-container {
+    fill: var(--foreground-muted);
+  }
+  .trigger-container:hover {
+    fill: var(--foreground);
   }
 </style>

@@ -125,29 +125,22 @@
   }
 </script>
 
-<div
-  class="markdown-editor flex-grow w-full h-full max-h-full max-w-full overflow-hidden"
->
-  {#if mode === "edit"}
-    <textarea
-      bind:this={textArea}
-      contenteditable="true"
-      spellcheck="false"
-      class="w-full p-1 h-full overflow-y-auto border border-transparent focus:border-emerald-500 focus:outline-none resize-none"
-      on:blur={handleBlur}
-      on:paste={handlePaste}
-      bind:value
-    />
-  {:else if mode === "preview"}
-    <!-- svelte-ignore a11y-no-static-element-interactions -->
-    <div
-      class="markdown-container p-1 flex-grow w-full h-full bg-opacity-40 overflow-y-auto"
-      on:dblclick={handleDoubleClick}
-    >
-      {@html highlightMatches(preview, $filter_value)}
-    </div>
-  {/if}
-</div>
+{#if mode === "edit"}
+  <textarea
+    bind:this={textArea}
+    contenteditable="true"
+    spellcheck="false"
+    class="w-full p-1 h-full overflow-y-auto border border-transparent focus:border-emerald-500 focus:outline-none resize-none"
+    on:blur={handleBlur}
+    on:paste={handlePaste}
+    bind:value
+  />
+{:else if mode === "preview"}
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div class="markdown-container p-2" on:dblclick={handleDoubleClick}>
+    {@html highlightMatches(preview, $filter_value)}
+  </div>
+{/if}
 
 <style>
   :global(.markdown-editor img) {

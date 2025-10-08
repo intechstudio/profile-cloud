@@ -54,7 +54,7 @@
 
 <div
   style="color: var(--foreground); background: var(--background);"
-  class="w-full h-full p-2 overflow-hidden"
+  class="flex flex-col flex-1 min-h-0 p-2 overflow-auto"
 >
   {#if typeof data !== "undefined"}
     <BlockRow>
@@ -195,7 +195,10 @@
         />
       </BlockRow>
     </BlockColumn>
-    <div style="color: var(--foreground-muted)" class="flex overflow-scroll">
+    <div
+      style="color: var(--foreground-muted)"
+      class="flex flex-1 min-h-0 w-full overflow-y-auto"
+    >
       <ConfigDescription
         value={data.description}
         disabled={!data.isEditable}
@@ -205,7 +208,7 @@
   {:else}
     <div
       style="color: var(--foreground-muted); background: var(--background)"
-      class="flex h-full items-center justify-center"
+      class="flex max-h-fit items-center justify-center"
     >
       No configuration is selected
     </div>

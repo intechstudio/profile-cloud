@@ -261,7 +261,7 @@
   }
 
   .subtree {
-    padding-left: 1rem;
+    padding-left: 1.25rem;
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -269,6 +269,8 @@
 
   .root-subtree {
     overflow-y: scroll;
-    padding-right: 4px;
+    padding-right: 0.5rem;
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
   }
 </style>
