@@ -30,10 +30,14 @@
 
 <style>
   .commit-container {
+    width: 100%;
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
     gap: 0.5rem; /* roughly Tailwind's gap-2 */
+    justify-content: center; /* centers horizontally */
+    align-items: center; /* centers vertically */
+    text-align: center; /* ensures inner text aligns */
   }
 
   .commit-button {

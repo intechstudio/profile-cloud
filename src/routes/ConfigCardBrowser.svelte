@@ -6,7 +6,7 @@
     onDestroy,
     onMount,
   } from "svelte";
-  import SvgIcon from "../lib/icons/SvgIcon.svelte";
+  import { SvgIcon } from "@intechstudio/grid-uikit";
   import type { Config } from "../lib/schemas";
   import { applyFocus } from "../lib/utils";
   import { doc, getDoc } from "firebase/firestore";
@@ -128,7 +128,7 @@
                 text: "Delete",
               }}
             >
-              <SvgIcon class="w-5" iconPath="delete" />
+              <SvgIcon fill="var(--foreground-muted)" iconPath="delete" />
             </button>
           {:else}
             <button
@@ -158,7 +158,10 @@
                 text: "Overwrite",
               }}
             >
-              <SvgIcon class="w-5" iconPath="overwrite_profile" />
+              <SvgIcon
+                fill="var(--foreground-muted)"
+                iconPath="overwrite_profile"
+              />
             </button>
           {:else}
             <button
@@ -260,7 +263,7 @@
                 text: "Public",
               }}
             >
-              <SvgIcon display={true} iconPath={"public"} />
+              <SvgIcon fill="var(--foreground-muted)" iconPath={"publicIcon"} />
             </div>
           {:else if data.public === false}
             <div
@@ -274,7 +277,10 @@
                 text: "Private",
               }}
             >
-              <SvgIcon display={true} iconPath={"private"} />
+              <SvgIcon
+                fill="var(--foreground-muted)"
+                iconPath={"privateIcon"}
+              />
             </div>
           {/if}
         </div>

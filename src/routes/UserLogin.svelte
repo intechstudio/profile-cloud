@@ -4,11 +4,17 @@
   import { userAccountService } from "../lib/stores";
   import { doc, getDoc, writeBatch } from "firebase/firestore";
   import { userCollection, usernameCollection } from "../lib/collections";
-  import SvgIcon from "../lib/icons/SvgIcon.svelte";
   import { get } from "svelte/store";
   import { firestore } from "../lib/firebase";
   import { submitAnalytics } from "./analytics";
-  import { MoltenPushButton } from "@intechstudio/grid-uikit";
+  import {
+    Block,
+    BlockBody,
+    BlockColumn,
+    BlockRow,
+    BlockTitle,
+  } from "@intechstudio/grid-uikit";
+  import { MoltenPushButton, SvgIcon } from "@intechstudio/grid-uikit";
 
   import {
     getUserNameByUid,
@@ -151,7 +157,7 @@
               text: "Save",
             }}
           >
-            <SvgIcon iconPath={"save_as_02"} class="w-5" />
+            <SvgIcon iconPath={"save_as_02"} fill="var(--foreground-muted)" />
           </button>
         {/if}
       </div>
@@ -184,7 +190,7 @@
           text: "Logout",
         }}
       >
-        <SvgIcon iconPath={"log_out"} class="w-5" />
+        <SvgIcon iconPath={"log_out"} fill="var(--foreground-muted)" />
         <div
           class="group-hover:block font-medium hidden absolute mt-7 top-0 right-0 text-white text-opacity-80 border border-white border-opacity-10 bg-neutral-900 rounded-lg px-2 py-0.5"
         >
@@ -194,12 +200,9 @@
     {/if}
   </div>
 {:else}
-  <div class="pt-4">
-    <div
-      style="background: var(--background-muted); color: var(--foreground);"
-      class="rounded-md dark:border dark:border-amber-500 p-2 flex items-center justify-between"
-    >
-      <div>Login to save and browse your profiles</div>
+  <Block border="red">
+    <BlockRow>
+      <div class="flex flex-grow">Login to save and browse your profiles</div>
 
       <MoltenPushButton
         text={"Login"}
@@ -215,9 +218,7 @@
         }}
         class="rounded px-4 py-1 border dark:border-emerald-500 dark:hover:bg-emerald-700 font-medium"
       />
-    </div>
-  </div>
+    </BlockRow>
+  </Block>
 {/if}
-<div class="flex w-full justify-center text-xs">
-  <VersionStamp />
-</div>
+<VersionStamp />
