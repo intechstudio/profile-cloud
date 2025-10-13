@@ -15,19 +15,34 @@
   export let item: AbstractTreeNode<any>;
   export let expanded: boolean;
   export let ctxOptions: ContextMenuOptions = { items: [] };
+  export let level: number;
+
+  let iconPath = "";
+
+  $: {
+    if (level !== 0) {
+      iconPath = expanded ? "folder_open" : "folder_closed";
+    } else {
+      if (data.title === "My Configs") {
+        iconPath = "profile";
+      } else if (data.title === "Community Configs") {
+        iconPath = "publicIcon";
+      } else if (data.title === "Other Configs") {
+        iconPath = "publicIcon";
+      } else if (data.title === "Recommended Configs") {
+        iconPath = "tick";
+      } else if (data.title === "Unsupported Configs") {
+        iconPath = "deleteIcon";
+      }
+    }
+  }
 
   let data: AbstractFolderData;
   $: data = $item.data as AbstractFolderData;
 </script>
 
 <div class="header" class:expanded use:contextTarget={ctxOptions}>
-  <SvgIcon
-    width="20"
-    height="20"
-    fill="var(--foreground-muted)"
-    iconPath={expanded ? "folder_open" : "folder_closed"}
-  />
-
+  <SvgIcon fill="var(--foreground-muted)" {iconPath} />
   <div class="title">
     <slot name="title-label">
       {`${data.title} (${
@@ -57,6 +72,7 @@
   }
 
   .title {
+    display: flex;
     flex-grow: 1;
     text-align: left;
     overflow: hidden;

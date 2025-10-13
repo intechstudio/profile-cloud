@@ -242,7 +242,12 @@
 <TreeComponent {...treeProps}>
   <svelte:fragment slot="folder" let:item let:expanded let:level>
     {@const data = getFolderData(item)}
-    <TreeFolder {item} {expanded} ctxOptions={getfolderCtxOptions(level, item)}>
+    <TreeFolder
+      {item}
+      {level}
+      {expanded}
+      ctxOptions={getfolderCtxOptions(level, item)}
+    >
       <span slot="title-label"
         >{@html `${highlightMatches(data.title, $filter_value)} (${getItemCount(item)})`}</span
       >

@@ -270,7 +270,5 @@
   .root-subtree {
     overflow-y: scroll;
     padding-right: 0.5rem;
-    margin-top: 0.25rem;
-    margin-bottom: 0.25rem;
   }
 </style>

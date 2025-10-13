@@ -62,8 +62,6 @@
     />
   </div>
   <SvgIcon
-    width="20"
-    height="20"
     fill="var(--foreground-muted)"
     iconPath={expanded ? "overlay_02" : "overlay_02"}
   />
