@@ -261,7 +261,7 @@
   }
 
   .subtree {
-    padding-left: 1.25rem;
+    padding-left: 1rem;
     display: flex;
     flex-direction: column;
     width: 100%;

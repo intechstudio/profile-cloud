@@ -13,6 +13,7 @@
   } from "./TreeNode.svelte";
   import { createEventDispatcher } from "svelte";
 
+  import { SvgIcon } from "@intechstudio/grid-uikit";
   const dispatch = createEventDispatcher();
 
   export let selected: boolean;
@@ -60,6 +61,12 @@
         : "status-inactive"}
     />
   </div>
+  <SvgIcon
+    width="20"
+    height="20"
+    fill="var(--foreground-muted)"
+    iconPath={expanded ? "overlay_02" : "overlay_02"}
+  />
   <div class="button-content" class:expanded>
     <span class="button-label" class:label-incompatible={compatible}>
       <slot name="button-label">
@@ -92,6 +99,7 @@
   .button {
     display: flex;
     flex-direction: row;
+    gap: 0.5rem;
     align-items: center;
     width: 100%;
     border-width: 1px;

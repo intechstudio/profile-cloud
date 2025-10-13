@@ -4,6 +4,7 @@
     type ContextMenuOptions,
   } from "@intechstudio/grid-uikit";
 
+  import { SvgIcon } from "@intechstudio/grid-uikit";
   import {
     type AbstractFolderData,
     type AbstractTreeNode,
@@ -20,6 +21,13 @@
 </script>
 
 <div class="header" class:expanded use:contextTarget={ctxOptions}>
+  <SvgIcon
+    width="20"
+    height="20"
+    fill="var(--foreground-muted)"
+    iconPath={expanded ? "folder_open" : "folder_closed"}
+  />
+
   <div class="title">
     <slot name="title-label">
       {`${data.title} (${
@@ -32,6 +40,7 @@
 <style>
   .header {
     display: flex;
+    gap: 0.5rem;
     width: 100%;
     align-items: center;
     padding: 0.25rem;
