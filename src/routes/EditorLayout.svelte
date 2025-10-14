@@ -4,6 +4,7 @@
   import { filter_value, FilterValue } from "./Filter";
   import {
     selected_config,
+    hide_community_configs,
     show_supported_only,
     config_manager,
     selected_component_types,
@@ -478,10 +479,16 @@
         />
       </BlockRow>
       <Sorter />
-      <MeltCheckbox
-        bind:target={$show_supported_only}
-        title="Only show supported"
-      />
+      <BlockRow
+        ><MeltCheckbox
+          bind:target={$show_supported_only}
+          title="Hide incompatible configs"
+        />
+        <MeltCheckbox
+          bind:target={$hide_community_configs}
+          title="Hide community configs"
+        /></BlockRow
+      >
     </BlockColumn>
   {/if}
 

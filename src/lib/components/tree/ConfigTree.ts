@@ -228,7 +228,7 @@ export namespace Tree {
     configs: Config[],
     options: Options = { compatibileTypes: [] },
   ) {
-    const { showSupportedOnly } = options;
+    const { showSupportedOnly, hideCommunityConfigs } = options;
     let root = new TreeNodeImpl(undefined, TreeItemType.FOLDER, {
       title: "Root",
     });
@@ -357,14 +357,18 @@ export namespace Tree {
 
     const fv = get(filter_value);
     const isFiltering = fv.length > 0;
-    if (isFiltering) {
-      root.addChild(other_configs);
+    if (hideCommunityConfigs) {
+      root.addChild(recommended_configs);
     } else {
       root.addChild(recommended_configs, community_configs);
     }
 
     if (showSupportedOnly) {
-      root.addChild(unsupported_configs);
+      // root.addChild(unsupported_configs);
+      console.log(
+        "Unsupported count",
+        get(unsupported_configs).children.length,
+      );
     }
 
     buildVirtualFolders(root);

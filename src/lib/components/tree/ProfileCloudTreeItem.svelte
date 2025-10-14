@@ -63,7 +63,7 @@
   </div>
   <SvgIcon
     fill="var(--foreground-muted)"
-    iconPath={expanded ? "overlay_02" : "overlay_02"}
+    iconPath={$item.children.length > 0 ? "overlay_02" : "overlay_03"}
   />
   <div class="button-content" class:expanded>
     <span class="button-label" class:label-incompatible={compatible}>
