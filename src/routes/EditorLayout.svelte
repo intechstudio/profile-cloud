@@ -170,45 +170,6 @@
     }
   }
 
-  function splitConfig(config: Config) {
-    if (config.configType !== "profile") return;
-
-    const type = ModuleType[config.type as keyof typeof ModuleType];
-    const elements = grid.get_module_element_list(type);
-
-    for (let configElement of config.configs) {
-      const name = `${config.name} - Element ${configElement.controlElementNumber}`;
-      const description = "";
-      const type = elements[configElement.controlElementNumber];
-
-      if (!type) {
-        parentIframeCommunication({
-          windowPostMessageName: "sendLogMessage",
-          dataForParent: {
-            type: "fail",
-            message: `Couldn't identify element number ${configElement.controlElementNumber} for type ${config.type}`,
-          },
-        });
-        continue;
-      }
-
-      const cm = get(config_manager);
-      let preset = {
-        name: name,
-        description: description,
-        type: type,
-        configType: "preset",
-        version: config.version,
-        configs: {
-          ...configElement,
-        },
-        id: "", //ID will be generated on save
-      };
-
-      cm?.saveConfig(BaseConfigSchema.parse(preset), true);
-    }
-  }
-
   async function createCloudConfigLink(config: Config) {
     const cm = get(config_manager);
     const configCloudId = cm?.getConfigCloudId(config);
@@ -622,36 +583,6 @@
             </DisplayOnWeb>
           </svelte:fragment>
 
-          <svelte:fragment slot="split-config-button">
-            {@const config = configs.find((e) => e.id === $selected_config?.id)}
-            {#if config?.configType === "profile"}
-              <button
-                on:click|stopPropagation={async () => {
-                  splitConfig(config);
-                  submitAnalytics({
-                    eventName: "Cloud Action",
-                    payload: {
-                      click: "Split config",
-                    },
-                  });
-                }}
-                class="flex items-center group relative"
-                use:tooltip={{
-                  nowrap: true,
-                  placement: "bottom",
-                  duration: 75,
-                  instant: true,
-                  class: "px-2 py-1",
-                  text: "Split",
-                }}
-              >
-                <SvgIcon
-                  fill="var(--foreground-muted)"
-                  iconPath="split_config"
-                />
-              </button>
-            {/if}
-          </svelte:fragment>
           <span slot="toggle-accessibility">
             {@const config = configs.find((e) => e.id === $selected_config?.id)}
             <ToggleSwitch
