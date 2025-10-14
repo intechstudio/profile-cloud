@@ -40,7 +40,6 @@
   import configuration from "../../Configuration.json";
   import { MeltCheckbox, MoltenPushButton } from "@intechstudio/grid-uikit";
   import { compatible_config_types } from "./EditorLayout";
-  import Sorter from "./Sorter.svelte";
   import { dragTarget } from "../lib/actions/drag.action";
   import {
     BlockRow,
@@ -478,7 +477,6 @@
           style={"normal"}
         />
       </BlockRow>
-      <Sorter />
       <BlockRow
         ><MeltCheckbox
           bind:target={$show_supported_only}
