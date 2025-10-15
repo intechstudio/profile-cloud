@@ -161,6 +161,7 @@ export function createConfigManager(observer: {
           ) ?? true,
         syncStatus: syncStatus,
         public: value.cloud?.public,
+        temporaryGraphPath: latestConfig.virtualPath,
       });
     });
     observer.next?.(mergedConfigs);

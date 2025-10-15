@@ -162,10 +162,14 @@ export namespace Tree {
       if (get(child).type !== TreeItemType.ITEM) continue;
 
       const { item } = get(child).data as ItemData;
-      const { virtualPath } = item;
-      if (!virtualPath) continue;
+      const { temporaryGraphPath } = item;
+      if (
+        typeof temporaryGraphPath === "undefined" ||
+        temporaryGraphPath === ""
+      )
+        continue;
 
-      const segments = virtualPath.split("/");
+      const segments = temporaryGraphPath.split("/");
       const [folderName, ...restPath] = segments;
       if (!folderName) continue;
 
@@ -185,7 +189,7 @@ export namespace Tree {
       // Clone the item with a reduced virtual path for recursion
       const newItem = {
         ...item,
-        virtualPath: restPath.join("/"),
+        temporaryGraphPath: restPath.join("/"),
       };
 
       // Replace the item's data on the child node without mutating the original

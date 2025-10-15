@@ -187,7 +187,7 @@
           disabled={!data.isEditable}
           on:change={(e) => {
             const { value } = e.detail;
-            const path = value.trim();
+            const path = value;
             dispatchEvent("path-change", {
               value: path === "" ? undefined : path,
             });

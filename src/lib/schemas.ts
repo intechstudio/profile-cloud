@@ -25,6 +25,7 @@ export const BaseConfigSchema = z.object({
   configs: z.any(),
   owner: z.string().optional(),
   virtualPath: z.string().optional(),
+  temporaryGraphPath: z.string().optional(),
   displayName: z.string().optional(),
 });
 

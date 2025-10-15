@@ -10,14 +10,14 @@
   let edited = false;
   let element: HTMLInputElement;
 
-  $: displayedText = edited ? value : value || placeholder;
+  $: displayedText = value.trim();
 
   function handleBlur() {
     window?.getSelection()?.removeAllRanges();
     edited = false;
 
-    if (value !== displayedText) {
-      value = displayedText;
+    if (value !== displayedText.trim()) {
+      value = displayedText.trim();
       dispatch("change", { value });
     }
   }
@@ -41,4 +41,5 @@
   on:blur={handleBlur}
   on:dblclick|stopPropagation|preventDefault={handleDblClick}
   bind:value={displayedText}
+  {placeholder}
 />
