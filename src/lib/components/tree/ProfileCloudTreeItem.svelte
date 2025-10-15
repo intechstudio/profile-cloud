@@ -103,6 +103,7 @@
     border-width: 1px;
     height: 33px;
     padding: 0;
+    background-color: transparent;
   }
   .button-content {
     color: var(--foreground-muted);

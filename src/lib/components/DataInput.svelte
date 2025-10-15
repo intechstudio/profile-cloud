@@ -31,15 +31,43 @@
 <input
   bind:this={element}
   style="color: var(--foreground)"
-  class="w-full mr-1 border bg-transparent truncate dark:hover:bg-neutral-800 focus:outline-none {edited
-    ? 'border-emerald-500'
-    : 'border-transparent'}"
-  class:pointer-events-none={disabled}
-  class:font-bold={bold}
-  readonly={!edited}
+  class:edited
+  class:isdisabled={disabled}
+  class:isbold={bold}
   on:keydown={(e) => e.key == "Enter" && !e.shiftKey && element?.blur()}
   on:blur={handleBlur}
   on:dblclick|stopPropagation|preventDefault={handleDblClick}
   bind:value={displayedText}
   {placeholder}
 />
+
+<style>
+  input {
+    background-color: transparent;
+    width: 100%;
+    margin-right: 1rem;
+    border: 1px solid transparent;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    outline-style: none;
+  }
+
+  input:hover {
+    background-color: var(--background-muted);
+  }
+
+  input.isbold {
+    font-weight: bold;
+    font-size: 110%;
+  }
+
+  input.edited {
+    background-color: var(--background-soft);
+    border-color: green;
+  }
+
+  input.isdisabled {
+    pointer-events: none;
+  }
+</style>
