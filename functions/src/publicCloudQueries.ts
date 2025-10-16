@@ -3,7 +3,7 @@ import * as admin from "firebase-admin";
 import { onRequest, Request } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { SecretParam } from "firebase-functions/lib/params/types";
-const intechstudioApiKey = defineSecret("X-INTECHSTUDIO-KEY");
+const intechstudioApiKey = defineSecret("X_INTECHSTUDIO_KEY");
 admin.initializeApp();
 const db = admin.firestore();
 
@@ -15,7 +15,7 @@ function validateApiKey(
 ) {
   // Get the API key from request headers
   const requestApiKey =
-    req.headers["x-intechstudio-key"] ||
+    req.headers["x_intechstudio_key"] ||
     req.get("Authorization")?.replace("Bearer ", "");
 
   // Get the expected API key from secret
