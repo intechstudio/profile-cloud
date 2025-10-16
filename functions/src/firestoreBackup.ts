@@ -1,5 +1,5 @@
 import * as firestore from "@google-cloud/firestore";
-import { onSchedule } from "firebase-functions/scheduler";
+import { onSchedule } from "firebase-functions/v2/scheduler";
 
 const bucket = "gs://profile-cloud-firestore-backup";
 const client = new firestore.v1.FirestoreAdminClient();
