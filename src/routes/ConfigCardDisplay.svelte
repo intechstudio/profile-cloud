@@ -70,11 +70,7 @@
               deleteConfirmFlag = true;
             }}
             use:tooltip={{
-              nowrap: true,
-              placement: "bottom",
-              duration: 75,
               instant: true,
-              class: "px-2 py-1",
               text: "Delete",
             }}
           >
@@ -100,11 +96,7 @@
               overwriteApplyFlag = true;
             }}
             use:tooltip={{
-              nowrap: true,
-              placement: "bottom",
-              duration: 75,
               instant: true,
-              class: "px-2 py-1",
               text: "Overwrite",
             }}
           >
@@ -130,18 +122,14 @@
       <slot name="link-button" />
       <slot name="sync-config-button" />
       <slot name="split-config-button" />
-      <div class="flex items-center gap-x-1">
+      <div class="items-center gap-x-1">
         {#if data.isEditable && data.public !== undefined}
           <slot name="toggle-accessibility" />
         {:else if data.public}
           <div
             class="relative group"
             use:tooltip={{
-              nowrap: true,
-              placement: "bottom",
-              duration: 75,
               instant: true,
-              class: "px-2 py-1",
               text: "Public",
             }}
           >
@@ -151,11 +139,7 @@
           <div
             class="relative group"
             use:tooltip={{
-              nowrap: true,
-              placement: "bottom",
-              duration: 75,
               instant: true,
-              class: "px-2 py-1",
               text: "Private",
             }}
           >

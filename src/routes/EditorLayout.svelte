@@ -24,7 +24,6 @@
     BaseConfigSchema,
   } from "../lib/schemas";
   import { fade } from "svelte/transition";
-  import ToggleSwitch from "../lib/components/atomic/ToggleSwitch.svelte";
   import { Toggle } from "@intechstudio/grid-uikit";
   import { parentIframeCommunication } from "../lib/utils";
   import {
@@ -414,6 +413,28 @@
       },
     });
   }
+
+  let publicToggleValue;
+
+  $: {
+    updateVisiblility(publicToggleValue);
+  }
+
+  function updateVisiblility(value) {
+    const config = configs.find((e) => e.id === $selected_config?.id);
+    if (typeof config === "undefined") {
+      return;
+    }
+
+    submitAnalytics({
+      eventName: "Cloud Action",
+      payload: {
+        click: "Set config visibility",
+      },
+    });
+    const cm = get(config_manager);
+    cm?.changeCloudVisibility(config, value);
+  }
 </script>
 
 <div
@@ -482,11 +503,7 @@
                   handleLink();
                 }}
                 use:tooltip={{
-                  nowrap: true,
-                  placement: "bottom",
-                  duration: 75,
                   instant: true,
-                  class: "px-2 py-1",
                   text: "Link",
                 }}
               >
@@ -586,58 +603,45 @@
 
           <span slot="toggle-accessibility">
             {@const config = configs.find((e) => e.id === $selected_config?.id)}
-            <ToggleSwitch
-              checkbox={config?.public}
-              on:toggle={(e) => {
-                if (typeof config === "undefined") {
-                  return;
-                }
-
-                submitAnalytics({
-                  eventName: "Cloud Action",
-                  payload: {
-                    click: "Set config visibility",
-                  },
-                });
-                const cm = get(config_manager);
-                cm?.changeCloudVisibility(config, e.detail);
-              }}
+            <div
+              style="display: flex;
+    align-items: center;
+    gap: 0.25rem;"
             >
+              {#if config?.public}
+                <div
+                  use:tooltip={{
+                    instant: true,
+                    text: "Public",
+                  }}
+                >
+                  <SvgIcon
+                    fill="var(--foreground-muted)"
+                    iconPath={"publicIcon"}
+                  />
+                </div>
+              {:else}
+                <div
+                  use:tooltip={{
+                    instant: true,
+                    text: "Private",
+                  }}
+                >
+                  <SvgIcon
+                    fill="var(--foreground-muted)"
+                    iconPath={"privateIcon"}
+                  />
+                </div>
+              {/if}
               <div
-                class="relative group"
-                slot="on"
                 use:tooltip={{
-                  nowrap: true,
-                  placement: "bottom",
-                  duration: 75,
                   instant: true,
-                  class: "px-2 py-1",
-                  text: "Public",
+                  text: "Change visibility",
                 }}
               >
-                <SvgIcon
-                  fill="var(--foreground-muted)"
-                  iconPath={"publicIcon"}
-                />
+                <Toggle bind:value={publicToggleValue} />
               </div>
-              <div
-                class="relative group"
-                slot="off"
-                use:tooltip={{
-                  nowrap: true,
-                  placement: "bottom",
-                  duration: 75,
-                  instant: true,
-                  class: "px-2 py-1",
-                  text: "Private",
-                }}
-              >
-                <SvgIcon
-                  fill="var(--foreground-muted)"
-                  iconPath={"privateIcon"}
-                />
-              </div>
-            </ToggleSwitch>
+            </div>
           </span>
         </ConfigCardDisplay>
       </div>
