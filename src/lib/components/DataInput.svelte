@@ -7,14 +7,12 @@
   export let bold = false;
 
   const dispatch = createEventDispatcher();
-  let edited = false;
   let element: HTMLInputElement;
 
   $: displayedText = value.trim();
 
   function handleBlur() {
     window?.getSelection()?.removeAllRanges();
-    edited = false;
 
     if (value !== displayedText.trim()) {
       value = displayedText.trim();
@@ -22,8 +20,10 @@
     }
   }
 
-  function handleDblClick() {
-    edited = true;
+  function handleClick() {
+    if (disabled) {
+      return;
+    }
     element?.setSelectionRange(0, element.value.length);
   }
 </script>
@@ -31,12 +31,11 @@
 <input
   bind:this={element}
   style="color: var(--foreground)"
-  class:edited
   class:isdisabled={disabled}
   class:isbold={bold}
   on:keydown={(e) => e.key == "Enter" && !e.shiftKey && element?.blur()}
   on:blur={handleBlur}
-  on:dblclick|stopPropagation|preventDefault={handleDblClick}
+  on:click|stopPropagation|preventDefault={handleClick}
   bind:value={displayedText}
   {placeholder}
 />
@@ -62,7 +61,7 @@
     font-size: 110%;
   }
 
-  input.edited {
+  input:focus {
     background-color: var(--background-soft);
     border-color: green;
   }
