@@ -19,8 +19,8 @@ export namespace Sort {
   };
 
   export const DefaultValue: Key = {
-    type: Type.DATE,
-    direction: Direction.DESC,
+    type: Type.NAME,
+    direction: Direction.ASC,
   };
 }
 

@@ -162,10 +162,14 @@ export namespace Tree {
       if (get(child).type !== TreeItemType.ITEM) continue;
 
       const { item } = get(child).data as ItemData;
-      const { virtualPath } = item;
-      if (!virtualPath) continue;
+      const { temporaryGraphPath } = item;
+      if (
+        typeof temporaryGraphPath === "undefined" ||
+        temporaryGraphPath === ""
+      )
+        continue;
 
-      const segments = virtualPath.split("/");
+      const segments = temporaryGraphPath.split("/");
       const [folderName, ...restPath] = segments;
       if (!folderName) continue;
 
@@ -185,7 +189,7 @@ export namespace Tree {
       // Clone the item with a reduced virtual path for recursion
       const newItem = {
         ...item,
-        virtualPath: restPath.join("/"),
+        temporaryGraphPath: restPath.join("/"),
       };
 
       // Replace the item's data on the child node without mutating the original
@@ -228,7 +232,7 @@ export namespace Tree {
     configs: Config[],
     options: Options = { compatibileTypes: [] },
   ) {
-    const { showSupportedOnly } = options;
+    const { showSupportedOnly, hideCommunityConfigs } = options;
     let root = new TreeNodeImpl(undefined, TreeItemType.FOLDER, {
       title: "Root",
     });
@@ -357,14 +361,18 @@ export namespace Tree {
 
     const fv = get(filter_value);
     const isFiltering = fv.length > 0;
-    if (isFiltering) {
-      root.addChild(other_configs);
+    if (hideCommunityConfigs) {
+      root.addChild(recommended_configs);
     } else {
       root.addChild(recommended_configs, community_configs);
     }
 
     if (showSupportedOnly) {
-      root.addChild(unsupported_configs);
+      // root.addChild(unsupported_configs);
+      console.log(
+        "Unsupported count",
+        get(unsupported_configs).children.length,
+      );
     }
 
     buildVirtualFolders(root);

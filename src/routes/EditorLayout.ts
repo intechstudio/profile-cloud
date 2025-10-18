@@ -22,7 +22,7 @@ export function selectClosestMatch(
 }
 
 export const show_supported_only: Writable<boolean> = writable(false);
-
+export const hide_community_configs: Writable<boolean> = writable(true);
 export const config_manager: Writable<ConfigManager | undefined> =
   writable(undefined);
 

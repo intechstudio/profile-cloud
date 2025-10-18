@@ -10,6 +10,7 @@
   import {
     selected_config,
     show_supported_only,
+    hide_community_configs,
     config_manager,
     compatible_config_types,
     selectClosestMatch,
@@ -60,6 +61,7 @@
       $debounced_filter_value,
       $sort_key,
       $show_supported_only,
+      $hide_community_configs,
       $compatible_config_types,
     );
   }
@@ -115,11 +117,13 @@
     filter: FilterValue,
     key: Sort.Key,
     supported: boolean,
+    community: boolean,
     compatibileTypes: string[],
   ): TreeProperties {
     const filteredConfigs = configs.filter((e) => matches(e, filter));
     const root = Tree.create(configs, {
       showSupportedOnly: supported,
+      hideCommunityConfigs: community,
       compatibileTypes,
     }).sort(key);
 
@@ -242,7 +246,12 @@
 <TreeComponent {...treeProps}>
   <svelte:fragment slot="folder" let:item let:expanded let:level>
     {@const data = getFolderData(item)}
-    <TreeFolder {item} {expanded} ctxOptions={getfolderCtxOptions(level, item)}>
+    <TreeFolder
+      {item}
+      {level}
+      {expanded}
+      ctxOptions={getfolderCtxOptions(level, item)}
+    >
       <span slot="title-label"
         >{@html `${highlightMatches(data.title, $filter_value)} (${getItemCount(item)})`}</span
       >

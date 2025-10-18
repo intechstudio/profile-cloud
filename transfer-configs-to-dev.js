@@ -58,6 +58,15 @@ async function transferConfigsToDev() {
       docSnapshot.data(),
     );
   });
+
+  // copy users from prod to dev
+  const prodUsers = collection(prodFirestore, "users");
+  const usersResult = await getDocs(prodUsers);
+  await Promise.all(
+    usersResult.docs.map((docSnapshot) =>
+      setDoc(doc(devFirestore, "users", docSnapshot.id), docSnapshot.data()),
+    ),
+  );
 }
 
 transferConfigsToDev();
