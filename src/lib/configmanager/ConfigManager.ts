@@ -234,6 +234,7 @@ export function createConfigManager(observer: {
   async function saveConfig(config: BaseConfig, createMissingConfigs: boolean) {
     let appConfigs = appConfigIdToConfigMap.get(config.id);
     config.modifiedAt = new Date();
+    delete config["temporaryGraphPath"];
 
     let cloudId = appConfigs?.cloud?.id;
     let configCreated = false;
