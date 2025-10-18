@@ -110,8 +110,8 @@
 
   $: {
     options = [
-      { title: `${element} Element`, value: ConfigurationSaveType.ELEMENT },
       { title: `${module} Module`, value: ConfigurationSaveType.MODULE },
+      { title: `${element} Element`, value: ConfigurationSaveType.ELEMENT },
       { title: `Snippet`, value: ConfigurationSaveType.SNIPPET },
     ];
   }
