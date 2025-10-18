@@ -25,6 +25,7 @@
   } from "../lib/schemas";
   import { fade } from "svelte/transition";
   import ToggleSwitch from "../lib/components/atomic/ToggleSwitch.svelte";
+  import { Toggle } from "@intechstudio/grid-uikit";
   import { parentIframeCommunication } from "../lib/utils";
   import {
     createConfigManager,

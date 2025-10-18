@@ -1,5 +1,4 @@
 <script lang="ts">
-  import ToggleSwitch from "../lib/components/atomic/ToggleSwitch.svelte";
   import { Toggle } from "@intechstudio/grid-uikit";
   import DisplayOnWeb from "../lib/components/DisplayOnWeb.svelte";
   import { getContext, setContext } from "svelte";
