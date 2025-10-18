@@ -49,6 +49,7 @@
   } from "@intechstudio/grid-uikit";
 
   import DisplayOnWeb from "../lib/components/DisplayOnWeb.svelte";
+  import { last } from "@melt-ui/svelte/internal/helpers";
 
   let configs: Config[] = [];
 
@@ -414,7 +415,20 @@
     });
   }
 
-  let publicToggleValue;
+  let publicToggleValue = $selected_config?.public;
+
+  let lastid = $selected_config?.id;
+
+  $: handleSelectionChange($selected_config);
+
+  function handleSelectionChange(config) {
+    if (lastid === config?.id) {
+      return;
+    }
+
+    lastid = config?.id;
+    publicToggleValue = config?.public;
+  }
 
   $: {
     updateVisiblility(publicToggleValue);
@@ -423,6 +437,10 @@
   function updateVisiblility(value) {
     const config = configs.find((e) => e.id === $selected_config?.id);
     if (typeof config === "undefined") {
+      return;
+    }
+
+    if (config.public === value) {
       return;
     }
 
