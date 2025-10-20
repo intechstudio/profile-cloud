@@ -31,6 +31,8 @@
         iconPath = "publicIcon";
       } else if (data.title === "Recommended Configs") {
         iconPath = "tick";
+      } else if (data.title === "Workflow Configs") {
+        iconPath = "tick";
       } else if (data.title === "Unsupported Configs") {
         iconPath = "deleteIcon";
       }
