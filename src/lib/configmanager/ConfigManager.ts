@@ -236,6 +236,10 @@ export function createConfigManager(observer: {
     config.modifiedAt = new Date();
     delete config["temporaryGraphPath"];
 
+    if (typeof config.virtualPath === "undefined") {
+      config.virtualPath = "";
+    }
+
     let cloudId = appConfigs?.cloud?.id;
     let configCreated = false;
     let configError = false;
