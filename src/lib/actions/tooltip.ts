@@ -1,5 +1,6 @@
 import type { Action } from "svelte/action";
 import { MoltenTooltip } from "@intechstudio/grid-uikit";
+import { mount } from "svelte";
 
 export const tooltip: Action<HTMLElement, any> = (
   node: HTMLElement,
@@ -15,7 +16,7 @@ export const tooltip: Action<HTMLElement, any> = (
   options.referenceElement = node;
 
   setTimeout(() => {
-    new MoltenTooltip({ target: sibling, props: options });
+    mount(MoltenTooltip, { target: sibling, props: options });
   });
 
   return {
