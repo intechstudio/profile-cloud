@@ -31,6 +31,7 @@
     mode = "edit";
     await tick(); // Wait for the DOM to update
     textArea.focus(); // Focus the input element
+    textArea.select();
   }
 
   function handlePaste(e: ClipboardEvent) {
@@ -130,7 +131,6 @@
     bind:this={textArea}
     contenteditable="true"
     spellcheck="false"
-    class="w-full p-1 h-full overflow-y-auto border border-transparent focus:border-emerald-500 focus:outline-none resize-none"
     on:blur={handleBlur}
     on:paste={handlePaste}
     bind:value
@@ -143,6 +143,31 @@
 {/if}
 
 <style>
+  textarea {
+    width: 100%;
+    padding: 0.25rem;
+    height: 100%;
+    overflow-y: auto;
+    border: 1px solid transparent;
+    resize: none;
+    background-color: transparent;
+    outline: none;
+  }
+
+  textarea:hover {
+    background-color: var(--background-muted);
+  }
+
+  textarea.isbold {
+    font-weight: bold;
+    font-size: 110%;
+  }
+
+  textarea:focus {
+    background-color: var(--background-soft);
+    border-color: green;
+  }
+
   :global(.markdown-editor img) {
     display: inline;
     vertical-align: middle;
