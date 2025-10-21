@@ -139,7 +139,7 @@
   async function provideSelectedConfigForEditor(config?: Config | undefined) {
     await parentIframeCommunication({
       windowPostMessageName: "provideSelectedConfigForEditor",
-      dataForParent: { config: config ?? undefined },
+      dataForParent: { config: config },
     });
   }
 
