@@ -385,6 +385,7 @@
   }
 
   function handleLink() {
+    let config = $selected_config;
     if (typeof config === "undefined") {
       return;
     }
@@ -531,7 +532,7 @@
                     transition:fade|global={{
                       duration: 100,
                     }}
-                    class="block font-medium absolute mt-7 top-0 right-0 border border-white border-opacity-10 bg-emerald-700 rounded-lg px-2 py-0.5"
+                    class="popup"
                   >
                     Copied to clipboard!
                   </div>
@@ -667,3 +668,16 @@
   </Splitpanes>
   <UserLogin {usernameInput} />
 </div>
+
+<style>
+  div.popup {
+    display: block;
+    position: absolute;
+    margin-top: 1.75rem;
+    top: 0;
+    color: var(--foreground-muted);
+    background-color: var(--popover-background);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+  }
+</style>

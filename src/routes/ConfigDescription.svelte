@@ -137,12 +137,17 @@
   />
 {:else if mode === "preview"}
   <!-- svelte-ignore a11y-no-static-element-interactions -->
-  <div class="markdown-container p-2" on:dblclick={handleDoubleClick}>
+  <div class="markdown-container" on:dblclick={handleDoubleClick}>
     {@html highlightMatches(preview, $filter_value)}
   </div>
 {/if}
 
 <style>
+  div.markdown-container {
+    padding: 0.5rem;
+    width: 100%;
+  }
+
   textarea {
     width: 100%;
     padding: 0.25rem;
