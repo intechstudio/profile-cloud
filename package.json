@@ -27,7 +27,6 @@
     "eslint": "^8.28.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-svelte": "^2.39.0",
-    "postcss": "^8.4.21",
     "postcss-import": "^16.1.0",
     "prettier": "^3.5.3",
     "prettier-plugin-svelte": "^3.3.3",
@@ -42,7 +41,7 @@
   "type": "module",
   "dependencies": {
     "@intechstudio/grid-protocol": "1.20250305.1735",
-    "@intechstudio/grid-uikit": "1.20250929.2015",
+    "@intechstudio/grid-uikit": "1.20251020.1904",
     "@melt-ui/svelte": "^0.86.6",
     "@toast-ui/editor": "^3.2.2",
     "audit": "^0.0.6",

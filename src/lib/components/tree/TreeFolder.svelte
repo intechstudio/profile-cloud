@@ -4,6 +4,7 @@
     type ContextMenuOptions,
   } from "@intechstudio/grid-uikit";
 
+  import { SvgIcon } from "@intechstudio/grid-uikit";
   import {
     type AbstractFolderData,
     type AbstractTreeNode,
@@ -14,12 +15,36 @@
   export let item: AbstractTreeNode<any>;
   export let expanded: boolean;
   export let ctxOptions: ContextMenuOptions = { items: [] };
+  export let level: number;
+
+  let iconPath = "";
+
+  $: {
+    if (level !== 0) {
+      iconPath = expanded ? "folder_open" : "folder_closed";
+    } else {
+      if (data.title === "My Configs") {
+        iconPath = "profile";
+      } else if (data.title === "Community Configs") {
+        iconPath = "publicIcon";
+      } else if (data.title === "Other Configs") {
+        iconPath = "publicIcon";
+      } else if (data.title === "Recommended Configs") {
+        iconPath = "tick";
+      } else if (data.title === "Workflow Configs") {
+        iconPath = "tick";
+      } else if (data.title === "Unsupported Configs") {
+        iconPath = "deleteIcon";
+      }
+    }
+  }
 
   let data: AbstractFolderData;
   $: data = $item.data as AbstractFolderData;
 </script>
 
-<div class="header" use:contextTarget={ctxOptions}>
+<div class="header" class:expanded use:contextTarget={ctxOptions}>
+  <SvgIcon fill="var(--foreground-muted)" {iconPath} />
   <div class="title">
     <slot name="title-label">
       {`${data.title} (${
@@ -27,41 +52,33 @@
       })`}</slot
     >
   </div>
-  <svg
-    width="14"
-    height="11"
-    class:collapsed={!expanded}
-    viewBox="0 0 14 11"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M6.99968 11L0.9375 0.5L13.0619 0.500001L6.99968 11Z"
-      fill="#D9D9D9"
-    />
-  </svg>
 </div>
 
 <style>
   .header {
     display: flex;
+    gap: 0.5rem;
     width: 100%;
     align-items: center;
-    margin-bottom: 0.25rem;
-    height: 1.25rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    padding: 0.25rem;
+    color: var(--foreground-muted);
+  }
+  .header:hover {
+    background-color: var(--background);
+  }
+
+  .expanded {
+    color: var(--foreground);
+    background-color: var(--background2);
+    font-weight: bolder;
   }
 
   .title {
+    display: flex;
     flex-grow: 1;
     text-align: left;
-    color: rgba(255, 255, 255, 0.8);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  .collapsed {
-    transform: rotate(-90deg);
   }
 </style>

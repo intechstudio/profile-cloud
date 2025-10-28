@@ -7,37 +7,66 @@
   export let bold = false;
 
   const dispatch = createEventDispatcher();
-  let edited = false;
   let element: HTMLInputElement;
 
-  $: displayedText = edited ? value : value || placeholder;
+  $: displayedText = value.trim();
 
   function handleBlur() {
     window?.getSelection()?.removeAllRanges();
-    edited = false;
 
-    if (value !== displayedText) {
-      value = displayedText;
+    if (value !== displayedText.trim()) {
+      value = displayedText.trim();
       dispatch("change", { value });
     }
   }
 
-  function handleDblClick() {
-    edited = true;
+  function handleClick() {
+    if (disabled) {
+      return;
+    }
     element?.setSelectionRange(0, element.value.length);
   }
 </script>
 
 <input
   bind:this={element}
-  class="w-full mr-1 border bg-white dark:bg-transparent truncate dark:hover:bg-neutral-800 focus:outline-none {edited
-    ? 'border-emerald-500'
-    : 'border-transparent'}"
-  class:pointer-events-none={disabled}
-  class:font-bold={bold}
-  readonly={!edited}
+  style="color: var(--foreground)"
+  class:isdisabled={disabled}
+  class:isbold={bold}
   on:keydown={(e) => e.key == "Enter" && !e.shiftKey && element?.blur()}
   on:blur={handleBlur}
-  on:dblclick|stopPropagation|preventDefault={handleDblClick}
+  on:click|stopPropagation|preventDefault={handleClick}
   bind:value={displayedText}
+  {placeholder}
 />
+
+<style>
+  input {
+    background-color: transparent;
+    width: 100%;
+    margin-right: 1rem;
+    border: 1px solid transparent;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    outline-style: none;
+  }
+
+  input:hover {
+    background-color: var(--background-muted);
+  }
+
+  input.isbold {
+    font-weight: bold;
+    font-size: 110%;
+  }
+
+  input:focus {
+    background-color: var(--background-soft);
+    border-color: green;
+  }
+
+  input.isdisabled {
+    pointer-events: none;
+  }
+</style>

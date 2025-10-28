@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ToggleSwitch from "../lib/components/atomic/ToggleSwitch.svelte";
+  import { Toggle } from "@intechstudio/grid-uikit";
   import DisplayOnWeb from "../lib/components/DisplayOnWeb.svelte";
   import { getContext, setContext } from "svelte";
   import "../app.css";
@@ -22,32 +22,18 @@
     setContext("display", "web");
   }
 
-  let darkMode = getContext("display") === "editor" ? true : true;
+  let darkMode = true;
 
-  function toggleDarkMode() {
-    darkMode = !darkMode;
-
+  $: {
     document.documentElement.setAttribute(
       "color-scheme",
       darkMode ? "dark" : "light",
     );
-
-    // set class on body, so on overscrolling the background will match the app color
-    //document.body.classList.toggle("bg-primary");
-  }
-
-  let editorMode = false;
-
-  function toggleDisplayMode() {
-    editorMode = !editorMode;
-
-    $mode_store = editorMode;
   }
 
   let fontSize = getContext("display") === "editor" ? "12px" : "16px";
 
   console.log("Dark mode:", darkMode);
-
   console.log("Application context:", getContext("display"));
 </script>
 
@@ -55,62 +41,31 @@
   <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 </svelte:head>
 
-<main
-  style="{'font-size: ' +
-    fontSize}; background-color: var(--background); color: var(--foreground);"
->
-  <div
-    class="flex flex-col justify-between transition duration-200 min-h-screen"
-  >
+<main>
+  <div class="app-container">
     <DisplayOnWeb>
-      <div class="">
-        <nav class=" container mx-auto flex w-full justify-between p-4">
-          <a href="https://intech.studio">
-            <img
-              src={darkMode
-                ? "/icon-logo-white-transparent.svg"
-                : "/icon-logo-black-transparent.svg"}
-              alt="Intech Studio"
-              class="h-8 p-1"
-            />
-          </a>
-          <ToggleSwitch on:toggle={toggleDarkMode}>
-            <svelte:fragment slot="off">
-              <img src="/moon_icon.svg" alt="dark mode" class="w-6 h-6" />
-            </svelte:fragment>
-            <svelte:fragment slot="on">
-              <img src="/sun_icon.svg" alt="light mode" class="w-6 h-6 p-1" />
-            </svelte:fragment>
-          </ToggleSwitch>
-          <ToggleSwitch on:toggle={toggleDisplayMode}>
-            <svelte:fragment slot="off">
-              <img
-                src="/icon-logo-{darkMode ? 'white' : 'black'}-transparent.svg"
-                alt="dark mode"
-                class="w-16 h-16 px-2"
-              />
-            </svelte:fragment>
-            <svelte:fragment slot="on">
-              <img
-                src="/icon-logo-{darkMode ? 'white' : 'black'}-transparent.svg"
-                alt="light mode"
-                class="w-16 h-16 px-2"
-              />
-            </svelte:fragment>
-          </ToggleSwitch>
-        </nav>
-      </div>
+      <nav class="container">
+        <a href="https://intech.studio">
+          <img
+            src={darkMode
+              ? "/icon-logo-white-transparent.svg"
+              : "/icon-logo-black-transparent.svg"}
+            alt="Intech Studio"
+            class="logo"
+          />
+        </a>
+        <Toggle title="Dark mode" bind:value={darkMode} />
+        <Toggle title="Editor view" bind:value={$mode_store} />
+      </nav>
     </DisplayOnWeb>
 
     <slot />
 
     <DisplayOnWeb>
-      <footer class=" bg-emerald-300">
-        <div
-          class="container mx-auto flex w-full justify-center p-4 text-center"
-        >
-          <div class="flex flex-row gap-2 text-sm">
-            <p>
+      <footer>
+        <div class="container">
+          <div class="footer-content">
+            <div>
               <a
                 href="https://intech.studio"
                 target="_blank"
@@ -118,8 +73,8 @@
               >
                 &copy; {new Date().getFullYear()} Intech Studio
               </a>
-            </p>
-            <span>-</span>
+            </div>
+            <div>-</div>
             <VersionStamp />
           </div>
         </div>
@@ -127,3 +82,53 @@
     </DisplayOnWeb>
   </div>
 </main>
+
+<style>
+  main {
+    font-size: var(--font-size);
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+
+  .app-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 100vh;
+    transition: all 0.2s;
+  }
+
+  nav.container {
+    max-width: 1024px;
+    margin: 0 auto;
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    padding: 1rem;
+  }
+
+  nav img.logo {
+    height: 2rem;
+    padding: 0.25rem;
+  }
+
+  footer {
+    background-color: #34d399; /* emerald-300 */
+  }
+
+  footer .container {
+    max-width: 1024px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  footer .footer-content {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    font-size: 0.875rem; /* text-sm */
+  }
+</style>
