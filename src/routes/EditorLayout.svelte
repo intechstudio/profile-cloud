@@ -208,6 +208,17 @@
         version: editorConfig.version,
         configType: editorConfig.configType,
       };
+
+      if (newConfig.type !== config.type) {
+        parentIframeCommunication({
+          windowPostMessageName: "sendLogMessage",
+          dataForParent: {
+            type: "fail",
+            message: `Config type does not match!`,
+          },
+        });
+        return;
+      }
       cm?.saveConfig(newConfig, false);
     }
   }
