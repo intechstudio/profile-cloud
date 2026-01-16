@@ -161,6 +161,7 @@ export function createConfigManager(observer: {
           ) ?? true,
         syncStatus: syncStatus,
         public: value.cloud?.public,
+        temporaryGraphPath: latestConfig.virtualPath,
       });
     });
     observer.next?.(mergedConfigs);
@@ -233,6 +234,11 @@ export function createConfigManager(observer: {
   async function saveConfig(config: BaseConfig, createMissingConfigs: boolean) {
     let appConfigs = appConfigIdToConfigMap.get(config.id);
     config.modifiedAt = new Date();
+    delete config["temporaryGraphPath"];
+
+    if (typeof config.virtualPath === "undefined") {
+      config.virtualPath = "";
+    }
 
     let cloudId = appConfigs?.cloud?.id;
     let configCreated = false;

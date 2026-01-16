@@ -96,7 +96,7 @@
   }
 </script>
 
-<container class:hidden={!visible} class="w-full h-full">
+<container class:hidden={!visible}>
   <SearchBar
     bind:value={searchValue}
     suggestions={searchSuggestions}
@@ -104,3 +104,10 @@
     on:input={handleInput}
   />
 </container>
+
+<style>
+  container {
+    width: 100%;
+    height: 100%;
+  }
+</style>

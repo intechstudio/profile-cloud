@@ -13,6 +13,7 @@
   } from "./TreeNode.svelte";
   import { createEventDispatcher } from "svelte";
 
+  import { SvgIcon } from "@intechstudio/grid-uikit";
   const dispatch = createEventDispatcher();
 
   export let selected: boolean;
@@ -60,7 +61,11 @@
         : "status-inactive"}
     />
   </div>
-  <div class="button-content">
+  <SvgIcon
+    fill="var(--foreground-muted)"
+    iconPath={$item.children.length > 0 ? "overlay_02" : "overlay_03"}
+  />
+  <div class="button-content" class:expanded>
     <span class="button-label" class:label-incompatible={compatible}>
       <slot name="button-label">
         {data.name}
@@ -79,13 +84,9 @@
           height="11"
           class:collapsed={!expanded}
           viewBox="0 0 14 11"
-          fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <path
-            d="M6.99968 11L0.9375 0.5L13.0619 0.500001L6.99968 11Z"
-            fill="#D9D9D9"
-          />
+          <path d="M6.99968 11L0.9375 0.5L13.0619 0.500001L6.99968 11Z" />
         </svg>
       </div>
     {/if}
@@ -96,21 +97,37 @@
   .button {
     display: flex;
     flex-direction: row;
+    gap: 0.5rem;
     align-items: center;
     width: 100%;
     border-width: 1px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    background-color: #2a3439;
     height: 33px;
     padding: 0;
+    background-color: transparent;
+  }
+  .button-content {
+    color: var(--foreground-muted);
+  }
+  .button-content.expanded {
+    font-weight: bolder;
+    color: var(--foreground);
+  }
+
+  .button:hover {
+    background-color: var(--background);
   }
 
   .border-selected {
+    background-color: var(--background);
+    font-weight: bolder;
     border-color: #10b981;
   }
 
+  .border-selected > .button-content {
+    color: var(--foreground);
+  }
   .border-unselected {
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: transparent;
   }
 
   .status-indicator {
@@ -154,7 +171,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     text-align: left;
-    color: white;
   }
 
   .label-incompatible {
@@ -162,7 +178,7 @@
   }
 
   .type-label {
-    color: white;
+    color: var(--foreground-muted);
     font-size: inherit;
     padding: 0.125rem 0.5rem;
     border-width: 1px;
@@ -187,7 +203,14 @@
     margin-right: 0.5rem;
   }
 
-  .collapsed {
+  svg.collapsed {
     transform: rotate(-90deg);
+  }
+
+  .trigger-container {
+    fill: var(--foreground-muted);
+  }
+  .trigger-container:hover {
+    fill: var(--foreground);
   }
 </style>

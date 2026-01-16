@@ -162,10 +162,14 @@ export namespace Tree {
       if (get(child).type !== TreeItemType.ITEM) continue;
 
       const { item } = get(child).data as ItemData;
-      const { virtualPath } = item;
-      if (!virtualPath) continue;
+      const { temporaryGraphPath } = item;
+      if (
+        typeof temporaryGraphPath === "undefined" ||
+        temporaryGraphPath === ""
+      )
+        continue;
 
-      const segments = virtualPath.split("/");
+      const segments = temporaryGraphPath.split("/");
       const [folderName, ...restPath] = segments;
       if (!folderName) continue;
 
@@ -185,7 +189,7 @@ export namespace Tree {
       // Clone the item with a reduced virtual path for recursion
       const newItem = {
         ...item,
-        virtualPath: restPath.join("/"),
+        temporaryGraphPath: restPath.join("/"),
       };
 
       // Replace the item's data on the child node without mutating the original
@@ -228,13 +232,14 @@ export namespace Tree {
     configs: Config[],
     options: Options = { compatibileTypes: [] },
   ) {
-    const { showSupportedOnly } = options;
+    const { showSupportedOnly, hideCommunityConfigs } = options;
     let root = new TreeNodeImpl(undefined, TreeItemType.FOLDER, {
       title: "Root",
     });
     const [
       my_configs,
       recommended_configs,
+      workflow_configs,
       community_configs,
       other_configs,
       unsupported_configs,
@@ -242,6 +247,9 @@ export namespace Tree {
       new TreeNodeImpl(root, TreeItemType.FOLDER, { title: "My Configs" }),
       new TreeNodeImpl(root, TreeItemType.FOLDER, {
         title: "Recommended Configs",
+      }),
+      new TreeNodeImpl(root, TreeItemType.FOLDER, {
+        title: "Workflow Configs",
       }),
       new TreeNodeImpl(root, TreeItemType.FOLDER, {
         title: "Community Configs",
@@ -278,6 +286,30 @@ export namespace Tree {
             configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
               e.owner ?? "",
             );
+
+          const cct = get(compatible_config_types);
+
+          return (
+            !isMyConfig &&
+            isOfficialConfig &&
+            (!(showSupportedOnly ?? false) || cct.includes(e.type))
+          );
+        })
+        .map(
+          (e) =>
+            new TreeNodeImpl(undefined, TreeItemType.ITEM, {
+              item: e,
+              compatible: isCompatible(e, options.compatibileTypes),
+            }),
+        ),
+    );
+    workflow_configs.addChild(
+      ...configs
+        .filter((e: Config) => {
+          const isMyConfig =
+            e.syncStatus == "local" || e.owner === cm?.getCurrentOwnerId();
+          const isOfficialConfig =
+            configuration.WORKFLOW_CONFIG_PROFILE_IDS.includes(e.owner ?? "");
 
           const cct = get(compatible_config_types);
 
@@ -357,14 +389,18 @@ export namespace Tree {
 
     const fv = get(filter_value);
     const isFiltering = fv.length > 0;
-    if (isFiltering) {
-      root.addChild(other_configs);
+    if (hideCommunityConfigs) {
+      root.addChild(recommended_configs, workflow_configs);
     } else {
-      root.addChild(recommended_configs, community_configs);
+      root.addChild(recommended_configs, workflow_configs, community_configs);
     }
 
     if (showSupportedOnly) {
-      root.addChild(unsupported_configs);
+      // root.addChild(unsupported_configs);
+      console.log(
+        "Unsupported count",
+        get(unsupported_configs).children.length,
+      );
     }
 
     buildVirtualFolders(root);

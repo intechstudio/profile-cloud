@@ -269,6 +269,6 @@
 
   .root-subtree {
     overflow-y: scroll;
-    padding-right: 4px;
+    padding-right: 0.5rem;
   }
 </style>
