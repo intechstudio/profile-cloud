@@ -1,4 +1,4 @@
-<svelte:options customElement={{ tag: "WEB-COMPONENT-NAME", shadow: "none" }} />
+<svelte:options customElement={{ tag: "web-component-name", shadow: "none" }} />
 
 <script>
   import { onMount } from "svelte";
