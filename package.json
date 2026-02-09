@@ -40,7 +40,6 @@
     "@intechstudio/grid-uikit": "1.20251020.1904",
     "@melt-ui/svelte": "^0.86.6",
     "firebase": "^12.2.1",
-    "fix": "^0.0.6",
     "marked": "^12.0.2",
     "semver-parser": "^4.1.4",
     "svelte-splitpanes": "^8.0.9",
