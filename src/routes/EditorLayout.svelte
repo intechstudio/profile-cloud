@@ -470,7 +470,7 @@
 <div
   style="background-color: var(--background-muted);"
   id="main"
-  class="flex flex-col h-full w-full gap-2 relative z-0 overflow-hidden"
+  class="main-layout"
 >
   {#if configurationSaveVisible}
     <ConfigurationSave
@@ -507,15 +507,15 @@
     horizontal={true}
     theme="modern-theme"
     pushOtherPanes={false}
-    class="flex flex-1 min-h-0 w-full"
+    style="display: flex; flex: 1; min-height: 0; width: 100%;"
   >
     <Pane size={60}>
-      <div class="flex h-full w-full pb-3 px-4">
+      <div class="tree-pane">
         <ConfigTree {configs} />
       </div></Pane
     >
     <Pane size={40}>
-      <div class="flex flex-col h-full w-full">
+      <div class="detail-pane">
         <ConfigCardDisplay
           on:delete-config={handleDeleteConfig}
           on:description-change={handleDescriptionChange}
@@ -528,7 +528,7 @@
             {@const config = $selected_config}
             {#if config?.syncStatus != "local"}
               <button
-                class="relative group flex"
+                class="icon-button"
                 on:click|stopPropagation={() => {
                   handleLink();
                 }}
@@ -587,13 +587,9 @@
                     },
                   });
                 }}
-                class="flex items-center group relative"
+                class="icon-button"
                 use:tooltip={{
-                  nowrap: true,
-                  placement: "bottom",
-                  duration: 75,
                   instant: true,
-                  class: "px-2 py-1",
                   text: !config?.isEditable
                     ? "Import"
                     : config.syncStatus === "cloud"
@@ -624,7 +620,7 @@
                     config?.id;
                   window.open(configLinkUrl, "_self");
                 }}
-                class="rounded px-4 py-1 dark:bg-emerald-600 dark:hover:bg-emerald-700 font-medium"
+                class="import-button"
               >
                 Import {config?.id}
               </button>
@@ -681,6 +677,54 @@
 </div>
 
 <style>
+  .main-layout {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    gap: 0.5rem;
+    position: relative;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .tree-pane {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    padding-bottom: 0.75rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .detail-pane {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+  }
+
+  .icon-button {
+    display: flex;
+    align-items: center;
+    position: relative;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+  }
+
+  .import-button {
+    border-radius: 0.25rem;
+    padding: 0.25rem 1rem;
+    font-weight: 500;
+    background-color: #059669;
+  }
+
+  .import-button:hover {
+    background-color: #047857;
+  }
+
   div.popup {
     display: block;
     position: absolute;

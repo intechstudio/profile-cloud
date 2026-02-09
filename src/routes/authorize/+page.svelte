@@ -53,40 +53,31 @@
   }
 </script>
 
-<div class="w-full h-full">
-  <div
-    class="container text-center items-center flex flex-col mx-auto max-w-xl p-4 bg-neutral-50 dark:bg-neutral-800 rounded-md shadow border dark:border-white dark:border-opacity-10 border-black border-opacity-10"
-  >
+<div class="page">
+  <div class="auth-card">
     {#if authStatus.status == 0}
-      <h2 class="text-2xl text-black font-bold pb-4">
-        authorize your social account
-      </h2>
-      <h3
-        class="pb-4 text-black dark:text-opacity-70 dark:text-white text-opacity-70"
-      >
+      <h2 class="title">authorize your social account</h2>
+      <h3 class="subtitle">
         When you login through social accounts, please click on the appropiate
         button below to proceed with authorization.
       </h3>
-      <div class="flex justify-center items-center w-full h-[44px] p-0 m-0">
+      <div class="action-row">
         <GoogleAuth on:google-signin={handleCredentialResponse} />
       </div>
     {:else if authStatus.status == 1}
-      <h2 class="text-2xl font-bold pb-4">authorization successful</h2>
-      <h3
-        class="pb-4 text-black dark:text-opacity-70 dark:text-white text-opacity-70"
-      >
+      <h2 class="title">authorization successful</h2>
+      <h3 class="subtitle">
         Click the button below, and open the application.
       </h3>
-      <div class="flex justify-center items-center w-full h-[44px] p-0 m-0">
-        <a
-          class="bg-blue-400 hover:bg-blue-500 py-2 px-6 rounded text-white dark:bg-emerald-400 dark:hover:bg-emerald-500 font-medium"
-          href={buildProtocolUrl(credential)}>launch desktop app</a
+      <div class="action-row">
+        <a class="launch-button" href={buildProtocolUrl(credential)}
+          >launch desktop app</a
         >
       </div>
-      <div class="pt-2 flex items-center text-sm">
-        <div class="w-6 h-6 p-1">
+      <div class="success-row">
+        <div class="check-icon">
           <svg
-            class="fill-current dark:text-white text-black"
+            style="fill: currentColor; color: var(--foreground);"
             viewBox="0 0 24 24"
             xmlns="http://www.w3.org/2000/svg"
             ><path
@@ -103,5 +94,71 @@
 <style>
   #google-signin-button {
     display: inline-block;
+  }
+
+  .page {
+    width: 100%;
+    height: 100%;
+  }
+
+  .auth-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    max-width: 36rem;
+    margin: 0 auto;
+    padding: 1rem;
+    background-color: var(--background);
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    padding-bottom: 1rem;
+  }
+
+  .subtitle {
+    padding-bottom: 1rem;
+    color: var(--foreground-muted);
+  }
+
+  .action-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 44px;
+    padding: 0;
+    margin: 0;
+  }
+
+  .launch-button {
+    background-color: #059669;
+    padding: 0.5rem 1.5rem;
+    border-radius: 0.25rem;
+    color: white;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .launch-button:hover {
+    background-color: #047857;
+  }
+
+  .success-row {
+    padding-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+  }
+
+  .check-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0.25rem;
   }
 </style>

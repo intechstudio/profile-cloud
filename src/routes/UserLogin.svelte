@@ -150,7 +150,7 @@
         <SvgIcon iconPath={"save_as_02"} fill="var(--foreground-muted)" />
       </button>
     </BlockRow>
-    <div class={usernameInput.valid ? "text-emerald-500" : "text-amber-500"}>
+    <div style="color: {usernameInput.valid ? '#10b981' : '#f59e0b'}">
       {usernameSelectionFeedback(usernameInput)}
     </div>
   </BlockColumn>

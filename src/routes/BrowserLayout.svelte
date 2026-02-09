@@ -9,7 +9,9 @@
     type ConfigManager,
     createConfigManager,
   } from "../lib/configmanager/ConfigManager";
+  import { tooltip } from "../lib/actions/tooltip";
   import ConfigCardBrowser from "./ConfigCardBrowser.svelte";
+  import { MoltenPushButton } from "@intechstudio/grid-uikit";
   import configuration from "../../Configuration.json";
 
   let selectedConfigIndex: number | undefined = undefined;
@@ -83,16 +85,23 @@
         }}
       >
         <svelte:fragment slot="import-config-browser-button">
-          <button
-            on:click={() => {
-              const configLinkUrl =
-                `${configuration.DEEPLINK_PROTOCOL_NAME}://?config-link=` +
-                config.id;
-              window.open(configLinkUrl, "_self");
+          <div
+            use:tooltip={{
+              instant: true,
+              text: `Import "${config.name}" into Grid Editor`,
             }}
           >
-            Import
-          </button>
+            <MoltenPushButton
+              text="Import"
+              style="accept"
+              click={() => {
+                const configLinkUrl =
+                  `${configuration.DEEPLINK_PROTOCOL_NAME}://?config-link=` +
+                  config.id;
+                window.open(configLinkUrl, "_self");
+              }}
+            />
+          </div>
         </svelte:fragment>
       </ConfigCardBrowser>
     {/each}
@@ -151,18 +160,4 @@
     }
   }
 
-  /* Import button inside ConfigCardBrowser */
-  ConfigCardBrowser button {
-    border-radius: 0.25rem; /* rounded */
-    padding: 0.25rem 1rem; /* py-1 px-4 */
-    font-weight: 500; /* font-medium */
-    background-color: #10b981; /* dark:bg-emerald-600 */
-    color: white;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  ConfigCardBrowser button:hover {
-    background-color: #059669; /* dark:hover:bg-emerald-700 */
-  }
 </style>
