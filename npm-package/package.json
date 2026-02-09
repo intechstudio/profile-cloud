@@ -2,5 +2,9 @@
   "name": "@intechstudio/profile-cloud-webcomponent",
   "version": "0.0.1",
   "type": "module",
-  "main": "dist/components.js"
+  "main": "dist/components.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/intechstudio/profile-cloud.git"
+  }
 }
