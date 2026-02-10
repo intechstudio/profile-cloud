@@ -11,7 +11,7 @@
   } from "../lib/configmanager/ConfigManager";
   import { tooltip } from "../lib/actions/tooltip";
   import ConfigCardBrowser from "./ConfigCardBrowser.svelte";
-  import { MoltenPushButton } from "@intechstudio/grid-uikit";
+  import { MeltCheckbox, MoltenPushButton } from "@intechstudio/grid-uikit";
   import configuration from "../../Configuration.json";
 
   let selectedConfigIndex: number | undefined = undefined;
@@ -23,10 +23,6 @@
   let selectedComponentTypes: string[] = [];
 
   let isSearchSortingShows = false;
-
-  function filterShowHide() {
-    isSearchSortingShows = !isSearchSortingShows;
-  }
 
   onMount(async () => {
     configManager = createConfigManager({
@@ -55,22 +51,19 @@
 </script>
 
 <div id="main">
-  <div class="filter-toggle">
-    <button on:click={filterShowHide}>
-      {#if isSearchSortingShows}
-        Hide Filters
-      {:else}
-        Show Filters
-      {/if}
-    </button>
-  </div>
-
-  {#if isSearchSortingShows}
-    <div class="filters-row">
+  <div class="filters-row">
+    <div class="filter-checkbox">
+      <MeltCheckbox
+        bind:target={isSearchSortingShows}
+        title="Show Filters"
+        style="transparent"
+      />
+    </div>
+    {#if isSearchSortingShows}
       <Filter />
       <Sorter />
-    </div>
-  {/if}
+    {/if}
+  </div>
 
   <div class="configs-grid">
     {#each filteredConfigs as config, index (config.id)}
@@ -118,9 +111,9 @@
     overflow: hidden;
   }
 
-  /* Filter toggle button */
-  .filter-toggle {
-    display: flex;
+  .filter-checkbox {
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 
   /* Filters row */
