@@ -97,6 +97,7 @@
 
 <style>
   .button {
+    container-type: inline-size;
     display: flex;
     flex-direction: row;
     gap: 0.5rem;
@@ -207,7 +208,7 @@
     white-space: nowrap;
   }
 
-  @media (max-width: 400px) {
+  @container (max-width: 400px) {
     .modified-date {
       display: none;
     }
