@@ -212,12 +212,14 @@
   .created-by {
     font-size: 0.75rem;
     display: flex;
+    flex-wrap: wrap;
     flex-grow: 1;
     justify-content: space-between;
   }
 
   .modified-date {
     color: var(--foreground-muted);
+    white-space: nowrap;
   }
 
   .icon-button {
