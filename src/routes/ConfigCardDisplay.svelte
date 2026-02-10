@@ -59,7 +59,10 @@
   {#if typeof data !== "undefined"}
     <BlockRow>
       <div class="created-by">
-        Created by {configOwner === "" ? "Unknown" : configOwner}
+        <span>{configOwner === "" ? "Unknown" : configOwner}</span>
+        <span class="modified-date"
+          >Last modified: {data.modifiedAt.toLocaleDateString()}</span
+        >
       </div>
 
       {#if data.isEditable}
@@ -210,6 +213,11 @@
     font-size: 0.75rem;
     display: flex;
     flex-grow: 1;
+    justify-content: space-between;
+  }
+
+  .modified-date {
+    color: var(--foreground-muted);
   }
 
   .icon-button {
