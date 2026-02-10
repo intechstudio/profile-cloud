@@ -611,17 +611,23 @@
                 {@const config = configs.find(
                   (e) => e.id === $selected_config?.id,
                 )}
-                <button
-                  on:click={() => {
-                    const configLinkUrl =
-                      `${configuration.DEEPLINK_PROTOCOL_NAME}://?config-link=` +
-                      config?.id;
-                    window.open(configLinkUrl, "_self");
+                <div
+                  use:tooltip={{
+                    instant: true,
+                    text: `Import "${config?.name}" into Grid Editor`,
                   }}
-                  class="import-button"
                 >
-                  Import {config?.id}
-                </button>
+                  <MoltenPushButton
+                    text="Import"
+                    style="accept"
+                    click={() => {
+                      const configLinkUrl =
+                        `${configuration.DEEPLINK_PROTOCOL_NAME}://?config-link=` +
+                        config?.id;
+                      window.open(configLinkUrl, "_self");
+                    }}
+                  />
+                </div>
               </DisplayOnWeb>
             </svelte:fragment>
 
@@ -717,17 +723,6 @@
     background: transparent;
     border: none;
     cursor: pointer;
-  }
-
-  .import-button {
-    border-radius: 0.25rem;
-    padding: 0.25rem 1rem;
-    font-weight: 500;
-    background-color: #059669;
-  }
-
-  .import-button:hover {
-    background-color: #047857;
   }
 
   div.popup {
