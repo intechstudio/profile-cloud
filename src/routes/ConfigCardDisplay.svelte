@@ -179,10 +179,7 @@
         />
       </BlockRow>
     </BlockColumn>
-    <div
-      style="color: var(--foreground-muted)"
-      class="description-container"
-    >
+    <div style="color: var(--foreground-muted)" class="description-container">
       <ConfigDescription
         value={data.description}
         disabled={!data.isEditable}
