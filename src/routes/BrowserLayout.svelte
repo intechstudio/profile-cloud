@@ -104,6 +104,7 @@
 <style>
   /* Main container */
   #main {
+    container-type: inline-size;
     display: flex;
     flex-direction: column;
     position: relative;
@@ -137,14 +138,14 @@
     gap: 1rem; /* gap-4 */
   }
 
-  @media (min-width: 768px) {
+  @container (min-width: 768px) {
     /* md:grid-cols-2 */
     .configs-grid {
       grid-template-columns: repeat(2, 1fr);
     }
   }
 
-  @media (min-width: 1024px) {
+  @container (min-width: 1024px) {
     /* lg:py-8 and lg:grid-cols-3 */
     .configs-grid {
       padding-top: 2rem;
