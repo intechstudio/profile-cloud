@@ -224,6 +224,9 @@
       {data.type}
     </div>
     <div class="footer-right" class:footer-right-editor={display === "editor"}>
+      <span class="modified-date"
+        >Last modified: {data.modifiedAt.toLocaleDateString()}</span
+      >
       <span class="owner-name">{configOwner}</span>
       {#if display == "editor"}
         <div class="visibility-container">
@@ -396,6 +399,11 @@
 
   .footer-right-editor {
     gap: 0.25rem;
+  }
+
+  .modified-date {
+    color: var(--foreground-muted);
+    font-size: 0.75rem;
   }
 
   .owner-name {
