@@ -176,7 +176,8 @@
         bind:this={descriptionTextarea.element}
         class="description-input"
         class:editing={descriptionTextarea.doubleClicked}
-        class:disabled={(!data.isEditable || !isSelected) && display === 'editor'}
+        class:disabled={(!data.isEditable || !isSelected) &&
+          display === "editor"}
         readonly={!descriptionTextarea.doubleClicked || display !== "editor"}
         on:keydown={(e) => {
           if (e.key == "Enter" && !e.shiftKey) {
@@ -216,11 +217,13 @@
   <div class="card-footer">
     <div
       class="type-badge"
-      class:type-badge-active={data.selectedComponentTypes?.includes(data.type) ?? false}
+      class:type-badge-active={data.selectedComponentTypes?.includes(
+        data.type,
+      ) ?? false}
     >
       {data.type}
     </div>
-    <div class="footer-right" class:footer-right-editor={display === 'editor'}>
+    <div class="footer-right" class:footer-right-editor={display === "editor"}>
       <span class="owner-name">{configOwner}</span>
       {#if display == "editor"}
         <div class="visibility-container">

@@ -85,6 +85,7 @@
 
 <style>
   main {
+    height: 100%;
     font-size: var(--font-size);
     background-color: var(--background);
     color: var(--foreground);
@@ -94,7 +95,7 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 100vh;
+    height: 100%;
     transition: all 0.2s;
   }
 
