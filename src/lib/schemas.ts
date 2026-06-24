@@ -2,6 +2,14 @@ import { ElementType, ModuleType } from "@intechstudio/grid-protocol";
 import { Timestamp } from "firebase/firestore";
 import { z } from "zod";
 
+export const ConfigFileSchema = z.object({
+  name: z.string(),
+  content: z.string(),
+  mimeType: z.string().optional(),
+});
+
+export type ConfigFile = z.infer<typeof ConfigFileSchema>;
+
 export const BaseConfigSchema = z.object({
   id: z.string(),
   modifiedAt: z.coerce.date().default(new Date()),
@@ -27,6 +35,7 @@ export const BaseConfigSchema = z.object({
   virtualPath: z.string().optional(),
   temporaryGraphPath: z.string().optional(),
   displayName: z.string().optional(),
+  files: z.array(ConfigFileSchema).optional(),
 });
 
 export type BaseConfig = z.infer<typeof BaseConfigSchema>;
