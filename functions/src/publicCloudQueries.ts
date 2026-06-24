@@ -7,6 +7,24 @@ const intechstudioApiKey = defineSecret("X_INTECHSTUDIO_KEY");
 admin.initializeApp();
 const db = admin.firestore();
 
+const publicProfileFields = [
+  "id",
+  "modifiedAt",
+  "createdAt",
+  "name",
+  "description",
+  "type",
+  "version",
+  "configType",
+  "configs",
+  "owner",
+  "virtualPath",
+  "temporaryGraphPath",
+  "displayName",
+  "access",
+  "public",
+] as const;
+
 // Helper function to validate API key
 function validateApiKey(
   req: Request,
@@ -40,6 +58,7 @@ export const readAllProfiles = onRequest(
     }
 
     db.collection("configs")
+      .select(...publicProfileFields)
       .where("public", "==", true)
       .get()
       .then((snapshot) => {
@@ -66,6 +85,7 @@ export const readUserProfiles = onRequest(
     }
 
     db.collection("configs")
+      .select(...publicProfileFields)
       .where("owner", "==", userId)
       .where("public", "==", true)
       .get()
@@ -91,6 +111,7 @@ export const readSingleProfile = onRequest(
     console.log(profileId);
 
     db.collection("configs")
+      .select(...publicProfileFields)
       .where("id", "==", profileId)
       .where("public", "==", true)
       .get()
