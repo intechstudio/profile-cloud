@@ -165,7 +165,6 @@
           });
         }}
       />
-
       <BlockRow>
         <span>Folder:</span>
         <DataInput
@@ -181,6 +180,29 @@
           }}
         />
       </BlockRow>
+      {#if data.files && data.files.length > 0}
+        <span class="border-b">Files:</span>
+        <BlockRow>
+          <div class="flex flex-col w-full">
+            {#each data.files as file}
+              <div class="flex w-full justify-between">
+                <div class="flex items-center gap-1">
+                  <SvgIcon
+                    fill="var(--foreground-muted)"
+                    iconPath="file"
+                    width={14}
+                    height={14}
+                  />
+                  <span>{file.name}</span>
+                </div>
+                <div>
+                  {new TextEncoder().encode(file.content).length}b
+                </div>
+              </div>
+            {/each}
+          </div>
+        </BlockRow>
+      {/if}
     </BlockColumn>
     <div style="color: var(--foreground-muted)" class="description-container">
       <ConfigDescription
@@ -200,6 +222,7 @@
 </div>
 
 <style>
+
   .card-container {
     display: flex;
     flex-direction: column;
