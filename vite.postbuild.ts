@@ -6,7 +6,7 @@ export function notifyEditorAfterBuildPlugin(): PluginOption {
     name: "postbuild-notify-editor",
     closeBundle: () =>
       new Promise<void>((resolve) => {
-        console.log("notify start")
+        console.log("notify start");
         if (
           process.env.WEB_COMPONENT_NAME &&
           process.env.WEB_COMPONENT_NAME != "profile-cloud-dev"
@@ -20,7 +20,7 @@ export function notifyEditorAfterBuildPlugin(): PluginOption {
         }, 3000);
         let ws = new WebSocket("ws://localhost:9000");
         ws.on("open", () => {
-          console.log("Websocket message sent!")
+          console.log("Websocket message sent!");
           ws.send(
             JSON.stringify({
               type: "developer-package",

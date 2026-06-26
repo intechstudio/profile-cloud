@@ -154,7 +154,10 @@
       });
       configResponse.data.name = name;
 
-      console.log("[WCPC] This is what we got from editor", configResponse.data)
+      console.log(
+        "[WCPC] This is what we got from editor",
+        configResponse.data,
+      );
 
       const config = BaseConfigSchema.parse(configResponse.data);
       config.createdAt = new Date();

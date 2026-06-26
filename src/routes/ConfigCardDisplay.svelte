@@ -180,28 +180,37 @@
           }}
         />
       </BlockRow>
-      {#if data.files && data.files.length > 0}
-        <span class="border-b">Files:</span>
-        <BlockRow>
-          <div class="flex flex-col w-full">
-            {#each data.files as file}
-              <div class="flex w-full justify-between">
-                <div class="flex items-center gap-1">
-                  <SvgIcon
-                    fill="var(--foreground-muted)"
-                    iconPath="file"
-                    width={14}
-                    height={14}
-                  />
-                  <span>{file.name}</span>
-                </div>
-                <div>
-                  {new TextEncoder().encode(file.content).length}b
-                </div>
-              </div>
-            {/each}
-          </div>
-        </BlockRow>
+      {#if data.files && data.files.length > 0}
+        <div class="files-scroll">
+          <table class="files-table">
+            <thead>
+              <tr>
+                <th>Files</th>
+                <th style="text-align: right;">Size</th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each data.files as file}
+                <tr>
+                  <td>
+                    <div class="accessibility-actions">
+                      <SvgIcon
+                        fill="var(--foreground-muted)"
+                        iconPath="file"
+                        width={14}
+                        height={14}
+                      />
+                      <span>{file.name}</span>
+                    </div>
+                  </td>
+                  <td class="size-cell">
+                    {new TextEncoder().encode(file.content).length}b
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
       {/if}
     </BlockColumn>
     <div style="color: var(--foreground-muted)" class="description-container">
@@ -222,7 +231,6 @@
 </div>
 
 <style>
-
   .card-container {
     display: flex;
     flex-direction: column;
@@ -286,5 +294,40 @@
     max-height: fit-content;
     align-items: center;
     justify-content: center;
+  }
+
+  .files-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: inherit;
+  }
+
+  .files-scroll {
+    max-height: calc(4 * 2rem + 2rem); /* header + 4 rows before scrolling */
+    overflow-y: auto;
+  }
+
+  .files-table th {
+    text-align: left;
+    padding: 0.25rem 0.5rem;
+    color: var(--foreground-muted);
+    font-weight: normal;
+    position: sticky;
+    top: 0;
+    background: var(--background);
+  }
+
+  .files-table td {
+    padding: 0.25rem 0.5rem;
+  }
+
+  .files-table thead tr {
+    border-bottom: 1px solid gray;
+  }
+
+  .size-cell {
+    text-align: right;
+    white-space: nowrap;
+    color: var(--foreground-muted);
   }
 </style>
