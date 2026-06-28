@@ -15,19 +15,16 @@
     compatible_config_types,
     selectClosestMatch,
   } from "./../../../routes/EditorLayout";
-  import { type Config } from "../../schemas";
+  import type { Config } from "../../schemas";
   import { Tree } from "./ConfigTree";
   import { createEventDispatcher } from "svelte";
   import { parentIframeCommunication } from "../../utils";
   import { dragTarget } from "../../actions/drag.action";
   import ProfileCloudTreeItem from "./ProfileCloudTreeItem.svelte";
-  import {
-    type AbstractFolderData,
-    AbstractTreeNode,
-    TreeItemType,
-    type ContextMenuOptions,
-    type TreeProperties,
-  } from "./TreeNode.svelte";
+  import { TreeItemType } from "./TreeNode.svelte";
+  import type { AbstractFolderData, AbstractTreeNode } from "./TreeNode.svelte";
+  import type { TreeProperties } from "./TreeComponent.svelte";
+  import type { ContextMenuOptions } from "@intechstudio/grid-uikit";
 
   import TreeFolder from "./TreeFolder.svelte";
 
@@ -36,8 +33,11 @@
   const dispatch = createEventDispatcher();
 
   export let configs: Config[];
+  export let scrollToSelectionTrigger = 0;
 
   let treeProps: TreeProperties;
+  let treeRoot: Tree.Node;
+  let filteredConfigs: Config[] = [];
 
   export function debounced<T>(store: Writable<T>, delay = 300) {
     let timeout: ReturnType<typeof setTimeout>;
@@ -56,7 +56,7 @@
   export const debounced_filter_value = debounced(filter_value, 300);
 
   $: {
-    treeProps = buildProps(
+    const tree = buildTree(
       configs,
       $debounced_filter_value,
       $sort_key,
@@ -64,6 +64,24 @@
       $hide_community_configs,
       $compatible_config_types,
     );
+    treeRoot = tree.root;
+    filteredConfigs = tree.filteredConfigs;
+  }
+
+  $: if (treeRoot) {
+    selectClosestMatch($selected_config, filteredConfigs);
+    const selected = get(selected_config);
+
+    treeProps = {
+      root: treeRoot,
+      selected: selected?.id,
+      expanded: treeRoot.getIncludingNodes(selected?.id),
+      scrollBehaviour: {
+        scrollToIndex: scrollToSelectionTrigger > 0,
+        scrollTrigger: scrollToSelectionTrigger,
+        easing: "smooth",
+      },
+    };
   }
 
   function filterNode(node: Tree.Node, filter: FilterValue, level = 0) {
@@ -112,14 +130,14 @@
     });
   }
 
-  function buildProps(
+  function buildTree(
     configs: Config[],
     filter: FilterValue,
     key: Sort.Key,
     supported: boolean,
     community: boolean,
     compatibileTypes: string[],
-  ): TreeProperties {
+  ) {
     const filteredConfigs = configs.filter((e) => matches(e, filter));
     const root = Tree.create(configs, {
       showSupportedOnly: supported,
@@ -129,14 +147,7 @@
 
     filterNode(root, filter);
 
-    selectClosestMatch($selected_config, filteredConfigs);
-
-    return {
-      root: root,
-      selected: $selected_config?.id,
-      expanded: root.getIncludingNodes($selected_config?.id),
-      scrollBehaviour: { scrollToIndex: true, easing: "instant" },
-    };
+    return { root, filteredConfigs };
   }
 
   function handleDeleteVirtualDirectory(title: string) {

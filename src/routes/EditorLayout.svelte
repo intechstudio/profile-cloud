@@ -52,11 +52,13 @@
   import { last } from "@melt-ui/svelte/internal/helpers";
 
   let configs: Config[] = [];
+  let scrollToSelectedConfigTrigger = 0;
 
   let linkFlag: string | undefined = undefined;
 
   let usernameInput = {
     element: null as HTMLInputElement | null,
+    value: null,
     exists: false,
     valid: false,
     active: false,
@@ -96,15 +98,33 @@
 
       case "configLink": {
         const cm = get(config_manager);
-        const linkedConfig = await cm?.importLinkedConfig(
+        const linkedConfigAppId = await cm?.findLinkedConfigAppId(
           event.data.configLinkId,
         );
 
-        if (linkedConfig) {
+        if (linkedConfigAppId) {
+          // Find the merged config from our configs list that matches the linked config ID
+          const matchedConfig = configs.find((c) => c.id === linkedConfigAppId);
+
+          if (matchedConfig) {
+            // Select the config and notify the editor
+            selected_config.set(matchedConfig);
+            scrollToSelectedConfigTrigger += 1;
+            await provideSelectedConfigForEditor(matchedConfig);
+          }
+
           submitAnalytics({
             eventName: "Cloud Action",
             payload: {
-              click: "Config Link Import",
+              click: "Config Link Navigate",
+            },
+          });
+        } else {
+          parentIframeCommunication({
+            windowPostMessageName: "sendLogMessage",
+            dataForParent: {
+              type: "fail",
+              message: "Config not found or no longer available.",
             },
           });
         }
@@ -433,7 +453,7 @@
 
   $: handleSelectionChange($selected_config);
 
-  function handleSelectionChange(config) {
+  function handleSelectionChange(config: Config | undefined) {
     if (lastid === config?.id) {
       return;
     }
@@ -446,7 +466,11 @@
     updateVisiblility(publicToggleValue);
   }
 
-  function updateVisiblility(value) {
+  function updateVisiblility(value: boolean | undefined) {
+    if (typeof value === "undefined") {
+      return;
+    }
+
     const config = configs.find((e) => e.id === $selected_config?.id);
     if (typeof config === "undefined") {
       return;
@@ -511,7 +535,10 @@
   >
     <Pane size={60}>
       <div class="flex h-full w-full pb-3 px-4">
-        <ConfigTree {configs} />
+        <ConfigTree
+          {configs}
+          scrollToSelectionTrigger={scrollToSelectedConfigTrigger}
+        />
       </div></Pane
     >
     <Pane size={40}>
