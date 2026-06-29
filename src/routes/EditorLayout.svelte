@@ -102,6 +102,8 @@
           event.data.configLinkId,
         );
 
+        console.log("[PC] linkedConfigAppId", linkedConfigAppId);
+
         if (linkedConfigAppId) {
           // Find the merged config from our configs list that matches the linked config ID
           const matchedConfig = configs.find((c) => c.id === linkedConfigAppId);
@@ -531,7 +533,10 @@
     <Splitpanes horizontal={true} theme="modern-theme" pushOtherPanes={false}>
       <Pane size={60}>
         <div class="tree-pane">
-          <ConfigTree {configs} />
+          <ConfigTree
+            {configs}
+            scrollToSelectionTrigger={scrollToSelectedConfigTrigger}
+          />
         </div></Pane
       >
       <Pane size={40}>

@@ -67,7 +67,12 @@
 
   let scrollTimeout: any;
   let lastScrollTrigger: number | undefined;
-  async function scrollToNode(id: string, attempt = 0) {
+  async function scrollToNode(
+    id: string,
+    attempt = 0,
+    block: ScrollLogicalPosition = "center",
+    behavior: ScrollBehavior = scrollBehaviour.easing ?? "smooth",
+  ) {
     clearTimeout(scrollTimeout);
     await tick();
     scrollTimeout = setTimeout(() => {
@@ -76,15 +81,15 @@
       ) as HTMLElement;
       if (target) {
         target.scrollIntoView({
-          behavior: scrollBehaviour.easing ?? "smooth",
-          block: "center",
+          behavior,
+          block,
           inline: "nearest",
         });
         return;
       }
 
       if (attempt < 4) {
-        scrollToNode(id, attempt + 1);
+        scrollToNode(id, attempt + 1, block, behavior);
       }
     }, 100);
   }
@@ -98,6 +103,18 @@
   ) {
     lastScrollTrigger = scrollBehaviour.scrollTrigger;
     scrollToNode(selected);
+  }
+
+  // When the tree is re-rendered (e.g. because treeRoot rebuilt due to reactive
+  // dependency changes after a click), restore the selected item into view.
+  // Using block:"nearest" avoids any visible scroll if it's already in viewport.
+  let prevTree: typeof tree;
+  $: if (tree !== prevTree) {
+    const wasRendered = prevTree !== undefined;
+    prevTree = tree;
+    if (wasRendered && selected) {
+      scrollToNode(selected, 0, "nearest", "instant");
+    }
   }
 </script>
 

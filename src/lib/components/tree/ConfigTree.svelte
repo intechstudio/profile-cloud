@@ -17,7 +17,7 @@
   } from "./../../../routes/EditorLayout";
   import type { Config } from "../../schemas";
   import { Tree } from "./ConfigTree";
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, tick } from "svelte";
   import { parentIframeCommunication } from "../../utils";
   import { dragTarget } from "../../actions/drag.action";
   import ProfileCloudTreeItem from "./ProfileCloudTreeItem.svelte";
@@ -71,6 +71,7 @@
   $: if (treeRoot) {
     selectClosestMatch($selected_config, filteredConfigs);
     const selected = get(selected_config);
+    console.log("we're triggered here", selected);
 
     treeProps = {
       root: treeRoot,
