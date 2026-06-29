@@ -606,59 +606,61 @@
               {@const config = configs.find(
                 (e) => e.id === $selected_config?.id,
               )}
-              {#if config?.syncStatus != "synced" || !config?.isEditable}
-                <button
-                  on:click|stopPropagation={async () => {
-                    if (typeof config === "undefined") {
-                      return;
-                    }
+              {#if config?.syncStatus != "synced"}
+                {#key config?.id}
+                  <button
+                    on:click|stopPropagation={async () => {
+                      if (typeof config === "undefined") {
+                        return;
+                      }
 
-                    if (
-                      config.isEditable &&
-                      config.syncStatus === "local" &&
-                      !$userAccountService.account
-                    ) {
-                      loginToProfileCloud();
-                      return;
-                    }
-                    let configToSave = config;
-                    if (!configToSave.isEditable) {
-                      configToSave = {
-                        ...configToSave,
-                        name: `Copy of ${configToSave.name}`,
-                        owner: undefined,
-                        id: "",
-                      };
-                    }
-                    const cm = get(config_manager);
-                    cm?.saveConfig(configToSave, true);
-                    provideSelectedConfigForEditor(undefined);
-                    submitAnalytics({
-                      eventName: "Cloud Action",
-                      payload: {
-                        click: "Sync config",
-                      },
-                    });
-                  }}
-                  class="icon-button"
-                  use:tooltip={{
-                    instant: true,
-                    text: !config?.isEditable
-                      ? "Import"
-                      : config.syncStatus === "cloud"
-                        ? "Download"
-                        : "Upload",
-                  }}
-                >
-                  <SvgIcon
-                    fill="var(--foreground-muted)"
-                    iconPath={!config?.isEditable
-                      ? "importIcon"
-                      : config.syncStatus === "cloud"
-                        ? "download"
-                        : "move_to_cloud_02"}
-                  />
-                </button>
+                      if (
+                        config.isEditable &&
+                        config.syncStatus === "local" &&
+                        !$userAccountService.account
+                      ) {
+                        loginToProfileCloud();
+                        return;
+                      }
+                      let configToSave = config;
+                      if (!configToSave.isEditable) {
+                        configToSave = {
+                          ...configToSave,
+                          name: `Copy of ${configToSave.name}`,
+                          owner: undefined,
+                          id: "",
+                        };
+                      }
+                      const cm = get(config_manager);
+                      cm?.saveConfig(configToSave, true);
+                      provideSelectedConfigForEditor(undefined);
+                      submitAnalytics({
+                        eventName: "Cloud Action",
+                        payload: {
+                          click: "Sync config",
+                        },
+                      });
+                    }}
+                    class="icon-button"
+                    use:tooltip={{
+                      instant: true,
+                      text: !config?.isEditable
+                        ? "Create a copy"
+                        : config.syncStatus === "cloud"
+                          ? "Download"
+                          : "Upload",
+                    }}
+                  >
+                    <SvgIcon
+                      fill="var(--foreground-muted)"
+                      iconPath={!config?.isEditable
+                        ? "importIcon"
+                        : config.syncStatus === "cloud"
+                          ? "download"
+                          : "move_to_cloud_02"}
+                    />
+                  </button>
+                {/key}
               {/if}
             </svelte:fragment>
             <svelte:fragment slot="import-config-browser-button">
