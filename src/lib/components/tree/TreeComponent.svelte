@@ -120,14 +120,7 @@
       let:itemFunction
       let:itemProps
     >
-      <slot
-        name="item"
-        {level}
-        {item}
-        {expanded}
-        {itemFunction}
-        {itemProps}
-      />
+      <slot name="item" {level} {item} {expanded} {itemFunction} {itemProps} />
     </svelte:fragment>
   </TreeNode>
 </ul>

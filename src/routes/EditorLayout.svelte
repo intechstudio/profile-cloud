@@ -102,8 +102,6 @@
           event.data.configLinkId,
         );
 
-        console.log("[PC] linkedConfigAppId", linkedConfigAppId);
-
         if (linkedConfigAppId) {
           // Find the merged config from our configs list that matches the linked config ID
           const matchedConfig = configs.find((c) => c.id === linkedConfigAppId);
@@ -130,7 +128,10 @@
               }
 
               const cct = get(compatible_config_types) as string[];
-              if (!cct.includes(matchedConfig.type) && get(show_supported_only)) {
+              if (
+                !cct.includes(matchedConfig.type) &&
+                get(show_supported_only)
+              ) {
                 show_supported_only.set(false);
               }
             }
@@ -576,30 +577,37 @@
             data={$selected_config}
           >
             <svelte:fragment slot="link-button">
-              {@const config = $selected_config}
+              {@const config = configs.find(
+                (e) => e.id === $selected_config?.id,
+              )}
               {#if config?.syncStatus != "local"}
-                <button
-                  class="icon-button"
-                  on:click|stopPropagation={() => {
-                    handleLink();
-                  }}
-                  use:tooltip={{
-                    instant: true,
-                    text: "Link",
-                  }}
-                >
-                  <SvgIcon iconPath="link" fill="var(--foreground-muted)" />
-                  {#if linkFlag == config?.id}
-                    <div
-                      transition:fade|global={{
-                        duration: 100,
-                      }}
-                      class="popup"
-                    >
-                      Copied to clipboard!
-                    </div>
-                  {/if}
-                </button>
+                {#key config?.public}
+                  <button
+                    class="icon-button"
+                    disabled={!config?.public}
+                    on:click|stopPropagation={() => {
+                      handleLink();
+                    }}
+                    use:tooltip={{
+                      instant: true,
+                      text: config?.public
+                        ? "Link"
+                        : "Only public config can be linked",
+                    }}
+                  >
+                    <SvgIcon iconPath="link" fill="var(--foreground-muted)" />
+                    {#if linkFlag == config?.id}
+                      <div
+                        transition:fade|global={{
+                          duration: 100,
+                        }}
+                        class="popup"
+                      >
+                        Copied to clipboard!
+                      </div>
+                    {/if}
+                  </button>
+                {/key}
               {/if}
             </svelte:fragment>
             <svelte:fragment slot="sync-config-button">
@@ -780,6 +788,11 @@
     background: transparent;
     border: none;
     cursor: pointer;
+  }
+
+  .icon-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   div.popup {
