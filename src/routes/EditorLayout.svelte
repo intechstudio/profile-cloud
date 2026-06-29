@@ -53,6 +53,7 @@
 
   let configs: Config[] = [];
   let scrollToSelectedConfigTrigger = 0;
+  let pendingNewConfigScroll = false; // this helps new configs to scroll into view upon creation
 
   let linkFlag: string | undefined = undefined;
 
@@ -206,6 +207,7 @@
       const config = BaseConfigSchema.parse(configResponse.data);
       config.createdAt = new Date();
       const cm = get(config_manager);
+      pendingNewConfigScroll = true;
       cm?.saveConfig(config, true).then((e) => {
         filter_value.set(new FilterValue());
       });
@@ -288,6 +290,18 @@
             let bi = configs.findIndex((e) => e.id === b.id);
             return ai - bi;
           });
+
+          if (pendingNewConfigScroll) {
+            pendingNewConfigScroll = false;
+            const newEntry = newConfigs
+              .filter((c) => !configs.some((e) => e.id === c.id))
+              .sort((a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime())[0];
+            if (newEntry) {
+              selected_config.set(newEntry);
+              scrollToSelectedConfigTrigger += 1;
+            }
+          }
+
           configs = newConfigs;
         },
       }),
@@ -640,6 +654,7 @@
                         };
                       }
                       const cm = get(config_manager);
+                      pendingNewConfigScroll = true;
                       cm?.saveConfig(configToSave, true);
                       provideSelectedConfigForEditor(undefined);
                       submitAnalytics({

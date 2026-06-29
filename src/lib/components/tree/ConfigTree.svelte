@@ -71,8 +71,6 @@
   $: if (treeRoot) {
     selectClosestMatch($selected_config, filteredConfigs);
     const selected = get(selected_config);
-    console.log("we're triggered here", selected);
-
     treeProps = {
       root: treeRoot,
       selected: selected?.id,
