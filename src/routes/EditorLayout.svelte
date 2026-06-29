@@ -109,6 +109,32 @@
           const matchedConfig = configs.find((c) => c.id === linkedConfigAppId);
 
           if (matchedConfig) {
+            // Unhide groups that may be hiding the linked config
+            const currentOwnerId = cm?.getCurrentOwnerId();
+            const isMyConfig =
+              matchedConfig.syncStatus === "local" ||
+              matchedConfig.owner === currentOwnerId;
+
+            if (!isMyConfig) {
+              const isOfficialConfig =
+                configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
+                  matchedConfig.owner ?? "",
+                ) ||
+                configuration.WORKFLOW_CONFIG_PROFILE_IDS.includes(
+                  matchedConfig.owner ?? "",
+                );
+
+              // We can only know if config belongs to the community, if it's not official or the user's!
+              if (!isOfficialConfig && get(hide_community_configs)) {
+                hide_community_configs.set(false);
+              }
+
+              const cct = get(compatible_config_types) as string[];
+              if (!cct.includes(matchedConfig.type) && get(show_supported_only)) {
+                show_supported_only.set(false);
+              }
+            }
+
             // Select the config and notify the editor
             selected_config.set(matchedConfig);
             scrollToSelectedConfigTrigger += 1;
