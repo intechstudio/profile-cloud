@@ -36,7 +36,7 @@
   let rootHeight: number;
 
   let ctx: TreeView;
-  $: if ($root?.id) {
+  $: if ($root?.id && !ctx) {
     ctx = createTreeView({ onExpandedChange: handleExpandedChange });
     setContext("tree", ctx);
   }
@@ -67,12 +67,7 @@
 
   let scrollTimeout: any;
   let lastScrollTrigger: number | undefined;
-  async function scrollToNode(
-    id: string,
-    attempt = 0,
-    block: ScrollLogicalPosition = "center",
-    behavior: ScrollBehavior = scrollBehaviour.easing ?? "smooth",
-  ) {
+  async function scrollToNode(id: string, attempt = 0) {
     clearTimeout(scrollTimeout);
     await tick();
     scrollTimeout = setTimeout(() => {
@@ -81,15 +76,15 @@
       ) as HTMLElement;
       if (target) {
         target.scrollIntoView({
-          behavior,
-          block,
+          behavior: scrollBehaviour.easing ?? "smooth",
+          block: "center",
           inline: "nearest",
         });
         return;
       }
 
       if (attempt < 4) {
-        scrollToNode(id, attempt + 1, block, behavior);
+        scrollToNode(id, attempt + 1);
       }
     }, 100);
   }
@@ -104,52 +99,38 @@
     lastScrollTrigger = scrollBehaviour.scrollTrigger;
     scrollToNode(selected);
   }
-
-  // When the tree is re-rendered (e.g. because treeRoot rebuilt due to reactive
-  // dependency changes after a click), restore the selected item into view.
-  // Using block:"nearest" avoids any visible scroll if it's already in viewport.
-  let prevTree: typeof tree;
-  $: if (tree !== prevTree) {
-    const wasRendered = prevTree !== undefined;
-    prevTree = tree;
-    if (wasRendered && selected) {
-      scrollToNode(selected, 0, "nearest", "instant");
-    }
-  }
 </script>
 
-{#key tree}
-  <ul
-    bind:this={rootElement}
-    bind:clientHeight={rootHeight}
-    {...$tree}
-    class="tree"
-  >
-    <TreeNode node={root} level={0} {rootElement} {rootHeight}>
-      <svelte:fragment slot="folder" let:level let:item let:expanded>
-        <slot name="folder" {level} {item} {expanded} />
-      </svelte:fragment>
+<ul
+  bind:this={rootElement}
+  bind:clientHeight={rootHeight}
+  {...$tree}
+  class="tree"
+>
+  <TreeNode node={root} level={0} {rootElement} {rootHeight}>
+    <svelte:fragment slot="folder" let:level let:item let:expanded>
+      <slot name="folder" {level} {item} {expanded} />
+    </svelte:fragment>
 
-      <svelte:fragment
-        slot="item"
-        let:item
-        let:level
-        let:expanded
-        let:itemFunction
-        let:itemProps
-      >
-        <slot
-          name="item"
-          {level}
-          {item}
-          {expanded}
-          {itemFunction}
-          {itemProps}
-        />
-      </svelte:fragment>
-    </TreeNode>
-  </ul>
-{/key}
+    <svelte:fragment
+      slot="item"
+      let:item
+      let:level
+      let:expanded
+      let:itemFunction
+      let:itemProps
+    >
+      <slot
+        name="item"
+        {level}
+        {item}
+        {expanded}
+        {itemFunction}
+        {itemProps}
+      />
+    </svelte:fragment>
+  </TreeNode>
+</ul>
 
 <style>
   ul {
