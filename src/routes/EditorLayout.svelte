@@ -295,7 +295,9 @@
             pendingNewConfigScroll = false;
             const newEntry = newConfigs
               .filter((c) => !configs.some((e) => e.id === c.id))
-              .sort((a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime())[0];
+              .sort(
+                (a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime(),
+              )[0];
             if (newEntry) {
               selected_config.set(newEntry);
               scrollToSelectedConfigTrigger += 1;
