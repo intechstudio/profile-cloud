@@ -57,5 +57,10 @@
   {/if}
 </section>
 
-<style global>
+<style>
+  section {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
 </style>

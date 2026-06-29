@@ -65,21 +65,16 @@
       dispatchEvent("focusout", {});
     }
   }}
-  class="{isSelected
-    ? 'border-emerald-500'
-    : 'border-white/10'} flex flex-col justify-between items-start text-left w-full bg-white rounded border shadow dark:bg-secondary"
+  class="card"
+  class:card-selected={isSelected}
 >
-  <div class="px-3 pt-3 w-full">
-    <div class="w-full flex items-center justify-between">
+  <div class="card-body">
+    <div class="card-header">
       <input
         bind:this={nameInputField.element}
-        class="w-full mr-1 font-bold border bg-white dark:bg-transparent dark:hover:bg-neutral-800 focus:outline-none
-                    {!data.isEditable || !isSelected
-          ? 'pointer-events-none'
-          : ''} 
-                    {nameInputField.doubleClicked
-          ? 'border-emerald-500'
-          : 'border-transparent'}"
+        class="name-input"
+        class:editing={nameInputField.doubleClicked}
+        class:disabled={!data.isEditable || !isSelected}
         readonly={!nameInputField.doubleClicked}
         on:keydown={(e) => {
           if (e.key == "Enter" && !e.shiftKey) {
@@ -111,20 +106,16 @@
         }}
         value={data.name}
       />
-      <div class="relative flex items-center gap-x-1">
+      <div class="actions-row">
         {#if data.isEditable}
           {#if deleteConfirmFlag == false}
             <button
-              class="flex group relative"
+              class="icon-button"
               on:click|stopPropagation={() => {
                 deleteConfirmFlag = true;
               }}
               use:tooltip={{
-                nowrap: true,
-                placement: "bottom",
-                duration: 75,
                 instant: true,
-                class: "px-2 py-1",
                 text: "Delete",
               }}
             >
@@ -140,21 +131,17 @@
                 dispatchEvent("delete-config");
                 deleteConfirmFlag = false;
               }}
-              class="bg-red-600 rounded px-1 py-0.5 text-xs">confirm</button
+              class="confirm-delete">confirm</button
             >
           {/if}
           {#if overwriteApplyFlag == false}
             <button
-              class="flex relative group"
+              class="icon-button"
               on:click|stopPropagation={() => {
                 overwriteApplyFlag = true;
               }}
               use:tooltip={{
-                nowrap: true,
-                placement: "bottom",
-                duration: 75,
                 instant: true,
-                class: "px-2 py-1",
                 text: "Overwrite",
               }}
             >
@@ -173,7 +160,7 @@
                 dispatchEvent("overwrite-profile");
                 overwriteApplyFlag = false;
               }}
-              class="bg-emerald-600 rounded px-1 py-0.5 text-xs">apply</button
+              class="confirm-apply">apply</button
             >
           {/if}
         {/if}
@@ -183,19 +170,14 @@
         <slot name="import-config-browser-button" />
       </div>
     </div>
-    <div
-      class="dark:text-white pt-2 text-black text-opacity-80 dark:text-opacity-70"
-    >
+    <div class="description-section">
       <textarea
         rows={2}
         bind:this={descriptionTextarea.element}
-        class="overflow-none w-full border bg-neutral-100 dark:bg-primary dark:hover:bg-neutral-800 focus:outline-none
-                    {(!data.isEditable || !isSelected) && display === 'editor'
-          ? 'pointer-events-none'
-          : ''} 
-                    {descriptionTextarea.doubleClicked
-          ? 'border-emerald-500'
-          : 'border-transparent'}"
+        class="description-input"
+        class:editing={descriptionTextarea.doubleClicked}
+        class:disabled={(!data.isEditable || !isSelected) &&
+          display === "editor"}
         readonly={!descriptionTextarea.doubleClicked || display !== "editor"}
         on:keydown={(e) => {
           if (e.key == "Enter" && !e.shiftKey) {
@@ -232,34 +214,29 @@
     </div>
   </div>
 
-  <div
-    class=" w-full flex py-1 px-3 justify-between items-center md:border-t-2 border-neutral-200 dark:border-neutral-700"
-  >
+  <div class="card-footer">
     <div
-      class="dark:text-white text-black text-opacity-80 py-0.5 px-2 dark:border
-                {(data.selectedComponentTypes?.includes(data.type) ?? false)
-        ? 'dark:text-opacity-100 dark:border-white dark:border-opacity-10 dark:bg-white dark:bg-opacity-10'
-        : 'dark:text-opacity-70 dark:border-transparent'}"
+      class="type-badge"
+      class:type-badge-active={data.selectedComponentTypes?.includes(
+        data.type,
+      ) ?? false}
     >
       {data.type}
     </div>
-    <div class="flex items-center {display === 'editor' ? 'gap-x-1' : ''}">
-      <span class="text-black dark:text-opacity-70 dark:text-white"
-        >{configOwner}</span
+    <div class="footer-right" class:footer-right-editor={display === "editor"}>
+      <span class="modified-date"
+        >Last modified: {data.modifiedAt.toLocaleDateString()}</span
       >
+      <span class="owner-name">{configOwner}</span>
       {#if display == "editor"}
-        <div class="ml-1">
+        <div class="visibility-container">
           {#if data.isEditable && data.public !== undefined}
             <slot name="toggle-accessibility" />
           {:else if data.public}
             <div
-              class="relative group"
+              class="icon-button"
               use:tooltip={{
-                nowrap: true,
-                placement: "bottom",
-                duration: 75,
                 instant: true,
-                class: "px-2 py-1",
                 text: "Public",
               }}
             >
@@ -267,13 +244,9 @@
             </div>
           {:else if data.public === false}
             <div
-              class="relative group"
+              class="icon-button"
               use:tooltip={{
-                nowrap: true,
-                placement: "bottom",
-                duration: 75,
                 instant: true,
-                class: "px-2 py-1",
                 text: "Private",
               }}
             >
@@ -288,3 +261,156 @@
     </div>
   </div>
 </button>
+
+<style>
+  .card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    text-align: left;
+    width: 100%;
+    color: var(--foreground);
+    background-color: var(--background);
+    border-radius: 0.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+  }
+
+  .card-selected {
+    border-color: #10b981;
+  }
+
+  .card-body {
+    padding: 0.75rem 0.75rem 0;
+    width: 100%;
+  }
+
+  .card-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .name-input {
+    width: 100%;
+    margin-right: 0.25rem;
+    font-weight: bold;
+    border: 1px solid transparent;
+    background: transparent;
+    color: inherit;
+    outline: none;
+  }
+
+  .name-input:hover {
+    background-color: var(--background-muted);
+  }
+
+  .name-input.editing {
+    border-color: #10b981;
+  }
+
+  .name-input.disabled {
+    pointer-events: none;
+  }
+
+  .actions-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .icon-button {
+    display: flex;
+    position: relative;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+  }
+
+  .confirm-delete {
+    background-color: #dc2626;
+    border-radius: 0.25rem;
+    padding: 0.125rem 0.25rem;
+    font-size: 0.75rem;
+  }
+
+  .confirm-apply {
+    background-color: #059669;
+    border-radius: 0.25rem;
+    padding: 0.125rem 0.25rem;
+    font-size: 0.75rem;
+  }
+
+  .description-section {
+    padding-top: 0.5rem;
+    color: var(--foreground-muted);
+  }
+
+  .description-input {
+    overflow: visible;
+    width: 100%;
+    border: 1px solid transparent;
+    background-color: var(--background-muted);
+    color: inherit;
+    outline: none;
+  }
+
+  .description-input:hover {
+    background-color: var(--background-muted);
+  }
+
+  .description-input.editing {
+    border-color: #10b981;
+  }
+
+  .description-input.disabled {
+    pointer-events: none;
+  }
+
+  .card-footer {
+    width: 100%;
+    display: flex;
+    padding: 0.25rem 0.75rem;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 2px solid var(--border, rgba(255, 255, 255, 0.1));
+  }
+
+  .type-badge {
+    color: var(--foreground-muted);
+    padding: 0.125rem 0.5rem;
+    border: 1px solid transparent;
+  }
+
+  .type-badge-active {
+    color: var(--foreground);
+    border-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .footer-right {
+    display: flex;
+    align-items: center;
+  }
+
+  .footer-right-editor {
+    gap: 0.25rem;
+  }
+
+  .modified-date {
+    color: var(--foreground-muted);
+    font-size: 0.75rem;
+  }
+
+  .owner-name {
+    color: var(--foreground-muted);
+  }
+
+  .visibility-container {
+    margin-left: 0.25rem;
+  }
+</style>

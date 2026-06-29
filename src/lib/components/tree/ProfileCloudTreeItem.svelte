@@ -3,6 +3,7 @@
     type: string;
     name: string;
     syncStatus: "synced" | "local" | "cloud";
+    modifiedAt: Date;
   }
 </script>
 
@@ -71,6 +72,7 @@
         {data.name}
       </slot>
     </span>
+    <span class="modified-date">{data.modifiedAt.toLocaleDateString()}</span>
     <div
       class="type-label
         {compatible ? 'type-compatible' : 'type-incompatible'}"
@@ -95,6 +97,7 @@
 
 <style>
   .button {
+    container-type: inline-size;
     display: flex;
     flex-direction: row;
     gap: 0.5rem;
@@ -160,7 +163,7 @@
     padding-top: 0.25rem;
     padding-bottom: 0.25rem;
     display: grid;
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: 1fr auto auto auto;
     gap: 0.25rem;
     width: 100%;
     align-items: center;
@@ -197,6 +200,18 @@
     opacity: 0.75;
     border-color: transparent;
     text-decoration: line-through;
+  }
+
+  .modified-date {
+    color: var(--foreground-muted);
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  @container (max-width: 400px) {
+    .modified-date {
+      display: none;
+    }
   }
 
   .trigger-container {

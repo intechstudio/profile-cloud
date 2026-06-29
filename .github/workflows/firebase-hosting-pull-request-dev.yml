@@ -10,7 +10,10 @@ jobs:
     if: "${{ github.event.pull_request.head.repo.full_name == github.repository }}"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.8.0"
       - name: Create public env file
         run: |
           touch .env
@@ -18,7 +21,7 @@ jobs:
           echo PUBLIC_APP_ENV=development >> .env
           echo PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.PUBLIC_GOOGLE_CLIENT_ID_DEV }} >> .env
            echo PUBLIC_CREATION_DATE=$(git log --format="%cd" --date=format:'%Y-%m-%d' -1) >> .env
-      - run: npm ci && npm run build && npm run build:webcomponent
+      - run: npm ci && npx svelte-kit sync && npm run build && npm run build:webcomponent
         env:
           WEB_COMPONENT_NAME: profile-cloud-pr
       - uses: FirebaseExtended/action-hosting-deploy@v0

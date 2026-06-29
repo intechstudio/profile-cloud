@@ -7,10 +7,9 @@ export default defineConfig({
   plugins: [
     svelte({
       preprocess: sveltePreprocess({
-        postcss: {},
         replace: [
           [
-            "WEB-COMPONENT-NAME",
+            "web-component-name",
             process.env.WEB_COMPONENT_NAME ?? "profile-cloud-dev",
           ],
         ],
@@ -24,10 +23,10 @@ export default defineConfig({
   ],
   build: {
     sourcemap: true,
-    target: "modules",
+    target: "esnext",
     lib: {
       entry: "src/WebComponent.svelte",
-      name: "<<name>>",
+      name: "profile-cloud-offline",
       fileName: "components",
     },
     outDir:

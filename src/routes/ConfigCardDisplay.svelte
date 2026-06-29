@@ -54,18 +54,21 @@
 
 <div
   style="color: var(--foreground); background: var(--background);"
-  class="flex flex-col flex-1 min-h-0 p-2 overflow-auto"
+  class="card-container"
 >
   {#if typeof data !== "undefined"}
     <BlockRow>
-      <div class="text-xs flex flex-grow">
-        Created by {configOwner === "" ? "Unknown" : configOwner}
+      <div class="created-by">
+        <span>{configOwner === "" ? "Unknown" : configOwner}</span>
+        <span class="modified-date"
+          >Last modified: {data.modifiedAt.toLocaleDateString()}</span
+        >
       </div>
 
       {#if data.isEditable}
         {#if deleteConfirmFlag == false}
           <button
-            class="flex group relative"
+            class="icon-button"
             on:click|stopPropagation={() => {
               deleteConfirmFlag = true;
             }}
@@ -86,12 +89,12 @@
               dispatchEvent("delete-config");
               deleteConfirmFlag = false;
             }}
-            class="bg-red-600 rounded px-1 text-xs">confirm</button
+            class="confirm-delete">confirm</button
           >
         {/if}
         {#if overwriteApplyFlag == false}
           <button
-            class="flex relative group"
+            class="icon-button"
             on:click|stopPropagation={() => {
               overwriteApplyFlag = true;
             }}
@@ -115,19 +118,19 @@
               dispatchEvent("overwrite-profile");
               overwriteApplyFlag = false;
             }}
-            class="bg-emerald-600 rounded px-1 text-xs">apply</button
+            class="confirm-apply">apply</button
           >
         {/if}
       {/if}
       <slot name="link-button" />
       <slot name="sync-config-button" />
       <slot name="split-config-button" />
-      <div class="items-center gap-x-1">
+      <div class="accessibility-actions">
         {#if data.isEditable && data.public !== undefined}
           <slot name="toggle-accessibility" />
         {:else if data.public}
           <div
-            class="relative group"
+            class="icon-button"
             use:tooltip={{
               instant: true,
               text: "Public",
@@ -137,7 +140,7 @@
           </div>
         {:else if data.public === false}
           <div
-            class="relative group"
+            class="icon-button"
             use:tooltip={{
               instant: true,
               text: "Private",
@@ -179,10 +182,7 @@
         />
       </BlockRow>
     </BlockColumn>
-    <div
-      style="color: var(--foreground-muted)"
-      class="flex flex-1 min-h-0 w-full overflow-y-auto"
-    >
+    <div style="color: var(--foreground-muted)" class="description-container">
       <ConfigDescription
         value={data.description}
         disabled={!data.isEditable}
@@ -192,9 +192,76 @@
   {:else}
     <div
       style="color: var(--foreground-muted); background: var(--background)"
-      class="flex max-h-fit items-center justify-center"
+      class="empty-state"
     >
       No configuration is selected
     </div>
   {/if}
 </div>
+
+<style>
+  .card-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    padding: 0.5rem;
+    overflow: auto;
+  }
+
+  .created-by {
+    font-size: 0.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    flex-grow: 1;
+    justify-content: space-between;
+  }
+
+  .modified-date {
+    color: var(--foreground-muted);
+    white-space: nowrap;
+  }
+
+  .icon-button {
+    display: flex;
+    position: relative;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+  }
+
+  .confirm-delete {
+    background-color: #dc2626;
+    border-radius: 0.25rem;
+    padding: 0 0.25rem;
+    font-size: 0.75rem;
+  }
+
+  .confirm-apply {
+    background-color: #059669;
+    border-radius: 0.25rem;
+    padding: 0 0.25rem;
+    font-size: 0.75rem;
+  }
+
+  .accessibility-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .description-container {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    overflow-y: auto;
+  }
+
+  .empty-state {
+    display: flex;
+    max-height: fit-content;
+    align-items: center;
+    justify-content: center;
+  }
+</style>
