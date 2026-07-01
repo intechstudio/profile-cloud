@@ -276,9 +276,9 @@
 
   function selectLatestConfig() {
     if (configs.length == 0) return;
-
     configs.sort((a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime());
     selected_config.set(configs[0]);
+    scrollToSelectedConfigTrigger += 1; // trigger scrolling into view on ConfigTree
   }
 
   onMount(async () => {
@@ -305,6 +305,18 @@
           }
 
           configs = newConfigs;
+
+          // Keep selected_config in sync with the latest config data.
+          // Without this, the store keeps a stale object after login (e.g. public: undefined).
+          const currentSelected = get(selected_config);
+          if (currentSelected) {
+            const refreshed = newConfigs.find(
+              (c) => c.id === currentSelected.id,
+            );
+            if (refreshed) {
+              selected_config.set(refreshed);
+            }
+          }
         },
       }),
     );
@@ -500,6 +512,11 @@
 
   function handleSelectionChange(config: Config | undefined) {
     if (lastid === config?.id) {
+      // Same config — only update publicToggleValue if it was undefined before
+      // (handles the login case where public goes from undefined to a real value).
+      if (publicToggleValue === undefined && config?.public !== undefined) {
+        publicToggleValue = config?.public;
+      }
       return;
     }
 
