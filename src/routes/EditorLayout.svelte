@@ -826,7 +826,7 @@
 
   .icon-button:disabled {
     opacity: 0.4;
-    cursor: not-allowed;
+    cursor: default;
   }
 
   div.popup {
