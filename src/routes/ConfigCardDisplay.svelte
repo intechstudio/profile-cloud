@@ -185,7 +185,7 @@
           <table class="files-table">
             <thead>
               <tr>
-                <th>Files</th>
+                <th>Page files for File Manager</th>
                 <th style="text-align: right;">Size</th>
               </tr>
             </thead>
