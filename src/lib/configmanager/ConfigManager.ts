@@ -6,12 +6,10 @@ import {
   where,
   onSnapshot,
   doc,
-  getDoc,
   deleteDoc,
   setDoc,
   updateDoc,
 } from "firebase/firestore";
-import { v4 as uuidv4 } from "uuid";
 import { configsCollection } from "../collections";
 import {
   type CloudConfig,
@@ -27,7 +25,7 @@ export interface ConfigManager {
   cancel(): void;
   deleteConfig(config: Config): Promise<void>;
   saveConfig(config: BaseConfig, createMissingConfigs: boolean): Promise<void>;
-  importLinkedConfig(linkId: string): Promise<CloudConfig | null | undefined>;
+  findLinkedConfigAppId(linkId: string): Promise<string | null | undefined>;
   changeCloudVisibility(config: Config, visibility: boolean): Promise<void>;
   getCurrentOwnerId(): string | null | undefined;
   getConfigCloudId(config: Config): string | undefined;
@@ -320,28 +318,8 @@ export function createConfigManager(observer: {
     );
   }
 
-  async function importLinkedConfig(linkId: string) {
-    const docRef = doc(configsCollection, linkId);
-    let configLink = await getDoc(docRef)
-      .then((res) => CloudConfigSchema.parse(res.data()))
-      .catch((err) => {
-        parentIframeCommunication({
-          windowPostMessageName: "sendLogMessage",
-          dataForParent: {
-            type: "fail",
-            message: "Error importing config link!",
-          },
-        });
-        return undefined;
-      });
-
-    if (configLink) {
-      configLink.name = `Copy of ${configLink.name}`;
-      configLink.owner = undefined;
-      configLink.id = uuidv4();
-      await saveConfig(configLink, true);
-    }
-    return configLink;
+  async function findLinkedConfigAppId(linkId: string) {
+    return configIdToAppConfigIdMap.get(linkId);
   }
 
   function getCurrentOwnerId() {
@@ -356,7 +334,7 @@ export function createConfigManager(observer: {
     cancel,
     deleteConfig,
     saveConfig,
-    importLinkedConfig,
+    findLinkedConfigAppId,
     changeCloudVisibility,
     getCurrentOwnerId,
     getConfigCloudId,

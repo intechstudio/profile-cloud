@@ -4,7 +4,7 @@ import {
   config_manager,
   compatible_config_types,
 } from "./../../../routes/EditorLayout";
-import { type Config } from "../../schemas";
+import type { Config } from "../../schemas";
 import { filter_value } from "../../../routes/Filter";
 import { Sort } from "../../../routes/Sorter";
 
@@ -22,6 +22,7 @@ import { ElementType, grid, ModuleType } from "@intechstudio/grid-protocol";
 export namespace Tree {
   export interface Options {
     showSupportedOnly?: boolean;
+    hideCommunityConfigs?: boolean;
     compatibileTypes: string[];
   }
 
@@ -287,7 +288,7 @@ export namespace Tree {
               e.owner ?? "",
             );
 
-          const cct = get(compatible_config_types);
+          const cct = get(compatible_config_types) as string[];
 
           return (
             !isMyConfig &&
@@ -311,7 +312,7 @@ export namespace Tree {
           const isOfficialConfig =
             configuration.WORKFLOW_CONFIG_PROFILE_IDS.includes(e.owner ?? "");
 
-          const cct = get(compatible_config_types);
+          const cct = get(compatible_config_types) as string[];
 
           return (
             !isMyConfig &&
@@ -336,7 +337,7 @@ export namespace Tree {
             configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
               e.owner ?? "",
             );
-          const cct = get(compatible_config_types);
+          const cct = get(compatible_config_types) as string[];
           return (
             !isMyConfig &&
             !isOfficialConfig &&
@@ -356,7 +357,7 @@ export namespace Tree {
         .filter((e: Config) => {
           const isMyConfig =
             e.syncStatus == "local" || e.owner === cm?.getCurrentOwnerId();
-          const cct = get(compatible_config_types);
+          const cct = get(compatible_config_types) as string[];
           return !isMyConfig && (!showSupportedOnly || cct.includes(e.type));
         })
         .map(
@@ -372,7 +373,7 @@ export namespace Tree {
         .filter((e: Config) => {
           const isMyConfig =
             e.syncStatus == "local" || e.owner === cm?.getCurrentOwnerId();
-          const cct = get(compatible_config_types);
+          const cct = get(compatible_config_types) as string[];
 
           return !isMyConfig && showSupportedOnly && !cct.includes(e.type);
         })

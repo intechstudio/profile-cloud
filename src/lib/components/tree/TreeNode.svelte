@@ -173,7 +173,7 @@
   }
 
   $: {
-    const items = Array.from(listItems.values());
+    const items = Array.from(listItems.values()).filter(Boolean);
     if (items.length > 0 && level === 0) {
       setMaxHeight(rootHeight, items);
     }

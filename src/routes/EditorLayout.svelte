@@ -52,11 +52,14 @@
   import { last } from "@melt-ui/svelte/internal/helpers";
 
   let configs: Config[] = [];
+  let scrollToSelectedConfigTrigger = 0;
+  let pendingNewConfigScroll = false; // this helps new configs to scroll into view upon creation
 
   let linkFlag: string | undefined = undefined;
 
   let usernameInput = {
     element: null as HTMLInputElement | null,
+    value: null,
     exists: false,
     valid: false,
     active: false,
@@ -96,15 +99,62 @@
 
       case "configLink": {
         const cm = get(config_manager);
-        const linkedConfig = await cm?.importLinkedConfig(
+        const linkedConfigAppId = await cm?.findLinkedConfigAppId(
           event.data.configLinkId,
         );
 
-        if (linkedConfig) {
+        if (linkedConfigAppId) {
+          // Find the merged config from our configs list that matches the linked config ID
+          const matchedConfig = configs.find((c) => c.id === linkedConfigAppId);
+
+          if (matchedConfig) {
+            // Unhide groups that may be hiding the linked config
+            const currentOwnerId = cm?.getCurrentOwnerId();
+            const isMyConfig =
+              matchedConfig.syncStatus === "local" ||
+              matchedConfig.owner === currentOwnerId;
+
+            if (!isMyConfig) {
+              const isOfficialConfig =
+                configuration.RECOMMENDED_CONFIG_PROFILE_IDS.includes(
+                  matchedConfig.owner ?? "",
+                ) ||
+                configuration.WORKFLOW_CONFIG_PROFILE_IDS.includes(
+                  matchedConfig.owner ?? "",
+                );
+
+              // We can only know if config belongs to the community, if it's not official or the user's!
+              if (!isOfficialConfig && get(hide_community_configs)) {
+                hide_community_configs.set(false);
+              }
+
+              const cct = get(compatible_config_types) as string[];
+              if (
+                !cct.includes(matchedConfig.type) &&
+                get(show_supported_only)
+              ) {
+                show_supported_only.set(false);
+              }
+            }
+
+            // Select the config and notify the editor
+            selected_config.set(matchedConfig);
+            scrollToSelectedConfigTrigger += 1;
+            await provideSelectedConfigForEditor(matchedConfig);
+          }
+
           submitAnalytics({
             eventName: "Cloud Action",
             payload: {
-              click: "Config Link Import",
+              click: "Config Link Navigate",
+            },
+          });
+        } else {
+          parentIframeCommunication({
+            windowPostMessageName: "sendLogMessage",
+            dataForParent: {
+              type: "fail",
+              message: "Config not found or no longer available.",
             },
           });
         }
@@ -157,6 +207,7 @@
       const config = BaseConfigSchema.parse(configResponse.data);
       config.createdAt = new Date();
       const cm = get(config_manager);
+      pendingNewConfigScroll = true;
       cm?.saveConfig(config, true).then((e) => {
         filter_value.set(new FilterValue());
       });
@@ -225,9 +276,9 @@
 
   function selectLatestConfig() {
     if (configs.length == 0) return;
-
     configs.sort((a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime());
     selected_config.set(configs[0]);
+    scrollToSelectedConfigTrigger += 1; // trigger scrolling into view on ConfigTree
   }
 
   onMount(async () => {
@@ -239,7 +290,33 @@
             let bi = configs.findIndex((e) => e.id === b.id);
             return ai - bi;
           });
+
+          if (pendingNewConfigScroll) {
+            pendingNewConfigScroll = false;
+            const newEntry = newConfigs
+              .filter((c) => !configs.some((e) => e.id === c.id))
+              .sort(
+                (a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime(),
+              )[0];
+            if (newEntry) {
+              selected_config.set(newEntry);
+              scrollToSelectedConfigTrigger += 1;
+            }
+          }
+
           configs = newConfigs;
+
+          // Keep selected_config in sync with the latest config data.
+          // Without this, the store keeps a stale object after login (e.g. public: undefined).
+          const currentSelected = get(selected_config);
+          if (currentSelected) {
+            const refreshed = newConfigs.find(
+              (c) => c.id === currentSelected.id,
+            );
+            if (refreshed) {
+              selected_config.set(refreshed);
+            }
+          }
         },
       }),
     );
@@ -433,8 +510,13 @@
 
   $: handleSelectionChange($selected_config);
 
-  function handleSelectionChange(config) {
+  function handleSelectionChange(config: Config | undefined) {
     if (lastid === config?.id) {
+      // Same config — only update publicToggleValue if it was undefined before
+      // (handles the login case where public goes from undefined to a real value).
+      if (publicToggleValue === undefined && config?.public !== undefined) {
+        publicToggleValue = config?.public;
+      }
       return;
     }
 
@@ -446,7 +528,11 @@
     updateVisiblility(publicToggleValue);
   }
 
-  function updateVisiblility(value) {
+  function updateVisiblility(value: boolean | undefined) {
+    if (typeof value === "undefined") {
+      return;
+    }
+
     const config = configs.find((e) => e.id === $selected_config?.id);
     if (typeof config === "undefined") {
       return;
@@ -507,7 +593,10 @@
     <Splitpanes horizontal={true} theme="modern-theme" pushOtherPanes={false}>
       <Pane size={60}>
         <div class="tree-pane">
-          <ConfigTree {configs} />
+          <ConfigTree
+            {configs}
+            scrollToSelectionTrigger={scrollToSelectedConfigTrigger}
+          />
         </div></Pane
       >
       <Pane size={40}>
@@ -521,89 +610,99 @@
             data={$selected_config}
           >
             <svelte:fragment slot="link-button">
-              {@const config = $selected_config}
+              {@const config = configs.find(
+                (e) => e.id === $selected_config?.id,
+              )}
               {#if config?.syncStatus != "local"}
-                <button
-                  class="icon-button"
-                  on:click|stopPropagation={() => {
-                    handleLink();
-                  }}
-                  use:tooltip={{
-                    instant: true,
-                    text: "Link",
-                  }}
-                >
-                  <SvgIcon iconPath="link" fill="var(--foreground-muted)" />
-                  {#if linkFlag == config?.id}
-                    <div
-                      transition:fade|global={{
-                        duration: 100,
-                      }}
-                      class="popup"
-                    >
-                      Copied to clipboard!
-                    </div>
-                  {/if}
-                </button>
+                {#key config?.public}
+                  <button
+                    class="icon-button"
+                    disabled={!config?.public}
+                    on:click|stopPropagation={() => {
+                      handleLink();
+                    }}
+                    use:tooltip={{
+                      instant: true,
+                      text: config?.public
+                        ? "Link"
+                        : "Only public config can be linked",
+                    }}
+                  >
+                    <SvgIcon iconPath="link" fill="var(--foreground-muted)" />
+                    {#if linkFlag == config?.id}
+                      <div
+                        transition:fade|global={{
+                          duration: 100,
+                        }}
+                        class="popup"
+                      >
+                        Copied to clipboard!
+                      </div>
+                    {/if}
+                  </button>
+                {/key}
               {/if}
             </svelte:fragment>
             <svelte:fragment slot="sync-config-button">
               {@const config = configs.find(
                 (e) => e.id === $selected_config?.id,
               )}
-              {#if config?.syncStatus != "synced" || !config?.isEditable}
-                <button
-                  on:click|stopPropagation={async () => {
-                    if (typeof config === "undefined") {
-                      return;
-                    }
+              {#if config?.syncStatus != "synced"}
+                {#key config?.id}
+                  <button
+                    on:click|stopPropagation={async () => {
+                      if (typeof config === "undefined") {
+                        return;
+                      }
 
-                    if (
-                      config.isEditable &&
-                      config.syncStatus === "local" &&
-                      !$userAccountService.account
-                    ) {
-                      loginToProfileCloud();
-                      return;
-                    }
-                    let configToSave = config;
-                    if (!configToSave.isEditable) {
-                      configToSave = {
-                        ...configToSave,
-                        name: `Copy of ${configToSave.name}`,
-                        owner: undefined,
-                        id: "",
-                      };
-                    }
-                    const cm = get(config_manager);
-                    cm?.saveConfig(configToSave, true);
-                    provideSelectedConfigForEditor(undefined);
-                    submitAnalytics({
-                      eventName: "Cloud Action",
-                      payload: {
-                        click: "Sync config",
-                      },
-                    });
-                  }}
-                  class="icon-button"
-                  use:tooltip={{
-                    instant: true,
-                    text: !config?.isEditable
-                      ? "Import"
-                      : config.syncStatus === "cloud"
-                        ? "Download"
-                        : "Upload",
-                  }}
-                >
-                  <SvgIcon
-                    fill="var(--foreground-muted)"
-                    iconPath={!config?.isEditable
-                      ? "importIcon"
-                      : config.syncStatus === "cloud"
-                        ? "download"
-                        : "move_to_cloud_02"}
-                  />
-                </button>
+                      if (
+                        config.isEditable &&
+                        config.syncStatus === "local" &&
+                        !$userAccountService.account
+                      ) {
+                        loginToProfileCloud();
+                        return;
+                      }
+                      let configToSave = config;
+                      if (!configToSave.isEditable) {
+                        configToSave = {
+                          ...configToSave,
+                          name: `Copy of ${configToSave.name}`,
+                          owner: undefined,
+                          id: "",
+                        };
+                      }
+                      const cm = get(config_manager);
+                      pendingNewConfigScroll = true;
+                      cm?.saveConfig(configToSave, true);
+                      provideSelectedConfigForEditor(undefined);
+                      submitAnalytics({
+                        eventName: "Cloud Action",
+                        payload: {
+                          click: "Sync config",
+                        },
+                      });
+                    }}
+                    class="icon-button"
+                    use:tooltip={{
+                      instant: true,
+                      text: !config?.isEditable
+                        ? "Create a copy"
+                        : config.syncStatus === "cloud"
+                          ? "Download"
+                          : "Upload",
+                    }}
+                  >
+                    <SvgIcon
+                      fill="var(--foreground-muted)"
+                      iconPath={!config?.isEditable
+                        ? "importIcon"
+                        : config.syncStatus === "cloud"
+                          ? "download"
+                          : "move_to_cloud_02"}
+                    />
+                  </button>
+                {/key}
               {/if}
             </svelte:fragment>
             <svelte:fragment slot="import-config-browser-button">
@@ -723,6 +822,11 @@
     background: transparent;
     border: none;
     cursor: pointer;
+  }
+
+  .icon-button:disabled {
+    opacity: 0.4;
+    cursor: default;
   }
 
   div.popup {

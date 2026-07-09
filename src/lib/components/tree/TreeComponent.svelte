@@ -2,6 +2,7 @@
   export interface TreeScrollBehaviour {
     scrollToIndex?: boolean;
     easing?: "smooth" | "instant";
+    scrollTrigger?: number;
   }
 
   export interface TreeProperties {
@@ -13,10 +14,12 @@
 </script>
 
 <script lang="ts">
-  import { createTreeView, type TreeView } from "@melt-ui/svelte";
-  import { setContext } from "svelte";
-  import TreeNode, { type AbstractTreeNode } from "./TreeNode.svelte";
-  import { type FolderSlotProps, type ItemSlotProps } from "./TreeChild.svelte";
+  import { createTreeView } from "@melt-ui/svelte";
+  import type { TreeView } from "@melt-ui/svelte";
+  import { setContext, tick } from "svelte";
+  import TreeNode from "./TreeNode.svelte";
+  import type { AbstractTreeNode } from "./TreeNode.svelte";
+  import type { FolderSlotProps, ItemSlotProps } from "./TreeChild.svelte";
   import { get } from "svelte/store";
 
   interface $$Slots {
@@ -33,7 +36,7 @@
   let rootHeight: number;
 
   let ctx: TreeView;
-  $: if ($root?.id) {
+  $: if ($root?.id && !ctx) {
     ctx = createTreeView({ onExpandedChange: handleExpandedChange });
     setContext("tree", ctx);
   }
@@ -63,10 +66,14 @@
   }
 
   let scrollTimeout: any;
-  async function scrollToNode(node: HTMLElement, id: string) {
+  let lastScrollTrigger: number | undefined;
+  async function scrollToNode(id: string, attempt = 0) {
     clearTimeout(scrollTimeout);
+    await tick();
     scrollTimeout = setTimeout(() => {
-      const target = node.querySelector(`#${CSS.escape(id)}`) as HTMLElement;
+      const target = rootElement?.querySelector(
+        `#${CSS.escape(id)}`,
+      ) as HTMLElement;
       if (target) {
         target.scrollIntoView({
           behavior: scrollBehaviour.easing ?? "smooth",
@@ -75,46 +82,48 @@
         });
         return;
       }
+
+      if (attempt < 4) {
+        scrollToNode(id, attempt + 1);
+      }
     }, 100);
   }
 
-  $: if (selected && (scrollBehaviour.scrollToIndex ?? false)) {
-    scrollToNode(rootElement, selected);
+  $: if (
+    selected &&
+    rootElement &&
+    (scrollBehaviour.scrollToIndex ?? false) &&
+    scrollBehaviour.scrollTrigger !== undefined &&
+    scrollBehaviour.scrollTrigger !== lastScrollTrigger
+  ) {
+    lastScrollTrigger = scrollBehaviour.scrollTrigger;
+    scrollToNode(selected);
   }
 </script>
 
-{#key tree}
-  <ul
-    bind:this={rootElement}
-    bind:clientHeight={rootHeight}
-    {...$tree}
-    class="tree"
-  >
-    <TreeNode node={root} level={0} {rootElement} {rootHeight}>
-      <svelte:fragment slot="folder" let:level let:item let:expanded>
-        <slot name="folder" {level} {item} {expanded} />
-      </svelte:fragment>
+<ul
+  bind:this={rootElement}
+  bind:clientHeight={rootHeight}
+  {...$tree}
+  class="tree"
+>
+  <TreeNode node={root} level={0} {rootElement} {rootHeight}>
+    <svelte:fragment slot="folder" let:level let:item let:expanded>
+      <slot name="folder" {level} {item} {expanded} />
+    </svelte:fragment>
 
-      <svelte:fragment
-        slot="item"
-        let:item
-        let:level
-        let:expanded
-        let:itemFunction
-        let:itemProps
-      >
-        <slot
-          name="item"
-          {level}
-          {item}
-          {expanded}
-          {itemFunction}
-          {itemProps}
-        />
-      </svelte:fragment>
-    </TreeNode>
-  </ul>
-{/key}
+    <svelte:fragment
+      slot="item"
+      let:item
+      let:level
+      let:expanded
+      let:itemFunction
+      let:itemProps
+    >
+      <slot name="item" {level} {item} {expanded} {itemFunction} {itemProps} />
+    </svelte:fragment>
+  </TreeNode>
+</ul>
 
 <style>
   ul {
