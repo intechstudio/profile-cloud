@@ -258,6 +258,7 @@
         type: editorConfig.type,
         version: editorConfig.version,
         configType: editorConfig.configType,
+        files: editorConfig?.files,
       };
 
       if (newConfig.type !== config.type) {
