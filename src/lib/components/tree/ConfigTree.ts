@@ -18,6 +18,7 @@ import {
 } from "./TreeNode.svelte";
 import { v4 as uuidv4 } from "uuid";
 import { ElementType, grid, ModuleType } from "@intechstudio/grid-protocol";
+import { isModuleTypeCompatible } from "../../utils";
 
 export namespace Tree {
   export interface Options {
@@ -98,33 +99,29 @@ export namespace Tree {
   }
 
   function isCompatible(config: Config, types: string[]) {
-    if (config.type === ModuleType.VSN1L || config.type === ModuleType.VSN1R) {
-      return (
-        types.includes(ModuleType.VSN1L) || types.includes(ModuleType.VSN1R)
-      );
-    } else {
-      switch (config.configType) {
-        case "profile": {
-          const moduleTypes = types.filter((t): t is ModuleType =>
-            isModuleType(t),
-          );
-          return moduleTypes.includes(config.type as ModuleType);
-        }
-        case "preset": {
-          const elementTypes = types.filter((t): t is ElementType =>
-            isElementType(t),
-          );
-          const leftCompatible = elementTypes.some((e) =>
-            grid.is_element_compatible_with(e, config.type as ElementType),
-          );
-          const rightCompatible = elementTypes.some((e) =>
-            grid.is_element_compatible_with(config.type as ElementType, e),
-          );
-          return leftCompatible || rightCompatible;
-        }
-        case "snippet": {
-          return true;
-        }
+    switch (config.configType) {
+      case "profile": {
+        const moduleTypes = types.filter((t): t is ModuleType =>
+          isModuleType(t),
+        );
+        return moduleTypes.some((t) =>
+          isModuleTypeCompatible(config.type as ModuleType, t),
+        );
+      }
+      case "preset": {
+        const elementTypes = types.filter((t): t is ElementType =>
+          isElementType(t),
+        );
+        const leftCompatible = elementTypes.some((e) =>
+          grid.is_element_compatible_with(e, config.type as ElementType),
+        );
+        const rightCompatible = elementTypes.some((e) =>
+          grid.is_element_compatible_with(config.type as ElementType, e),
+        );
+        return leftCompatible || rightCompatible;
+      }
+      case "snippet": {
+        return true;
       }
     }
   }
