@@ -25,7 +25,10 @@
   } from "../lib/schemas";
   import { fade } from "svelte/transition";
   import { Toggle } from "@intechstudio/grid-uikit";
-  import { parentIframeCommunication } from "../lib/utils";
+  import {
+    parentIframeCommunication,
+    isModuleTypeCompatible,
+  } from "../lib/utils";
   import {
     createConfigManager,
     updateLocalConfigs,
@@ -261,7 +264,12 @@
         files: editorConfig?.files,
       };
 
-      if (newConfig.type !== config.type) {
+      if (
+        !isModuleTypeCompatible(
+          newConfig.type as ModuleType,
+          config.type as ModuleType,
+        )
+      ) {
         parentIframeCommunication({
           windowPostMessageName: "sendLogMessage",
           dataForParent: {
