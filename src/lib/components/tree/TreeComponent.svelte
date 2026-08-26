@@ -16,7 +16,7 @@
 <script lang="ts">
   import { createTreeView } from "@melt-ui/svelte";
   import type { TreeView } from "@melt-ui/svelte";
-  import { setContext, tick } from "svelte";
+  import { createEventDispatcher, setContext, tick } from "svelte";
   import TreeNode from "./TreeNode.svelte";
   import type { AbstractTreeNode } from "./TreeNode.svelte";
   import type { FolderSlotProps, ItemSlotProps } from "./TreeChild.svelte";
@@ -26,6 +26,8 @@
     folder: FolderSlotProps;
     item: ItemSlotProps;
   }
+
+  const dispatch = createEventDispatcher<{ expandedChange: string[] }>();
 
   export let root: AbstractTreeNode<any>;
   export let expanded: string[] = [];
@@ -51,18 +53,21 @@
     curr: string[];
     next: string[];
   }) {
+    let result: string[];
     if (next.length > curr.length) {
       const diff = next.find((e) => !curr.includes(e))!;
       const rootNodes = get(root).children.map((e) => get(e).id);
       if (rootNodes.includes(diff)) {
         const others = next.filter((e) => !rootNodes.includes(e));
-        return [...others, diff];
+        result = [...others, diff];
       } else {
-        return next;
+        result = next;
       }
     } else {
-      return next;
+      result = next;
     }
+    dispatch("expandedChange", result);
+    return result;
   }
 
   let scrollTimeout: any;

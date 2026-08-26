@@ -38,6 +38,18 @@
   let treeProps: TreeProperties;
   let treeRoot: Tree.Node;
   let filteredConfigs: Config[] = [];
+  let manuallyExpanded: string[] = [];
+
+  function sameIds(a: string[], b: string[]) {
+    if (a.length !== b.length) return false;
+    const set = new Set(a);
+    return b.every((id) => set.has(id));
+  }
+
+  function handleExpandedChange(event: CustomEvent<string[]>) {
+    if (sameIds(manuallyExpanded, event.detail)) return;
+    manuallyExpanded = event.detail;
+  }
 
   export function debounced<T>(store: Writable<T>, delay = 300) {
     let timeout: ReturnType<typeof setTimeout>;
@@ -74,7 +86,12 @@
     treeProps = {
       root: treeRoot,
       selected: selected?.id,
-      expanded: treeRoot.getIncludingNodes(selected?.id),
+      expanded: Array.from(
+        new Set([
+          ...treeRoot.getIncludingNodes(selected?.id),
+          ...manuallyExpanded,
+        ]),
+      ),
       scrollBehaviour: {
         scrollToIndex: scrollToSelectionTrigger > 0,
         scrollTrigger: scrollToSelectionTrigger,
@@ -253,7 +270,7 @@
   }
 </script>
 
-<TreeComponent {...treeProps}>
+<TreeComponent {...treeProps} on:expandedChange={handleExpandedChange}>
   <svelte:fragment slot="folder" let:item let:expanded let:level>
     {@const data = getFolderData(item)}
     <TreeFolder
