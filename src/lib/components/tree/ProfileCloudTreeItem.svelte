@@ -80,7 +80,12 @@
       <slot name="type-label">{data.type}</slot>
     </div>
     {#if $item.children.length > 0}
-      <div class="trigger-container" use:itemFunction {...itemProps}>
+      <div
+        class="trigger-container"
+        use:itemFunction
+        {...itemProps}
+        on:click|stopPropagation
+      >
         <svg
           width="14"
           height="11"
