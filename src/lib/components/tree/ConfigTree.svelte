@@ -83,15 +83,23 @@
   $: if (treeRoot) {
     selectClosestMatch($selected_config, filteredConfigs);
     const selected = get(selected_config);
+    // Only one top-level category can be open at a time (see TreeComponent's
+    // accordion logic). getIncludingNodes always forces the selected config's
+    // top-level ancestor open so the selection stays visible, but that fights
+    // a manual click into a *different* category - the forced root keeps
+    // reappearing and evicts the one the user just opened. Once the user has
+    // manually opened a root, drop any other root from the forced set so
+    // their choice sticks; nested (non-root) ancestors are unaffected.
+    const rootIds = get(treeRoot).children.map((e) => get(e).id);
+    const manualRoot = manuallyExpanded.find((e) => rootIds.includes(e));
+    const includingNodes = treeRoot.getIncludingNodes(selected?.id);
+    const forcedNodes = manualRoot
+      ? includingNodes.filter((e) => !rootIds.includes(e) || e === manualRoot)
+      : includingNodes;
     treeProps = {
       root: treeRoot,
       selected: selected?.id,
-      expanded: Array.from(
-        new Set([
-          ...treeRoot.getIncludingNodes(selected?.id),
-          ...manuallyExpanded,
-        ]),
-      ),
+      expanded: Array.from(new Set([...forcedNodes, ...manuallyExpanded])),
       scrollBehaviour: {
         scrollToIndex: scrollToSelectionTrigger > 0,
         scrollTrigger: scrollToSelectionTrigger,
