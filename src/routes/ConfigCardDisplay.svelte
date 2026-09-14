@@ -197,8 +197,8 @@
                       <SvgIcon
                         fill="var(--foreground-muted)"
                         iconPath="file"
-                        width={14}
-                        height={14}
+                        width={1.2}
+                        height={1.2}
                       />
                       <span>{file.name}</span>
                     </div>
