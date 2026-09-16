@@ -1,14 +1,12 @@
 <script lang="ts">
-  import { tooltip } from "../lib/actions/tooltip";
   import {
     createEventDispatcher,
     getContext,
     onDestroy,
     onMount,
   } from "svelte";
-  import { SvgIcon } from "@intechstudio/grid-uikit";
+  import { SvgIcon, IconButton, tooltip } from "@intechstudio/grid-uikit";
   import type { Config } from "../lib/schemas";
-  import { applyFocus } from "../lib/utils";
   import { doc, getDoc } from "firebase/firestore";
   import { userCollection } from "../lib/collections";
 
@@ -23,9 +21,6 @@
   export let isSelected: boolean;
 
   const display = getContext("display");
-
-  let deleteConfirmFlag = false;
-  let overwriteApplyFlag = false;
 
   let configOwner: string = "";
   onMount(() => {
@@ -106,63 +101,29 @@
         }}
         value={data.name}
       />
-      <div class="actions-row">
+      <div class="actions-row" on:click|stopPropagation>
         {#if data.isEditable}
-          {#if deleteConfirmFlag == false}
-            <button
-              class="icon-button"
-              on:click|stopPropagation={() => {
-                deleteConfirmFlag = true;
-              }}
-              use:tooltip={{
-                instant: true,
-                text: "Delete",
-              }}
-            >
-              <SvgIcon fill="var(--foreground-muted)" iconPath="delete" />
-            </button>
-          {:else}
-            <button
-              use:applyFocus
-              on:blur|stopPropagation={() => {
-                deleteConfirmFlag = false;
-              }}
-              on:click|stopPropagation={() => {
-                dispatchEvent("delete-config");
-                deleteConfirmFlag = false;
-              }}
-              class="confirm-delete">confirm</button
-            >
-          {/if}
-          {#if overwriteApplyFlag == false}
-            <button
-              class="icon-button"
-              on:click|stopPropagation={() => {
-                overwriteApplyFlag = true;
-              }}
-              use:tooltip={{
-                instant: true,
-                text: "Overwrite",
-              }}
-            >
-              <SvgIcon
-                fill="var(--foreground-muted)"
-                iconPath="overwrite_profile"
-              />
-            </button>
-          {:else}
-            <button
-              use:applyFocus
-              on:blur={() => {
-                overwriteApplyFlag = false;
-              }}
-              on:click|stopPropagation={() => {
-                dispatchEvent("overwrite-profile");
-                overwriteApplyFlag = false;
-              }}
-              class="confirm-apply">apply</button
-            >
-          {/if}
+          <IconButton
+            iconPath="deleteIcon"
+            tooltipText="Delete"
+            tooltipExtendedText={`Delete '${data.name}'?`}
+            tooltipButtons={[
+              { label: "Cancel", handler: undefined },
+              { label: "Confirm", handler: () => dispatchEvent("delete-config") },
+            ]}
+          />
+          <IconButton
+            iconPath="overwrite_profile"
+            tooltipText="Overwrite"
+            tooltipExtendedText={`Overwrite '${data.name}'?`}
+            tooltipButtons={[
+              { label: "Cancel", handler: undefined },
+              {
+                label: "Confirm",
+                handler: () => dispatchEvent("overwrite-profile"),
+              },
+            ]}
+          />
         {/if}
         <slot name="link-button" />
         <slot name="sync-config-button" />
@@ -329,20 +290,6 @@
     background: transparent;
     border: none;
     cursor: pointer;
-  }
-
-  .confirm-delete {
-    background-color: #dc2626;
-    border-radius: 0.25rem;
-    padding: 0.125rem 0.25rem;
-    font-size: 0.75rem;
-  }
-
-  .confirm-apply {
-    background-color: #059669;
-    border-radius: 0.25rem;
-    padding: 0.125rem 0.25rem;
-    font-size: 0.75rem;
   }
 
   .description-section {

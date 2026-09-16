@@ -11,19 +11,17 @@
   } from "./EditorLayout";
   import { get } from "svelte/store";
   import ConfigTree from "../lib/components/tree/ConfigTree.svelte";
-  import { tooltip } from "./../lib/actions/tooltip";
   import ConfigurationSave, {
     ConfigurationSaveType,
   } from "./ConfigurationSave.svelte";
   import { onDestroy, onMount } from "svelte";
   import { userAccountService } from "../lib/stores";
-  import { SvgIcon } from "@intechstudio/grid-uikit";
+  import { SvgIcon, IconButton, tooltip } from "@intechstudio/grid-uikit";
   import {
     type Config,
     LocalConfigSchema,
     BaseConfigSchema,
   } from "../lib/schemas";
-  import { fade } from "svelte/transition";
   import { Toggle } from "@intechstudio/grid-uikit";
   import {
     parentIframeCommunication,
@@ -57,8 +55,6 @@
   let configs: Config[] = [];
   let scrollToSelectedConfigTrigger = 0;
   let pendingNewConfigScroll = false; // this helps new configs to scroll into view upon creation
-
-  let linkFlag: string | undefined = undefined;
 
   let usernameInput = {
     element: null as HTMLInputElement | null,
@@ -488,10 +484,13 @@
     }
     createCloudConfigLink(config)
       .then((res) => {
-        linkFlag = config.id;
-        setTimeout(() => {
-          linkFlag = undefined;
-        }, 1750);
+        parentIframeCommunication({
+          windowPostMessageName: "sendLogMessage",
+          dataForParent: {
+            type: "success",
+            message: `Link for '${config.name}' copied to clipboard!`,
+          },
+        });
         provideSelectedConfigForEditor(undefined);
       })
       .catch((e) => {
@@ -509,6 +508,40 @@
       eventName: "Cloud Action",
       payload: {
         click: "Create config link",
+      },
+    });
+  }
+
+  async function handleSyncConfig(config: Config | undefined) {
+    if (typeof config === "undefined") {
+      return;
+    }
+
+    if (
+      config.isEditable &&
+      config.syncStatus === "local" &&
+      !$userAccountService.account
+    ) {
+      loginToProfileCloud();
+      return;
+    }
+    let configToSave = config;
+    if (!configToSave.isEditable) {
+      configToSave = {
+        ...configToSave,
+        name: `Copy of ${configToSave.name}`,
+        owner: undefined,
+        id: "",
+      };
+    }
+    const cm = get(config_manager);
+    pendingNewConfigScroll = true;
+    cm?.saveConfig(configToSave, true);
+    provideSelectedConfigForEditor(undefined);
+    submitAnalytics({
+      eventName: "Cloud Action",
+      payload: {
+        click: "Sync config",
       },
     });
   }
@@ -624,31 +657,18 @@
               )}
               {#if config?.syncStatus != "local"}
                 {#key config?.public}
-                  <button
-                    class="icon-button"
+                  <IconButton
+                    iconPath="link"
                     disabled={!config?.public}
-                    on:click|stopPropagation={() => {
+                    tooltipText={config?.public
+                      ? "Link"
+                      : "Only public config can be linked"}
+                    tooltipDelay={0}
+                    stopPropagation
+                    onClick={() => {
                       handleLink();
                     }}
-                    use:tooltip={{
-                      instant: true,
-                      text: config?.public
-                        ? "Link"
-                        : "Only public config can be linked",
-                    }}
-                  >
-                    <SvgIcon iconPath="link" fill="var(--foreground-muted)" />
-                    {#if linkFlag == config?.id}
-                      <div
-                        transition:fade|global={{
-                          duration: 100,
-                        }}
-                        class="popup"
-                      >
-                        Copied to clipboard!
-                      </div>
-                    {/if}
-                  </button>
+                  />
                 {/key}
               {/if}
             </svelte:fragment>
@@ -656,63 +676,36 @@
               {@const config = configs.find(
                 (e) => e.id === $selected_config?.id,
               )}
-              {#if config?.syncStatus != "synced"}
-                {#key config?.id}
-                  <button
-                    on:click|stopPropagation={async () => {
-                      if (typeof config === "undefined") {
-                        return;
-                      }
-
-                      if (
-                        config.isEditable &&
-                        config.syncStatus === "local" &&
-                        !$userAccountService.account
-                      ) {
-                        loginToProfileCloud();
-                        return;
-                      }
-                      let configToSave = config;
-                      if (!configToSave.isEditable) {
-                        configToSave = {
-                          ...configToSave,
-                          name: `Copy of ${configToSave.name}`,
-                          owner: undefined,
-                          id: "",
-                        };
-                      }
-                      const cm = get(config_manager);
-                      pendingNewConfigScroll = true;
-                      cm?.saveConfig(configToSave, true);
-                      provideSelectedConfigForEditor(undefined);
-                      submitAnalytics({
-                        eventName: "Cloud Action",
-                        payload: {
-                          click: "Sync config",
-                        },
-                      });
-                    }}
-                    class="icon-button"
-                    use:tooltip={{
-                      instant: true,
-                      text: !config?.isEditable
-                        ? "Create a copy"
-                        : config.syncStatus === "cloud"
-                          ? "Download"
-                          : "Upload",
-                    }}
-                  >
-                    <SvgIcon
-                      fill="var(--foreground-muted)"
-                      iconPath={!config?.isEditable
-                        ? "importIcon"
-                        : config.syncStatus === "cloud"
-                          ? "download"
-                          : "move_to_cloud_02"}
-                    />
-                  </button>
-                {/key}
-              {/if}
+              {#key config?.id}
+                <IconButton
+                  iconPath="importIcon"
+                  tooltipText="Create a copy"
+                  tooltipDelay={0}
+                  stopPropagation
+                  disabled={!config || config.isEditable}
+                  onClick={() => handleSyncConfig(config)}
+                />
+                <IconButton
+                  iconPath="download"
+                  tooltipText="Download"
+                  tooltipDelay={0}
+                  stopPropagation
+                  disabled={!config ||
+                    !config.isEditable ||
+                    config.syncStatus !== "cloud"}
+                  onClick={() => handleSyncConfig(config)}
+                />
+                <IconButton
+                  iconPath="move_to_cloud_02"
+                  tooltipText="Upload"
+                  tooltipDelay={0}
+                  stopPropagation
+                  disabled={!config ||
+                    !config.isEditable ||
+                    config.syncStatus !== "local"}
+                  onClick={() => handleSyncConfig(config)}
+                />
+              {/key}
             </svelte:fragment>
             <svelte:fragment slot="import-config-browser-button">
               <DisplayOnWeb>
@@ -824,28 +817,4 @@
     width: 100%;
   }
 
-  .icon-button {
-    display: flex;
-    align-items: center;
-    position: relative;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-  }
-
-  .icon-button:disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
-
-  div.popup {
-    display: block;
-    position: absolute;
-    margin-top: 1.75rem;
-    top: 0;
-    color: var(--foreground-muted);
-    background-color: var(--popover-background);
-    border-radius: 0.5rem;
-    padding: 0.5rem;
-  }
 </style>
