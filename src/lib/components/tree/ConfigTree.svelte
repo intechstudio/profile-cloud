@@ -233,6 +233,11 @@
     });
   }
 
+  function handleContextMenu(node: AbstractTreeNode<any>) {
+    const config = (get(node).data as Tree.ItemData).item;
+    selected_config.set(config);
+  }
+
   function getfolderCtxOptions(
     level: number,
     child: AbstractTreeNode<any>,
@@ -263,6 +268,11 @@
           text: [`Show in folder`, ``],
           handler: () => get(config_manager)?.showConfigInFolder(item),
           isDisabled: () => !get(config_manager)?.hasLocalFile(item),
+        },
+        {
+          text: [`Delete`, ``],
+          handler: () => get(config_manager)?.deleteConfig(item),
+          isDisabled: () => !item.isEditable,
         },
       ],
     };
@@ -326,6 +336,7 @@
       on:drag-start={() => handleDragStart(item)}
       on:drag-end={() => handleDragEnd(item)}
       on:click={() => handleClick(item)}
+      on:contextmenu={() => handleContextMenu(item)}
     >
       <div slot="button-label">
         {@html highlightMatches(data.item.name, $filter_value)}

@@ -45,6 +45,10 @@
   function handleClick(e: MouseEvent) {
     dispatch("click");
   }
+
+  function handleContextMenu(e: MouseEvent) {
+    dispatch("contextmenu");
+  }
 </script>
 
 <button
@@ -53,6 +57,7 @@
   draggable="true"
   use:contextTarget={ctxOptions}
   on:click={handleClick}
+  on:contextmenu={handleContextMenu}
   on:dragstart={handleDragStart}
   on:dragend={handleDragEnd}
 >
