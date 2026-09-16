@@ -255,6 +255,19 @@
     };
   }
 
+  function getItemCtxOptions(node: AbstractTreeNode<any>): ContextMenuOptions {
+    const { item } = get(node).data as Tree.ItemData;
+    return {
+      items: [
+        {
+          text: [`Show in folder`, ``],
+          handler: () => get(config_manager)?.showConfigInFolder(item),
+          isDisabled: () => !get(config_manager)?.hasLocalFile(item),
+        },
+      ],
+    };
+  }
+
   function getItemCount(item: AbstractTreeNode<any>) {
     const { type, children } = get(item);
 
@@ -309,6 +322,7 @@
       compatible={data.compatible}
       selected={data.item.id === $selected_config?.id}
       {expanded}
+      ctxOptions={getItemCtxOptions(item)}
       on:drag-start={() => handleDragStart(item)}
       on:drag-end={() => handleDragEnd(item)}
       on:click={() => handleClick(item)}

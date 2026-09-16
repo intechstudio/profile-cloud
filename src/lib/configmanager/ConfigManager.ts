@@ -29,6 +29,8 @@ export interface ConfigManager {
   changeCloudVisibility(config: Config, visibility: boolean): Promise<void>;
   getCurrentOwnerId(): string | null | undefined;
   getConfigCloudId(config: Config): string | undefined;
+  hasLocalFile(config: Config): boolean;
+  showConfigInFolder(config: Config): Promise<void>;
   configs: Readable<Config[]>;
 }
 
@@ -330,6 +332,20 @@ export function createConfigManager(observer: {
     return appConfigIdToConfigMap.get(config.id)?.cloud?.id;
   }
 
+  function hasLocalFile(config: Config): boolean {
+    return appConfigIdToConfigMap.get(config.id)?.local !== undefined;
+  }
+
+  async function showConfigInFolder(config: Config) {
+    const localConfig = appConfigIdToConfigMap.get(config.id)?.local;
+    if (!localConfig) return;
+
+    await parentIframeCommunication({
+      windowPostMessageName: "showConfigInFolder",
+      dataForParent: { config: localConfig },
+    });
+  }
+
   return {
     cancel,
     deleteConfig,
@@ -338,6 +354,8 @@ export function createConfigManager(observer: {
     changeCloudVisibility,
     getCurrentOwnerId,
     getConfigCloudId,
+    hasLocalFile,
+    showConfigInFolder,
     configs: derived(configs, ($configs) => {
       return $configs.map((item) => Object.freeze({ ...item }));
     }),

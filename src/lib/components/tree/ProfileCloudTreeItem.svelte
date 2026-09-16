@@ -14,7 +14,11 @@
   } from "./TreeNode.svelte";
   import { createEventDispatcher } from "svelte";
 
-  import { SvgIcon } from "@intechstudio/grid-uikit";
+  import {
+    SvgIcon,
+    contextTarget,
+    type ContextMenuOptions,
+  } from "@intechstudio/grid-uikit";
   const dispatch = createEventDispatcher();
 
   export let selected: boolean;
@@ -23,6 +27,7 @@
   export let item: AbstractTreeNode<WithProfileCloudData>;
   export let itemProps: any;
   export let itemFunction: any;
+  export let ctxOptions: ContextMenuOptions = { items: [] };
 
   type WithProfileCloudData<T = unknown> = T & ProfileCloudCardData;
 
@@ -46,6 +51,7 @@
   id={$item.id}
   class="{selected ? 'border-selected' : 'border-unselected'} button"
   draggable="true"
+  use:contextTarget={ctxOptions}
   on:click={handleClick}
   on:dragstart={handleDragStart}
   on:dragend={handleDragEnd}
