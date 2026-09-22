@@ -109,7 +109,10 @@
             tooltipExtendedText={`Delete '${data.name}'?`}
             tooltipButtons={[
               { label: "Cancel", handler: undefined },
-              { label: "Confirm", handler: () => dispatchEvent("delete-config") },
+              {
+                label: "Confirm",
+                handler: () => dispatchEvent("delete-config"),
+              },
             ]}
           />
           <IconButton
