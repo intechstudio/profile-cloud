@@ -178,16 +178,38 @@
     return { root, filteredConfigs };
   }
 
-  function handleDeleteVirtualDirectory(title: string) {
+  async function handleDeleteVirtualDirectory(title: string) {
     const cm = get(config_manager);
 
-    for (const config of configs) {
-      const segments = config.virtualPath?.split("/") ?? [];
-      if (segments.includes(title)) {
-        const newPath = segments.filter((e: string) => e !== title).join("/");
-        config.virtualPath = newPath === "" ? undefined : newPath;
-        cm?.saveConfig(config, false);
+    const affected = configs.filter((c) =>
+      (c.virtualPath?.split("/") ?? []).includes(title),
+    );
+    try {
+      for (const config of affected) {
+        const newPath = config
+          .virtualPath!.split("/")
+          .filter((e) => e !== title)
+          .join("/");
+        await cm?.saveConfig(
+          { ...config, virtualPath: newPath === "" ? undefined : newPath },
+          false,
+        );
       }
+      parentIframeCommunication({
+        windowPostMessageName: "sendLogMessage",
+        dataForParent: {
+          type: "success",
+          message: `Deleted virtual directory '${title}'`,
+        },
+      });
+    } catch (e) {
+      parentIframeCommunication({
+        windowPostMessageName: "sendLogMessage",
+        dataForParent: {
+          type: "fail",
+          message: `Failed to delete virtual directory '${title}'. ${e}`,
+        },
+      });
     }
   }
 
@@ -284,6 +306,13 @@
     try {
       const cm = get(config_manager);
       await cm?.saveConfig({ ...config, name: newName }, false);
+      parentIframeCommunication({
+        windowPostMessageName: "sendLogMessage",
+        dataForParent: {
+          type: "success",
+          message: `Config '${newName}' saved`,
+        },
+      });
       pendingRenameName = newName;
       clearTimeout(pendingRenameTimeout);
       // Safety net: if the reload never lands (e.g. watcher hiccup), don't
@@ -293,6 +322,13 @@
       }, 5000);
     } catch (e) {
       renameError = String(e);
+      parentIframeCommunication({
+        windowPostMessageName: "sendLogMessage",
+        dataForParent: {
+          type: "fail",
+          message: `Failed to rename '${config.name}'. ${e}`,
+        },
+      });
     } finally {
       renameInProgress = false;
     }
@@ -351,15 +387,23 @@
       const affected = configs.filter((c) =>
         c.virtualPath?.split("/").includes(oldTitle),
       );
-      await Promise.all(
-        affected.map((config) => {
-          const newPath = config
-            .virtualPath!.split("/")
-            .map((segment) => (segment === oldTitle ? newTitle : segment))
-            .join("/");
-          return cm?.saveConfig({ ...config, virtualPath: newPath }, false);
-        }),
-      );
+      // Sequential rather than Promise.all: each save round-trips through
+      // grid-editor's file watcher, and there's no need to have several
+      // in flight at once for a rename that isn't performance-sensitive.
+      for (const config of affected) {
+        const newPath = config
+          .virtualPath!.split("/")
+          .map((segment) => (segment === oldTitle ? newTitle : segment))
+          .join("/");
+        await cm?.saveConfig({ ...config, virtualPath: newPath }, false);
+      }
+      parentIframeCommunication({
+        windowPostMessageName: "sendLogMessage",
+        dataForParent: {
+          type: "success",
+          message: `Renamed virtual directory '${oldTitle}' to '${newTitle}' (${affected.length} config${affected.length === 1 ? "" : "s"})`,
+        },
+      });
       folderRenameSaved = true;
       clearTimeout(folderRenameTimeout);
       // Safety net: if the reload never lands, don't leave the editor stuck
@@ -369,6 +413,13 @@
       }, 5000);
     } catch (e) {
       renameFolderError = String(e);
+      parentIframeCommunication({
+        windowPostMessageName: "sendLogMessage",
+        dataForParent: {
+          type: "fail",
+          message: `Failed to rename virtual directory '${oldTitle}'. ${e}`,
+        },
+      });
     } finally {
       renameFolderInProgress = false;
     }

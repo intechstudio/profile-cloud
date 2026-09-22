@@ -207,15 +207,21 @@
       config.createdAt = new Date();
       const cm = get(config_manager);
       pendingNewConfigScroll = true;
-      cm?.saveConfig(config, true).then((e) => {
-        filter_value.set(new FilterValue());
+      await cm?.saveConfig(config, true);
+      filter_value.set(new FilterValue());
+      parentIframeCommunication({
+        windowPostMessageName: "sendLogMessage",
+        dataForParent: {
+          type: "success",
+          message: `Config '${name}' saved`,
+        },
       });
     } catch (e: any) {
       parentIframeCommunication({
         windowPostMessageName: "sendLogMessage",
         dataForParent: {
           type: "fail",
-          message: e.data,
+          message: e?.data ?? e?.message ?? String(e),
         },
       });
     }
@@ -275,7 +281,24 @@
         });
         return;
       }
-      cm?.saveConfig(newConfig, false);
+      try {
+        await cm?.saveConfig(newConfig, false);
+        parentIframeCommunication({
+          windowPostMessageName: "sendLogMessage",
+          dataForParent: {
+            type: "success",
+            message: `Config '${newConfig.name}' saved`,
+          },
+        });
+      } catch (e) {
+        parentIframeCommunication({
+          windowPostMessageName: "sendLogMessage",
+          dataForParent: {
+            type: "fail",
+            message: `Failed to overwrite '${newConfig.name}'. ${e}`,
+          },
+        });
+      }
     }
   }
 
@@ -411,7 +434,24 @@
       description: newDescription,
     };
     const cm = get(config_manager);
-    cm?.saveConfig(newConfig, false);
+    try {
+      await cm?.saveConfig(newConfig, false);
+      parentIframeCommunication({
+        windowPostMessageName: "sendLogMessage",
+        dataForParent: {
+          type: "success",
+          message: `Config '${newConfig.name}' saved`,
+        },
+      });
+    } catch (e) {
+      parentIframeCommunication({
+        windowPostMessageName: "sendLogMessage",
+        dataForParent: {
+          type: "fail",
+          message: `Failed to save '${newConfig.name}'. ${e}`,
+        },
+      });
+    }
     provideSelectedConfigForEditor(newConfig);
     submitAnalytics({
       eventName: "Cloud Action",
@@ -435,7 +475,24 @@
       name: value,
     };
     const cm = get(config_manager);
-    cm?.saveConfig(newConfig, false);
+    try {
+      await cm?.saveConfig(newConfig, false);
+      parentIframeCommunication({
+        windowPostMessageName: "sendLogMessage",
+        dataForParent: {
+          type: "success",
+          message: `Config '${newConfig.name}' saved`,
+        },
+      });
+    } catch (e) {
+      parentIframeCommunication({
+        windowPostMessageName: "sendLogMessage",
+        dataForParent: {
+          type: "fail",
+          message: `Failed to save '${newConfig.name}'. ${e}`,
+        },
+      });
+    }
     submitAnalytics({
       eventName: "Cloud Action",
       payload: {
@@ -457,7 +514,24 @@
       virtualPath: value,
     };
     const cm = get(config_manager);
-    cm?.saveConfig(newConfig, false);
+    try {
+      await cm?.saveConfig(newConfig, false);
+      parentIframeCommunication({
+        windowPostMessageName: "sendLogMessage",
+        dataForParent: {
+          type: "success",
+          message: `Config '${newConfig.name}' saved`,
+        },
+      });
+    } catch (e) {
+      parentIframeCommunication({
+        windowPostMessageName: "sendLogMessage",
+        dataForParent: {
+          type: "fail",
+          message: `Failed to save '${newConfig.name}'. ${e}`,
+        },
+      });
+    }
 
     submitAnalytics({
       eventName: "Cloud Action",
@@ -536,7 +610,29 @@
     }
     const cm = get(config_manager);
     pendingNewConfigScroll = true;
-    cm?.saveConfig(configToSave, true);
+    const action = !config.isEditable
+      ? "Created a copy of"
+      : config.syncStatus === "cloud"
+        ? "Downloaded"
+        : "Uploaded";
+    try {
+      await cm?.saveConfig(configToSave, true);
+      parentIframeCommunication({
+        windowPostMessageName: "sendLogMessage",
+        dataForParent: {
+          type: "success",
+          message: `${action} '${configToSave.name}'`,
+        },
+      });
+    } catch (e) {
+      parentIframeCommunication({
+        windowPostMessageName: "sendLogMessage",
+        dataForParent: {
+          type: "fail",
+          message: `Failed to sync '${configToSave.name}'. ${e}`,
+        },
+      });
+    }
     provideSelectedConfigForEditor(undefined);
     submitAnalytics({
       eventName: "Cloud Action",

@@ -241,13 +241,8 @@ export function createConfigManager(observer: {
     }
 
     let cloudId = appConfigs?.cloud?.id;
-    let configCreated = false;
-    let configError = false;
     let errorDetail = undefined;
     if (currentOwnerId != null && (createMissingConfigs || cloudId)) {
-      if (createMissingConfigs || !cloudId) {
-        configCreated = true;
-      }
       cloudId = cloudId ?? doc(configsCollection).id;
       let configRef = doc(configsCollection, cloudId);
 
@@ -281,33 +276,17 @@ export function createConfigManager(observer: {
         windowPostMessageName: "configImportCommunication",
 
         dataForParent: data,
-      })
-        .then((result) => {
-          configCreated = true;
-        })
-        .catch((e) => {
-          configError = true;
-          errorDetail = e.data;
-        });
+      }).catch((e) => {
+        errorDetail = e.data;
+      });
     }
-    if (configCreated) {
-      parentIframeCommunication({
-        windowPostMessageName: "sendLogMessage",
-        dataForParent: {
-          type: "success",
-          message: `Config '${config.name}' saved`,
-        },
-      });
-      return Promise.resolve();
-    } else if (configError) {
-      console.warn(errorDetail);
-      parentIframeCommunication({
-        windowPostMessageName: "sendLogMessage",
-        dataForParent: {
-          type: "fail",
-          message: `Config ${config.name} import failed. ${errorDetail}`,
-        },
-      });
+    // No user-facing message here: this is the atomic per-config save. A
+    // batch operation (e.g. renaming a virtual directory) calls this once
+    // per affected config, and the caller - which knows whether it's one
+    // save or many - is responsible for reporting a single result to the
+    // user once its whole transaction settles, not one message per file.
+    if (errorDetail !== undefined) {
+      throw new Error(String(errorDetail));
     }
   }
 
