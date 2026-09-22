@@ -9,9 +9,12 @@
     type ConfigManager,
     createConfigManager,
   } from "../lib/configmanager/ConfigManager";
-  import { tooltip } from "../lib/actions/tooltip";
   import ConfigCardBrowser from "./ConfigCardBrowser.svelte";
-  import { MeltCheckbox, MoltenPushButton } from "@intechstudio/grid-uikit";
+  import {
+    MeltCheckbox,
+    MoltenPushButton,
+    tooltip,
+  } from "@intechstudio/grid-uikit";
   import configuration from "../../Configuration.json";
 
   let selectedConfigIndex: number | undefined = undefined;

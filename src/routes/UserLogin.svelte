@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { tooltip } from "../lib/actions/tooltip";
   import { onDestroy } from "svelte";
   import { userAccountService } from "../lib/stores";
   import { doc, getDoc, writeBatch } from "firebase/firestore";
@@ -17,7 +16,7 @@
   import {
     MoltenPushButton,
     MoltenInput,
-    SvgIcon,
+    IconButton,
   } from "@intechstudio/grid-uikit";
 
   import {
@@ -131,8 +130,11 @@
     </BlockBody>
     <BlockRow>
       <MoltenInput bind:target={nameFieldValue} />
-      <button
-        on:click={() => {
+      <IconButton
+        iconPath="save_as_02"
+        tooltipText="Save"
+        tooltipDelay={0}
+        onClick={() => {
           usernameInput.active = false;
           setUserName(usernameInput.value ?? "");
           submitAnalytics({
@@ -142,13 +144,7 @@
             },
           });
         }}
-        use:tooltip={{
-          instant: true,
-          text: "Save",
-        }}
-      >
-        <SvgIcon iconPath={"save_as_02"} fill="var(--foreground-muted)" />
-      </button>
+      />
     </BlockRow>
     <div style="color: {usernameInput.valid ? '#10b981' : '#f59e0b'}">
       {usernameSelectionFeedback(usernameInput)}
@@ -159,8 +155,11 @@
       ><BlockBody>
         Logged in as {usernameInput.value ?? ""}
       </BlockBody>
-      <button
-        on:click={() => {
+      <IconButton
+        iconPath="log_out"
+        tooltipText="Logout"
+        tooltipDelay={0}
+        onClick={() => {
           logoutFromProfileCloud();
           submitAnalytics({
             eventName: "Cloud Action",
@@ -169,13 +168,7 @@
             },
           });
         }}
-        use:tooltip={{
-          instant: true,
-          text: "Logout",
-        }}
-      >
-        <SvgIcon iconPath={"log_out"} fill="var(--foreground-muted)" />
-      </button>
+      />
     </BlockRow></Block
   >
 {/if}
