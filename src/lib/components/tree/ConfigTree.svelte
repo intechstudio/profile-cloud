@@ -24,7 +24,11 @@
   import { TreeItemType } from "./TreeNode.svelte";
   import type { AbstractFolderData, AbstractTreeNode } from "./TreeNode.svelte";
   import type { TreeProperties } from "./TreeComponent.svelte";
-  import type { ContextMenuOptions } from "@intechstudio/grid-uikit";
+  import {
+    type ContextMenuOptions,
+    MoltenInput,
+    IconButton,
+  } from "@intechstudio/grid-uikit";
 
   import TreeFolder from "./TreeFolder.svelte";
 
@@ -178,11 +182,9 @@
     const cm = get(config_manager);
 
     for (const config of configs) {
-      if (config.virtualPath?.includes(title)) {
-        const newPath = config.virtualPath
-          .split("/")
-          .filter((e: string) => e !== title)
-          .join("/");
+      const segments = config.virtualPath?.split("/") ?? [];
+      if (segments.includes(title)) {
+        const newPath = segments.filter((e: string) => e !== title).join("/");
         config.virtualPath = newPath === "" ? undefined : newPath;
         cm?.saveConfig(config, false);
       }
@@ -238,23 +240,206 @@
     selected_config.set(config);
   }
 
+  // ── Inline rename ──────────────────────────────────────────────────────────
+
+  let renamingConfigId: string | null = null;
+  let renameValue = "";
+  let renameInProgress = false;
+  let renameError: string | null = null;
+  let renameInput: MoltenInput;
+  // Set once confirmRename's save resolves, holding the name we're waiting to
+  // see land back in `configs`. saveConfig's promise only resolves once the
+  // write completes, not once the file-watcher-driven reload reports it back
+  // to us - closing the inline editor right away would flash the old name
+  // for a moment. The reactive block below watches for it to land and only
+  // then exits edit mode.
+  let pendingRenameName: string | null = null;
+  let pendingRenameTimeout: ReturnType<typeof setTimeout> | undefined;
+
+  async function startRename(config: Config) {
+    renamingConfigId = config.id;
+    renameValue = config.name;
+    renameError = null;
+    await tick();
+    renameInput?.focus();
+  }
+
+  function cancelRename() {
+    clearTimeout(pendingRenameTimeout);
+    renamingConfigId = null;
+    renameValue = "";
+    renameError = null;
+    pendingRenameName = null;
+  }
+
+  async function confirmRename(config: Config) {
+    if (renamingConfigId !== config.id) return;
+    const newName = renameValue.trim();
+    if (!newName || newName === config.name) {
+      cancelRename();
+      return;
+    }
+    renameInProgress = true;
+    renameError = null;
+    try {
+      const cm = get(config_manager);
+      await cm?.saveConfig({ ...config, name: newName }, false);
+      pendingRenameName = newName;
+      clearTimeout(pendingRenameTimeout);
+      // Safety net: if the reload never lands (e.g. watcher hiccup), don't
+      // leave the editor stuck open forever.
+      pendingRenameTimeout = setTimeout(() => {
+        if (renamingConfigId === config.id) cancelRename();
+      }, 5000);
+    } catch (e) {
+      renameError = String(e);
+    } finally {
+      renameInProgress = false;
+    }
+  }
+
+  $: if (
+    renamingConfigId &&
+    pendingRenameName &&
+    configs.find((c) => c.id === renamingConfigId)?.name === pendingRenameName
+  ) {
+    cancelRename();
+  }
+
+  // ── Inline rename (virtual directory) ─────────────────────────────────────
+  // A virtual directory is just a shared segment string in each config's
+  // virtualPath (see buildVirtualFolders in ./ConfigTree.ts) - there's no
+  // single entity to rename, so this rewrites that segment on every config
+  // that has it, the same way handleDeleteVirtualDirectory removes it.
+
+  let renamingFolderTitle: string | null = null;
+  let renameFolderValue = "";
+  let renameFolderInProgress = false;
+  let renameFolderError: string | null = null;
+  let renameFolderInput: MoltenInput;
+  let folderRenameSaved = false;
+  let folderRenameTimeout: ReturnType<typeof setTimeout> | undefined;
+
+  async function startRenameFolder(title: string) {
+    renamingFolderTitle = title;
+    renameFolderValue = title;
+    renameFolderError = null;
+    folderRenameSaved = false;
+    await tick();
+    renameFolderInput?.focus();
+  }
+
+  function cancelRenameFolder() {
+    clearTimeout(folderRenameTimeout);
+    renamingFolderTitle = null;
+    renameFolderValue = "";
+    renameFolderError = null;
+    folderRenameSaved = false;
+  }
+
+  async function confirmRenameFolder(oldTitle: string) {
+    if (renamingFolderTitle !== oldTitle) return;
+    const newTitle = renameFolderValue.trim();
+    if (!newTitle || newTitle === oldTitle) {
+      cancelRenameFolder();
+      return;
+    }
+    renameFolderInProgress = true;
+    renameFolderError = null;
+    try {
+      const cm = get(config_manager);
+      const affected = configs.filter((c) =>
+        c.virtualPath?.split("/").includes(oldTitle),
+      );
+      await Promise.all(
+        affected.map((config) => {
+          const newPath = config
+            .virtualPath!.split("/")
+            .map((segment) => (segment === oldTitle ? newTitle : segment))
+            .join("/");
+          return cm?.saveConfig({ ...config, virtualPath: newPath }, false);
+        }),
+      );
+      folderRenameSaved = true;
+      clearTimeout(folderRenameTimeout);
+      // Safety net: if the reload never lands, don't leave the editor stuck
+      // open forever.
+      folderRenameTimeout = setTimeout(() => {
+        if (renamingFolderTitle === oldTitle) cancelRenameFolder();
+      }, 5000);
+    } catch (e) {
+      renameFolderError = String(e);
+    } finally {
+      renameFolderInProgress = false;
+    }
+  }
+
+  $: if (
+    renamingFolderTitle &&
+    folderRenameSaved &&
+    !configs.some((c) =>
+      c.virtualPath?.split("/").includes(renamingFolderTitle!),
+    )
+  ) {
+    cancelRenameFolder();
+  }
+
+  // Both rename inputs sit inside melt-ui's tree item <button> (see
+  // TreeChild.svelte), which handles Space/Enter/arrow keys for tree
+  // navigation. stopPropagation on the wrapping row keeps that JS listener
+  // from firing, but Space also triggers a native browser default action -
+  // the input is invalidly nested inside a <button>, and Chromium treats
+  // Space as "activate the nearest button ancestor", moving focus there and
+  // closing the editor via blur. Only preventDefault() can stop a native
+  // default action, but doing that also blocks the browser's own "insert
+  // this character" default - so for Space specifically, prevent it and
+  // insert the character ourselves, preserving cursor position.
+  function handleRenameKeydown(
+    e: CustomEvent<KeyboardEvent>,
+    getValue: () => string,
+    setValue: (value: string) => void,
+    onConfirm: () => void,
+    onCancel: () => void,
+  ) {
+    const native = e.detail;
+    if (native.key === "Enter") {
+      onConfirm();
+    } else if (native.key === "Escape") {
+      onCancel();
+    } else if (native.key === " ") {
+      native.preventDefault();
+      const input = native.target as HTMLInputElement;
+      const value = getValue();
+      const start = input.selectionStart ?? value.length;
+      const end = input.selectionEnd ?? value.length;
+      setValue(value.slice(0, start) + " " + value.slice(end));
+      tick().then(() => input.setSelectionRange(start + 1, start + 1));
+    }
+  }
+
   function getfolderCtxOptions(
     level: number,
     child: AbstractTreeNode<any>,
   ): ContextMenuOptions {
     const { title } = get(child).data as AbstractFolderData;
+    const isDisabled = () =>
+      level === 0 ||
+      get(child).children.some(
+        (e) =>
+          get(e).type === TreeItemType.ITEM &&
+          (get(e).data as Tree.ItemData).item.syncStatus !== "local",
+      );
     return {
       items: [
         {
+          text: [`Rename virtual directory`, ``],
+          handler: () => startRenameFolder(title),
+          isDisabled,
+        },
+        {
           text: [`Delete virtual directory`, ``],
           handler: () => handleDeleteVirtualDirectory(title),
-          isDisabled: () =>
-            level === 0 ||
-            get(child).children.some(
-              (e) =>
-                get(e).type === TreeItemType.ITEM &&
-                (get(e).data as Tree.ItemData).item.syncStatus !== "local",
-            ),
+          isDisabled,
         },
       ],
     };
@@ -268,6 +453,11 @@
           text: [`Show in folder`, ``],
           handler: () => get(config_manager)?.showConfigInFolder(item),
           isDisabled: () => !get(config_manager)?.hasLocalFile(item),
+        },
+        {
+          text: [`Rename`, ``],
+          handler: () => startRename(item),
+          isDisabled: () => !item.isEditable,
         },
         {
           text: [`Delete`, ``],
@@ -304,16 +494,44 @@
 <TreeComponent {...treeProps} on:expandedChange={handleExpandedChange}>
   <svelte:fragment slot="folder" let:item let:expanded let:level>
     {@const data = getFolderData(item)}
-    <TreeFolder
-      {item}
-      {level}
-      {expanded}
-      ctxOptions={getfolderCtxOptions(level, item)}
-    >
-      <span slot="title-label"
-        >{@html `${highlightMatches(data.title, $filter_value)} (${getItemCount(item)})`}</span
+    {#if renamingFolderTitle === data.title}
+      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+      <div class="rename-row" on:keydown|stopPropagation>
+        <MoltenInput
+          bind:this={renameFolderInput}
+          bind:target={renameFolderValue}
+          on:blur={() => confirmRenameFolder(data.title)}
+          on:keydown={(e) =>
+            handleRenameKeydown(
+              e,
+              () => renameFolderValue,
+              (v) => (renameFolderValue = v),
+              () => confirmRenameFolder(data.title),
+              cancelRenameFolder,
+            )}
+        />
+        <IconButton
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={cancelRenameFolder}
+          iconPath="close"
+          tooltipText="Cancel"
+        />
+      </div>
+      {#if renameFolderError}
+        <p class="rename-error">{renameFolderError}</p>
+      {/if}
+    {:else}
+      <TreeFolder
+        {item}
+        {level}
+        {expanded}
+        ctxOptions={getfolderCtxOptions(level, item)}
       >
-    </TreeFolder>
+        <span slot="title-label"
+          >{@html `${highlightMatches(data.title, $filter_value)} (${getItemCount(item)})`}</span
+        >
+      </TreeFolder>
+    {/if}
   </svelte:fragment>
 
   <svelte:fragment
@@ -325,25 +543,75 @@
     let:itemProps
   >
     {@const data = getItemData(item)}
-    <ProfileCloudTreeItem
-      {itemFunction}
-      {itemProps}
-      {item}
-      compatible={data.compatible}
-      selected={data.item.id === $selected_config?.id}
-      {expanded}
-      ctxOptions={getItemCtxOptions(item)}
-      on:drag-start={() => handleDragStart(item)}
-      on:drag-end={() => handleDragEnd(item)}
-      on:click={() => handleClick(item)}
-      on:contextmenu={() => handleContextMenu(item)}
-    >
-      <div slot="button-label">
-        {@html highlightMatches(data.item.name, $filter_value)}
+    {#if renamingConfigId === data.item.id}
+      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+      <div class="rename-row" on:keydown|stopPropagation>
+        <MoltenInput
+          bind:this={renameInput}
+          bind:target={renameValue}
+          on:blur={() => confirmRename(data.item)}
+          on:keydown={(e) =>
+            handleRenameKeydown(
+              e,
+              () => renameValue,
+              (v) => (renameValue = v),
+              () => confirmRename(data.item),
+              cancelRename,
+            )}
+        />
+        <IconButton
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={cancelRename}
+          iconPath="close"
+          tooltipText="Cancel"
+        />
       </div>
-      <div slot="type-label">
-        {@html highlightMatches(data.item.type, $filter_value)}
-      </div>
-    </ProfileCloudTreeItem>
+      {#if renameError}
+        <p class="rename-error">{renameError}</p>
+      {/if}
+    {:else}
+      <ProfileCloudTreeItem
+        {itemFunction}
+        {itemProps}
+        {item}
+        compatible={data.compatible}
+        selected={data.item.id === $selected_config?.id}
+        {expanded}
+        ctxOptions={getItemCtxOptions(item)}
+        on:drag-start={() => handleDragStart(item)}
+        on:drag-end={() => handleDragEnd(item)}
+        on:click={() => handleClick(item)}
+        on:contextmenu={() => handleContextMenu(item)}
+      >
+        <div slot="button-label">
+          {@html highlightMatches(data.item.name, $filter_value)}
+        </div>
+        <div slot="type-label">
+          {@html highlightMatches(data.item.type, $filter_value)}
+        </div>
+      </ProfileCloudTreeItem>
+    {/if}
   </svelte:fragment>
 </TreeComponent>
+
+<style>
+  .rename-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.25rem;
+  }
+
+  .rename-row > :global(:first-child) {
+    flex-grow: 1;
+    min-width: 0;
+  }
+
+  .rename-error {
+    color: var(--error);
+    font-size: 0.75rem;
+    padding: 0 0.25rem;
+    margin: 0;
+  }
+</style>

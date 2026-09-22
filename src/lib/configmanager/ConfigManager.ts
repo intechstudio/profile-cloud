@@ -295,7 +295,7 @@ export function createConfigManager(observer: {
         windowPostMessageName: "sendLogMessage",
         dataForParent: {
           type: "success",
-          message: `Config ${config.name} imported successfully`,
+          message: `Config '${config.name}' saved`,
         },
       });
       return Promise.resolve();
