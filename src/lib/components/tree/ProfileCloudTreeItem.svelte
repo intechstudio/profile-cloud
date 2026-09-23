@@ -129,7 +129,7 @@
     align-items: center;
     width: 100%;
     border-width: 1px;
-    height: 33px;
+    min-height: 2em;
     padding: 0;
     background-color: transparent;
   }
@@ -204,6 +204,7 @@
   .edit-content {
     grid-column: 1 / span 3;
     display: flex;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 0.5rem;
     min-width: 0;

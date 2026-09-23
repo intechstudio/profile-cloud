@@ -582,12 +582,14 @@
               )}
           />
         </div>
-        <IconButton
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={cancelRenameFolder}
-          iconPath="close"
-          tooltipText="Cancel"
-        />
+        <div class="rename-cancel">
+          <IconButton
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={cancelRenameFolder}
+            iconPath="close"
+            tooltipText="Cancel"
+          />
+        </div>
       </div>
       {#if renameFolderError}
         <p class="rename-error">{renameFolderError}</p>
@@ -652,12 +654,14 @@
               )}
           />
         </div>
-        <IconButton
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={cancelRename}
-          iconPath="close"
-          tooltipText="Cancel"
-        />
+        <div class="rename-cancel">
+          <IconButton
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={cancelRename}
+            iconPath="close"
+            tooltipText="Cancel"
+          />
+        </div>
       </svelte:fragment>
     </ProfileCloudTreeItem>
     {#if isRenaming && renameError}
@@ -678,6 +682,20 @@
   .rename-input {
     flex-grow: 1;
     min-width: 0;
+  }
+
+  /* MoltenInput's <input> doesn't set box-sizing, so width:100% adds its own
+     padding/border on top of that. Profile Cloud's standalone pages hide this
+     via a global box-sizing reset, but that reset isn't present when this app
+     is embedded as the profile-cloud-web-component (shadow:none, no app.css),
+     so without this the input overflows its flex row and pushes the cancel
+     button onto its own line in narrow/deeply-nested rows. */
+  .rename-input :global(input) {
+    box-sizing: border-box;
+  }
+
+  .rename-cancel {
+    flex-shrink: 0;
   }
 
   .rename-error {
