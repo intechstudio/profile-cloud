@@ -28,6 +28,7 @@
   export let itemProps: any;
   export let itemFunction: any;
   export let ctxOptions: ContextMenuOptions = { items: [] };
+  export let editing: boolean = false;
 
   type WithProfileCloudData<T = unknown> = T & ProfileCloudCardData;
 
@@ -51,15 +52,16 @@
   }
 </script>
 
-<button
+<svelte:element
+  this={editing ? "div" : "button"}
   id={$item.id}
   class="{selected ? 'border-selected' : 'border-unselected'} button"
-  draggable="true"
-  use:contextTarget={ctxOptions}
-  on:click={handleClick}
-  on:contextmenu={handleContextMenu}
-  on:dragstart={handleDragStart}
-  on:dragend={handleDragEnd}
+  draggable={editing ? "false" : "true"}
+  use:contextTarget={editing ? { items: [] } : ctxOptions}
+  on:click={editing ? undefined : handleClick}
+  on:contextmenu={editing ? undefined : handleContextMenu}
+  on:dragstart={editing ? undefined : handleDragStart}
+  on:dragend={editing ? undefined : handleDragEnd}
 >
   <div class="status-indicator">
     <div
@@ -78,18 +80,25 @@
     iconPath={$item.children.length > 0 ? "overlay_02" : "overlay_03"}
   />
   <div class="button-content" class:expanded>
-    <span class="button-label" class:label-incompatible={compatible}>
-      <slot name="button-label">
-        {data.name}
-      </slot>
-    </span>
-    <span class="modified-date">{data.modifiedAt.toLocaleDateString()}</span>
-    <div
-      class="type-label
-        {compatible ? 'type-compatible' : 'type-incompatible'}"
-    >
-      <slot name="type-label">{data.type}</slot>
-    </div>
+    {#if editing}
+      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+      <div class="edit-content" on:keydown|stopPropagation>
+        <slot name="edit-content" />
+      </div>
+    {:else}
+      <span class="button-label" class:label-incompatible={compatible}>
+        <slot name="button-label">
+          {data.name}
+        </slot>
+      </span>
+      <span class="modified-date">{data.modifiedAt.toLocaleDateString()}</span>
+      <div
+        class="type-label
+          {compatible ? 'type-compatible' : 'type-incompatible'}"
+      >
+        <slot name="type-label">{data.type}</slot>
+      </div>
+    {/if}
     {#if $item.children.length > 0}
       <div
         class="trigger-container"
@@ -109,7 +118,7 @@
       </div>
     {/if}
   </div>
-</button>
+</svelte:element>
 
 <style>
   .button {
@@ -190,6 +199,14 @@
     overflow: hidden;
     text-overflow: ellipsis;
     text-align: left;
+  }
+
+  .edit-content {
+    grid-column: 1 / span 3;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
   }
 
   .label-incompatible {
