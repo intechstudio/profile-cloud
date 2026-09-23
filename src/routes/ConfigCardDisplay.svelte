@@ -19,6 +19,7 @@
   const dispatchEvent = createEventDispatcher();
 
   export let data: Config | undefined;
+  export let emptyStateMessage: string = "No configuration is selected";
 
   let configOwner: string = "";
 
@@ -188,7 +189,7 @@
       style="color: var(--foreground-muted); background: var(--background)"
       class="empty-state"
     >
-      No configuration is selected
+      {emptyStateMessage}
     </div>
   {/if}
 </div>

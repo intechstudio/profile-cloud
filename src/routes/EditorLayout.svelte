@@ -4,6 +4,8 @@
   import { filter_value, FilterValue } from "./Filter";
   import {
     selected_config,
+    selected_node_id,
+    selected_node_label,
     hide_community_configs,
     show_supported_only,
     config_manager,
@@ -138,6 +140,10 @@
 
             // Select the config and notify the editor
             selected_config.set(matchedConfig);
+            selected_node_id.set(matchedConfig.id);
+            selected_node_label.set(
+              matchedConfig.displayName ?? matchedConfig.name,
+            );
             scrollToSelectedConfigTrigger += 1;
             await provideSelectedConfigForEditor(matchedConfig);
           }
@@ -306,6 +312,8 @@
     if (configs.length == 0) return;
     configs.sort((a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime());
     selected_config.set(configs[0]);
+    selected_node_id.set(configs[0].id);
+    selected_node_label.set(configs[0].displayName ?? configs[0].name);
     scrollToSelectedConfigTrigger += 1; // trigger scrolling into view on ConfigTree
   }
 
@@ -328,6 +336,8 @@
               )[0];
             if (newEntry) {
               selected_config.set(newEntry);
+              selected_node_id.set(newEntry.id);
+              selected_node_label.set(newEntry.displayName ?? newEntry.name);
               scrollToSelectedConfigTrigger += 1;
             }
           }
@@ -754,6 +764,9 @@
             on:path-change={handlePathChange}
             on:overwrite-profile={handleOverwriteProfile}
             data={$selected_config}
+            emptyStateMessage={$selected_node_id !== undefined
+              ? `No preview available for "${$selected_node_label}"`
+              : "No configuration is selected"}
           >
             <svelte:fragment slot="link-button">
               {@const config = configs.find(

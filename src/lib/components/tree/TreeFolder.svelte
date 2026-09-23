@@ -11,9 +11,13 @@
     TreeItemType,
   } from "./TreeNode.svelte";
   import { get } from "svelte/store";
+  import { createEventDispatcher } from "svelte";
+
+  const dispatch = createEventDispatcher();
 
   export let item: AbstractTreeNode<any>;
   export let expanded: boolean;
+  export let selected: boolean = false;
   export let ctxOptions: ContextMenuOptions = { items: [] };
   export let level: number;
 
@@ -43,7 +47,14 @@
   $: data = $item.data as AbstractFolderData;
 </script>
 
-<div class="header" class:expanded use:contextTarget={ctxOptions}>
+<div
+  class="header"
+  class:expanded
+  class:selected
+  use:contextTarget={ctxOptions}
+  on:click={() => dispatch("click")}
+  on:contextmenu={() => dispatch("contextmenu")}
+>
   <SvgIcon fill="var(--foreground-muted)" {iconPath} />
   <div class="title">
     <slot name="title-label">
@@ -61,6 +72,8 @@
     width: 100%;
     align-items: center;
     padding: 0.25rem;
+    border-width: 1px;
+    border-color: transparent;
     color: var(--foreground-muted);
   }
   .header:hover {
@@ -71,6 +84,10 @@
     color: var(--foreground);
     background-color: var(--background2);
     font-weight: bolder;
+  }
+
+  .selected {
+    border-color: #10b981;
   }
 
   .title {
