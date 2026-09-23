@@ -9,6 +9,8 @@
   } from "./../../../routes/Filter";
   import {
     selected_config,
+    selected_node_id,
+    selected_node_label,
     show_supported_only,
     hide_community_configs,
     config_manager,
@@ -98,26 +100,33 @@
   }
 
   $: if (treeRoot) {
-    selectClosestMatch($selected_config, filteredConfigs);
-    const selected = get(selected_config);
+    // selectClosestMatch auto-selects a config when nothing at all is
+    // selected yet (startup, or the previous selection got deleted/filtered
+    // out). Skip it once a folder or nested preset is the active selection -
+    // those intentionally leave selected_config unset, and re-running this
+    // would keep clobbering that choice with configs[0].
+    if ($selected_node_id === undefined) {
+      selectClosestMatch($selected_config, filteredConfigs);
+    }
+    const currentNodeId = get(selected_node_id);
 
     // A fresh selection should reveal its location, overriding any folder
-    // the user previously closed by hand. Re-selecting the same config
+    // the user previously closed by hand. Re-selecting the same node
     // (e.g. toggling a folder it lives in) must not reset that choice.
-    if (selected?.id !== previousSelectedId) {
+    if (currentNodeId !== previousSelectedId) {
       manuallyClosed.clear();
-      previousSelectedId = selected?.id;
+      previousSelectedId = currentNodeId;
     }
 
-    // getIncludingNodes forces every ancestor of the selected config open so
+    // getIncludingNodes forces every ancestor of the selected node open so
     // the selection stays visible. Drop any node the user explicitly closed
     // (including a top-level category) so that choice sticks instead of
     // snapping back open.
-    const includingNodes = treeRoot.getIncludingNodes(selected?.id);
+    const includingNodes = treeRoot.getIncludingNodes(currentNodeId);
     const forcedNodes = includingNodes.filter((e) => !manuallyClosed.has(e));
     treeProps = {
       root: treeRoot,
-      selected: selected?.id,
+      selected: currentNodeId,
       expanded: Array.from(new Set([...forcedNodes, ...manuallyExpanded])),
       scrollBehaviour: {
         scrollToIndex: scrollToSelectionTrigger > 0,
@@ -258,13 +267,35 @@
     dragTarget.set(undefined);
   }
 
+  // generateVirtualPresets (ConfigTree.ts) stamps a displayName ("Profile /
+  // Preset") on every synthetic preset/snippet node it fabricates for a
+  // profile's nested elements. Real, saved configs never set displayName, so
+  // it doubles as a reliable "this is a virtual node, not a loadable config"
+  // marker.
+  function isVirtualPreset(config: Config) {
+    return config.displayName !== undefined;
+  }
+
   async function handleClick(node: AbstractTreeNode<any>) {
     const config = (get(node).data as Tree.ItemData).item;
-    selected_config.set(config);
+    selected_node_id.set(config.id);
+    selected_node_label.set(config.displayName ?? config.name);
+
+    const isPreset = isVirtualPreset(config);
+    selected_config.set(isPreset ? undefined : config);
+
+    // provideSelectedConfigForEditor's handler (grid-editor side) switches on
+    // config.configType to pick the right module overlay - PRESET_LOAD for a
+    // preset, PROFILE_LOAD for a profile, or moduleOverlay.close() otherwise.
+    // It only updates that overlay + grid-editor's own selection store, it
+    // doesn't write anything to the device, so it's safe to send for a
+    // virtual/nested preset too even though there's nothing to preview here.
     await parentIframeCommunication({
       windowPostMessageName: "provideSelectedConfigForEditor",
       dataForParent: { config: config },
     });
+
+    if (isPreset) return;
 
     await parentIframeCommunication({
       windowPostMessageName: "showOverlay",
@@ -274,7 +305,23 @@
 
   function handleContextMenu(node: AbstractTreeNode<any>) {
     const config = (get(node).data as Tree.ItemData).item;
-    selected_config.set(config);
+    selected_node_id.set(config.id);
+    selected_node_label.set(config.displayName ?? config.name);
+    selected_config.set(isVirtualPreset(config) ? undefined : config);
+  }
+
+  function selectFolder(node: AbstractTreeNode<any>) {
+    const { title } = get(node).data as AbstractFolderData;
+    selected_node_id.set(get(node).id);
+    selected_node_label.set(title);
+    selected_config.set(undefined);
+    // config: undefined falls into provideSelectedConfigForEditor's default
+    // case (moduleOverlay.close()), so a folder selection clears any
+    // PRESET_LOAD/PROFILE_LOAD overlay left over from the previous selection.
+    parentIframeCommunication({
+      windowPostMessageName: "provideSelectedConfigForEditor",
+      dataForParent: { config: undefined },
+    });
   }
 
   // ── Inline rename ──────────────────────────────────────────────────────────
@@ -599,7 +646,10 @@
         {item}
         {level}
         {expanded}
+        selected={get(item).id === $selected_node_id}
         ctxOptions={getfolderCtxOptions(level, item)}
+        on:click={() => selectFolder(item)}
+        on:contextmenu={() => selectFolder(item)}
       >
         <span slot="title-label"
           >{@html `${highlightMatches(data.title, $filter_value)} (${getItemCount(item)})`}</span
@@ -623,7 +673,7 @@
       {itemProps}
       {item}
       compatible={data.compatible}
-      selected={data.item.id === $selected_config?.id}
+      selected={data.item.id === $selected_node_id}
       {expanded}
       editing={isRenaming}
       ctxOptions={getItemCtxOptions(item)}
