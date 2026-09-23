@@ -586,12 +586,16 @@
     });
   }
 
-  async function handleSyncConfig(config: Config | undefined) {
+  async function handleSyncConfig(
+    config: Config | undefined,
+    forceCopy = false,
+  ) {
     if (typeof config === "undefined") {
       return;
     }
 
     if (
+      !forceCopy &&
       config.isEditable &&
       config.syncStatus === "local" &&
       !$userAccountService.account
@@ -599,18 +603,21 @@
       loginToProfileCloud();
       return;
     }
+    const makeCopy = forceCopy || !config.isEditable;
     let configToSave = config;
-    if (!configToSave.isEditable) {
+    if (makeCopy) {
       configToSave = {
         ...configToSave,
         name: `Copy of ${configToSave.name}`,
+        displayName: undefined,
+        isEditable: true,
         owner: undefined,
         id: "",
       };
     }
     const cm = get(config_manager);
     pendingNewConfigScroll = true;
-    const action = !config.isEditable
+    const action = makeCopy
       ? "Created a copy of"
       : config.syncStatus === "cloud"
         ? "Downloaded"
@@ -734,6 +741,7 @@
           <ConfigTree
             {configs}
             scrollToSelectionTrigger={scrollToSelectedConfigTrigger}
+            on:create-copy={(e) => handleSyncConfig(e.detail, true)}
           />
         </div></Pane
       >
@@ -778,8 +786,8 @@
                   tooltipText="Create a copy"
                   tooltipDelay={0}
                   stopPropagation
-                  disabled={!config || config.isEditable}
-                  onClick={() => handleSyncConfig(config)}
+                  disabled={!config}
+                  onClick={() => handleSyncConfig(config, true)}
                 />
                 <IconButton
                   iconPath="download"

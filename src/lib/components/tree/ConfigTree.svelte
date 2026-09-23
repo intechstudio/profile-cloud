@@ -521,6 +521,10 @@
           isDisabled: () => !get(config_manager)?.hasLocalFile(item),
         },
         {
+          text: [`Create a copy`, ``],
+          handler: () => dispatch("create-copy", item),
+        },
+        {
           text: [`Rename`, ``],
           handler: () => startRename(item),
           isDisabled: () => !item.isEditable,
@@ -563,19 +567,21 @@
     {#if renamingFolderTitle === data.title}
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <div class="rename-row" on:keydown|stopPropagation>
-        <MoltenInput
-          bind:this={renameFolderInput}
-          bind:target={renameFolderValue}
-          on:blur={() => confirmRenameFolder(data.title)}
-          on:keydown={(e) =>
-            handleRenameKeydown(
-              e,
-              () => renameFolderValue,
-              (v) => (renameFolderValue = v),
-              () => confirmRenameFolder(data.title),
-              cancelRenameFolder,
-            )}
-        />
+        <div class="rename-input">
+          <MoltenInput
+            bind:this={renameFolderInput}
+            bind:target={renameFolderValue}
+            on:blur={() => confirmRenameFolder(data.title)}
+            on:keydown={(e) =>
+              handleRenameKeydown(
+                e,
+                () => renameFolderValue,
+                (v) => (renameFolderValue = v),
+                () => confirmRenameFolder(data.title),
+                cancelRenameFolder,
+              )}
+          />
+        </div>
         <IconButton
           onMouseDown={(e) => e.preventDefault()}
           onClick={cancelRenameFolder}
@@ -609,53 +615,53 @@
     let:itemProps
   >
     {@const data = getItemData(item)}
-    {#if renamingConfigId === data.item.id}
-      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-      <div class="rename-row" on:keydown|stopPropagation>
-        <MoltenInput
-          bind:this={renameInput}
-          bind:target={renameValue}
-          on:blur={() => confirmRename(data.item)}
-          on:keydown={(e) =>
-            handleRenameKeydown(
-              e,
-              () => renameValue,
-              (v) => (renameValue = v),
-              () => confirmRename(data.item),
-              cancelRename,
-            )}
-        />
+    {@const isRenaming = renamingConfigId === data.item.id}
+    <ProfileCloudTreeItem
+      {itemFunction}
+      {itemProps}
+      {item}
+      compatible={data.compatible}
+      selected={data.item.id === $selected_config?.id}
+      {expanded}
+      editing={isRenaming}
+      ctxOptions={getItemCtxOptions(item)}
+      on:drag-start={() => handleDragStart(item)}
+      on:drag-end={() => handleDragEnd(item)}
+      on:click={() => handleClick(item)}
+      on:contextmenu={() => handleContextMenu(item)}
+    >
+      <div slot="button-label">
+        {@html highlightMatches(data.item.name, $filter_value)}
+      </div>
+      <div slot="type-label">
+        {@html highlightMatches(data.item.type, $filter_value)}
+      </div>
+      <svelte:fragment slot="edit-content">
+        <div class="rename-input">
+          <MoltenInput
+            bind:this={renameInput}
+            bind:target={renameValue}
+            on:blur={() => confirmRename(data.item)}
+            on:keydown={(e) =>
+              handleRenameKeydown(
+                e,
+                () => renameValue,
+                (v) => (renameValue = v),
+                () => confirmRename(data.item),
+                cancelRename,
+              )}
+          />
+        </div>
         <IconButton
           onMouseDown={(e) => e.preventDefault()}
           onClick={cancelRename}
           iconPath="close"
           tooltipText="Cancel"
         />
-      </div>
-      {#if renameError}
-        <p class="rename-error">{renameError}</p>
-      {/if}
-    {:else}
-      <ProfileCloudTreeItem
-        {itemFunction}
-        {itemProps}
-        {item}
-        compatible={data.compatible}
-        selected={data.item.id === $selected_config?.id}
-        {expanded}
-        ctxOptions={getItemCtxOptions(item)}
-        on:drag-start={() => handleDragStart(item)}
-        on:drag-end={() => handleDragEnd(item)}
-        on:click={() => handleClick(item)}
-        on:contextmenu={() => handleContextMenu(item)}
-      >
-        <div slot="button-label">
-          {@html highlightMatches(data.item.name, $filter_value)}
-        </div>
-        <div slot="type-label">
-          {@html highlightMatches(data.item.type, $filter_value)}
-        </div>
-      </ProfileCloudTreeItem>
+      </svelte:fragment>
+    </ProfileCloudTreeItem>
+    {#if isRenaming && renameError}
+      <p class="rename-error">{renameError}</p>
     {/if}
   </svelte:fragment>
 </TreeComponent>
@@ -669,7 +675,7 @@
     padding: 0.25rem;
   }
 
-  .rename-row > :global(:first-child) {
+  .rename-input {
     flex-grow: 1;
     min-width: 0;
   }
