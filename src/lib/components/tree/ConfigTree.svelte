@@ -43,6 +43,12 @@
   let treeRoot: Tree.Node;
   let filteredConfigs: Config[] = [];
   let manuallyExpanded: string[] = [];
+  // Nodes the user explicitly collapsed. Without this, forcedNodes below
+  // would keep re-forcing open any folder that's an ancestor of the
+  // selected config, making it impossible to close that folder while its
+  // config stays selected.
+  let manuallyClosed: Set<string> = new Set();
+  let previousSelectedId: string | undefined;
 
   function sameIds(a: string[], b: string[]) {
     if (a.length !== b.length) return false;
@@ -52,7 +58,14 @@
 
   function handleExpandedChange(event: CustomEvent<string[]>) {
     if (sameIds(manuallyExpanded, event.detail)) return;
-    manuallyExpanded = event.detail;
+    const next = event.detail;
+    for (const id of manuallyExpanded) {
+      if (!next.includes(id)) manuallyClosed.add(id);
+    }
+    for (const id of next) {
+      manuallyClosed.delete(id);
+    }
+    manuallyExpanded = next;
   }
 
   export function debounced<T>(store: Writable<T>, delay = 300) {
@@ -87,19 +100,21 @@
   $: if (treeRoot) {
     selectClosestMatch($selected_config, filteredConfigs);
     const selected = get(selected_config);
-    // Only one top-level category can be open at a time (see TreeComponent's
-    // accordion logic). getIncludingNodes always forces the selected config's
-    // top-level ancestor open so the selection stays visible, but that fights
-    // a manual click into a *different* category - the forced root keeps
-    // reappearing and evicts the one the user just opened. Once the user has
-    // manually opened a root, drop any other root from the forced set so
-    // their choice sticks; nested (non-root) ancestors are unaffected.
-    const rootIds = get(treeRoot).children.map((e) => get(e).id);
-    const manualRoot = manuallyExpanded.find((e) => rootIds.includes(e));
+
+    // A fresh selection should reveal its location, overriding any folder
+    // the user previously closed by hand. Re-selecting the same config
+    // (e.g. toggling a folder it lives in) must not reset that choice.
+    if (selected?.id !== previousSelectedId) {
+      manuallyClosed.clear();
+      previousSelectedId = selected?.id;
+    }
+
+    // getIncludingNodes forces every ancestor of the selected config open so
+    // the selection stays visible. Drop any node the user explicitly closed
+    // (including a top-level category) so that choice sticks instead of
+    // snapping back open.
     const includingNodes = treeRoot.getIncludingNodes(selected?.id);
-    const forcedNodes = manualRoot
-      ? includingNodes.filter((e) => !rootIds.includes(e) || e === manualRoot)
-      : includingNodes;
+    const forcedNodes = includingNodes.filter((e) => !manuallyClosed.has(e));
     treeProps = {
       root: treeRoot,
       selected: selected?.id,
