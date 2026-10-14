@@ -39,9 +39,13 @@
   import { loginToProfileCloud } from "./user_account";
   import Filter from "./Filter.svelte";
   import ConfigCardDisplay from "./ConfigCardDisplay.svelte";
-  import { Pane, Splitpanes } from "svelte-splitpanes";
   import configuration from "../../Configuration.json";
-  import { MeltCheckbox, MoltenPushButton } from "@intechstudio/grid-uikit";
+  import {
+    GridPane,
+    GridSplitpanes,
+    MeltCheckbox,
+    MoltenPushButton,
+  } from "@intechstudio/grid-uikit";
   import { compatible_config_types } from "./EditorLayout";
   import { dragTarget } from "../lib/actions/drag.action";
   import {
@@ -745,17 +749,17 @@
   {/if}
 
   <div class="splitpanes-wrapper">
-    <Splitpanes horizontal={true} theme="modern-theme" pushOtherPanes={false}>
-      <Pane size={60}>
+    <GridSplitpanes horizontal={true} pushOtherPanes={false}>
+      <GridPane size={60}>
         <div class="tree-pane">
           <ConfigTree
             {configs}
             scrollToSelectionTrigger={scrollToSelectedConfigTrigger}
             on:create-copy={(e) => handleSyncConfig(e.detail, true)}
           />
-        </div></Pane
+        </div></GridPane
       >
-      <Pane size={40}>
+      <GridPane size={40}>
         <div class="detail-pane">
           <ConfigCardDisplay
             on:delete-config={handleDeleteConfig}
@@ -895,8 +899,8 @@
             </span>
           </ConfigCardDisplay>
         </div>
-      </Pane>
-    </Splitpanes>
+      </GridPane>
+    </GridSplitpanes>
   </div>
   <UserLogin {usernameInput} />
 </div>

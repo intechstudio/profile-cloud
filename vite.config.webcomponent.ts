@@ -1,8 +1,31 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { sveltePreprocess } from "svelte-preprocess";
 import { notifyEditorAfterBuildPlugin } from "./vite.postbuild";
 import path from "path";
+
+// The host editor only loads components.js, so any CSS vite extracts into a
+// separate file (e.g. grid-uikit's splitpanes theme) never reaches the page.
+function injectCssIntoJsPlugin(): Plugin {
+  return {
+    name: "inject-css-into-js",
+    apply: "build",
+    enforce: "post",
+    generateBundle(_, bundle) {
+      const cssFiles = Object.keys(bundle).filter((k) => k.endsWith(".css"));
+      const css = cssFiles
+        .map((k) => (bundle[k] as { source: string }).source)
+        .join("\n");
+      if (!css) return;
+      for (const chunk of Object.values(bundle)) {
+        if (chunk.type === "chunk" && chunk.isEntry) {
+          chunk.code += `\n;(function(){try{var s=document.createElement("style");s.textContent=${JSON.stringify(css)};document.head.appendChild(s);}catch(e){}})();`;
+        }
+      }
+      cssFiles.forEach((k) => delete bundle[k]);
+    },
+  };
+}
 
 export default defineConfig({
   resolve: {
@@ -46,6 +69,7 @@ export default defineConfig({
       },
       emitCss: false,
     }),
+    injectCssIntoJsPlugin(),
     notifyEditorAfterBuildPlugin(),
   ],
   build: {
