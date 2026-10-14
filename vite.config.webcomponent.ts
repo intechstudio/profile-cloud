@@ -2,8 +2,35 @@ import { defineConfig } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { sveltePreprocess } from "svelte-preprocess";
 import { notifyEditorAfterBuildPlugin } from "./vite.postbuild";
+import path from "path";
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      // svelte-splitpanes (pulled in transitively via grid-uikit's
+      // GridSplitpanes) imports the SvelteKit-only $app/environment module;
+      // this build isn't a SvelteKit app, so shim it. Same pattern as
+      // grid-uikit's own demo and grid-editor's renderer config.
+      "$app/environment": path.resolve(
+        __dirname,
+        "src/app-environment-shim.ts",
+      ),
+    },
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      plugins: [
+        {
+          name: "resolve-app-environment",
+          setup(build) {
+            build.onResolve({ filter: /^\$app\/environment$/ }, () => ({
+              path: path.resolve(__dirname, "src/app-environment-shim.ts"),
+            }));
+          },
+        },
+      ],
+    },
+  },
   plugins: [
     svelte({
       preprocess: sveltePreprocess({
