@@ -42,7 +42,6 @@
     "firebase": "^12.2.1",
     "marked": "^12.0.2",
     "semver-parser": "^4.1.4",
-    "svelte-splitpanes": "^8.0.9",
     "uuid": "^9.0.0",
     "ws": "^8.18.3",
     "zod": "^3.21.4"
