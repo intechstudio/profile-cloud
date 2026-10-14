@@ -3,26 +3,43 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { sveltePreprocess } from "svelte-preprocess";
 import { notifyEditorAfterBuildPlugin } from "./vite.postbuild";
 import path from "path";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 
 // The host editor only loads components.js, so any CSS vite extracts into a
 // separate file (e.g. grid-uikit's splitpanes theme) never reaches the page.
+// Vite attaches the extracted CSS to a different output format depending on
+// the mode (build vs --watch), so inject it into every entry file after all
+// formats are written instead of per bundle.
 function injectCssIntoJsPlugin(): Plugin {
+  const marker = "/*inject-css-into-js*/";
+  let outDir = "";
+  let css = "";
+  const entryFiles = new Set<string>();
   return {
     name: "inject-css-into-js",
     apply: "build",
     enforce: "post",
+    configResolved(config) {
+      outDir = path.resolve(config.root, config.build.outDir);
+    },
     generateBundle(_, bundle) {
-      const cssFiles = Object.keys(bundle).filter((k) => k.endsWith(".css"));
-      const css = cssFiles
-        .map((k) => (bundle[k] as { source: string }).source)
-        .join("\n");
-      if (!css) return;
-      for (const chunk of Object.values(bundle)) {
-        if (chunk.type === "chunk" && chunk.isEntry) {
-          chunk.code += `\n;(function(){try{var s=document.createElement("style");s.textContent=${JSON.stringify(css)};document.head.appendChild(s);}catch(e){}})();`;
+      for (const [name, file] of Object.entries(bundle)) {
+        if (file.type === "chunk" && file.isEntry) entryFiles.add(name);
+        if (file.type === "asset" && name.endsWith(".css")) {
+          css = String(file.source);
+          delete bundle[name];
         }
       }
-      cssFiles.forEach((k) => delete bundle[k]);
+    },
+    closeBundle() {
+      if (!css) return;
+      const snippet = `\n${marker};(function(){try{var s=document.createElement("style");s.textContent=${JSON.stringify(css)};document.head.appendChild(s);}catch(e){}})();`;
+      for (const name of entryFiles) {
+        const file = path.join(outDir, name);
+        if (!existsSync(file)) continue;
+        const code = readFileSync(file, "utf8");
+        if (!code.includes(marker)) writeFileSync(file, code + snippet);
+      }
     },
   };
 }
