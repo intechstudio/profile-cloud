@@ -19,6 +19,8 @@ function createUserAccountService() {
     };
   });
 
+  let signedInIdToken: string | undefined;
+
   async function authenticateUser(credential: {
     event?: string;
     providerId?: string;
@@ -34,6 +36,10 @@ function createUserAccountService() {
       signOut(firebaseAuth);
       return;
     }
+    // the editor re-posts the same token on remount; a refreshed one still signs in
+    if (firebaseAuth.currentUser && credential.idToken === signedInIdToken) {
+      return;
+    }
     const provider = new OAuthProvider(
       import.meta.env.PUBLIC_APP_ENV === "production"
         ? "oidc.is-auth"
@@ -47,6 +53,7 @@ function createUserAccountService() {
 
     return await signInWithCredential(firebaseAuth, cred)
       .then((user) => {
+        signedInIdToken = credential.idToken;
         console.log("authenticated in profile cloud", user);
       })
       .catch((error) => {
