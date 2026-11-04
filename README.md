@@ -36,3 +36,9 @@ npm run build
 You can preview the production build with `npm run preview`.
 
 > To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+
+## Authentication
+
+Profile Cloud has no sign-in UI. The editor posts `{ event, providerId: "oidc", idToken }` into the web component, and `src/lib/stores.ts` signs that token into Firebase through the `oidc.is-auth` (production) or `oidc.is-auth-dev` (development) provider.
+
+The identity bridge to Logto is console-side: those providers point at Logto's issuer and the `grid-editor` client id, which keeps every Firebase uid without any code here. See decision 27 in the [authentication rework plan](https://github.com/intechstudio/webapps/blob/main/docs/auth-rework-plan.md).
