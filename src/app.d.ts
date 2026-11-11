@@ -9,6 +9,4 @@ declare global {
   }
 }
 
-declare var google: any;
-
 export {};

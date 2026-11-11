@@ -19,7 +19,6 @@ jobs:
           touch .env
           echo PUBLIC_COMMIT_HASH=$(git log --format="%h" -n 1) >> .env
           echo PUBLIC_APP_ENV=development >> .env
-          echo PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.PUBLIC_GOOGLE_CLIENT_ID_DEV }} >> .env
            echo PUBLIC_CREATION_DATE=$(git log --format="%cd" --date=format:'%Y-%m-%d' -1) >> .env
       - run: npm ci && npx svelte-kit sync && npm run build && npm run build:webcomponent
         env:
