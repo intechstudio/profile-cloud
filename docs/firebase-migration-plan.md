@@ -5,11 +5,33 @@ the phase-2 counterpart of `webapps/docs/auth-rework-plan.md` (phase 1,
 "auth"), whose section 7 only sketched what follows. Decisions settled there
 are taken as given and referenced by number (D1..D30).
 
+**Update 2026-11-11: the phase-1 provider is Keycloak, not Logto** (D36-D44
+in the auth plan; the provider question is closed by D44). Read "Logto" below
+as "the identity provider". What changes for this plan:
+
+- Section 3 (re-key) is unchanged. `sub` stays the old central uid (D39,
+  imported into Keycloak with the Firebase uid as user id). If that gate
+  fails, the phase-1 fallback re-links each `oidc.is-auth` user to the new
+  `sub` with the Firebase Admin SDK, so `providerUserInfo[].rawId` is the
+  provider `sub` either way and `map-users.ts` needs no change.
+- Section 6.3 and D-P2.3: still ID token verification with `jose` against
+  the issuer's JWKS. The issuer is `https://auth.intech.studio/realms/intech`
+  (local `http://localhost:3001/realms/intech`), and `aud` is the fixed
+  client id `grid-editor` in every environment (D43). The access-token
+  alternative becomes a Keycloak client scope with an audience mapper
+  instead of a Logto API resource.
+- The editor's sign-in returns through a loopback redirect (D42). The
+  postMessage payload `{ event, providerId: "oidc", idToken }` is unchanged.
+- Local development runs next to the Keycloak stack from `intechstudio/auth`.
+  The Postgres server and backups that were planned for `logto_auth` hold
+  the Keycloak database instead.
+
 Constraints given for this work:
 
 - full data ownership;
 - hosted on Coolify, open-source services only;
-- authentication is stage one and is already in progress (Logto, phase 1);
+- authentication is stage one and is already in progress (Keycloak since
+  2026-11-11, previously Logto; phase 1);
 - feature parity;
 - mature technology.
 
