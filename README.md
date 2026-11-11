@@ -41,4 +41,4 @@ You can preview the production build with `npm run preview`.
 
 Profile Cloud has no sign-in UI. The editor posts `{ event, providerId: "oidc", idToken }` into the web component, and `src/lib/stores.ts` signs that token into Firebase through the `oidc.is-auth` (production) or `oidc.is-auth-dev` (development) provider.
 
-The identity bridge to Logto is console-side: those providers point at Logto's issuer and the `grid-editor` client id, which keeps every Firebase uid without any code here. See decision 27 in the [authentication rework plan](https://github.com/intechstudio/webapps/blob/main/docs/auth-rework-plan.md).
+The identity bridge is console-side: those providers point at the identity provider's issuer and the `grid-editor` client id, which keeps every Firebase uid without any code here. The provider is Keycloak (decision 36; this branch was rehearsed against Logto), with the issuer in the form `https://<host>/realms/intech`. See decision 27 in the [authentication rework plan](https://github.com/intechstudio/webapps/blob/main/docs/auth-rework-plan.md).
