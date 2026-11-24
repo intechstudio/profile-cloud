@@ -6,6 +6,7 @@ import {
   type User,
 } from "firebase/auth";
 import { writable } from "svelte/store";
+import { providerIdForToken } from "./authProvider";
 import { firebaseAuth } from "./firebase";
 
 function createUserAccountService() {
@@ -41,9 +42,7 @@ function createUserAccountService() {
       return;
     }
     const provider = new OAuthProvider(
-      import.meta.env.PUBLIC_APP_ENV === "production"
-        ? "oidc.is-auth"
-        : "oidc.is-auth-dev",
+      providerIdForToken(credential.idToken, import.meta.env.PUBLIC_APP_ENV),
     );
     cred = provider.credential({
       idToken: credential.idToken,
