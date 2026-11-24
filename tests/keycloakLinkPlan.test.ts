@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { planLinks, type Account } from "../scripts/keycloak-link-plan.ts";
+import {
+  planLinks,
+  selectOnly,
+  type Account,
+} from "../scripts/keycloak-link-plan.ts";
 
 const options = { legacyProvider: "oidc.legacy", provider: "oidc.new" };
 
@@ -111,4 +115,35 @@ test("an already-linked account stays linked when another claims its id", () => 
     plan.conflicts.map((c) => c.localId),
     ["L2"],
   );
+});
+
+test("--only picks one account and leaves the plan counts whole", () => {
+  const accounts = [account("L1", "old1"), account("L2", "old2")];
+  const plan = planLinks(accounts, { old1: "k1", old2: "k2" }, options);
+  assert.equal(plan.toLink.length, 2);
+  assert.deepEqual(selectOnly(plan, accounts, "old2", "oidc.legacy"), {
+    item: { localId: "L2", rawId: "k2" },
+  });
+});
+
+test("--only explains why an account is not linkable", () => {
+  const accounts = [
+    account("L1", "old1", "k1"),
+    account("L2", "old2"),
+    account("L3", "old3"),
+    account("L4", "old4"),
+    account("L5", undefined, "old5"),
+  ];
+  const map = { old1: "k1", old3: "k3", old4: "k3" };
+  const plan = planLinks(accounts, map, options);
+  const error = (uid: string) => {
+    const selected = selectOnly(plan, accounts, uid, "oidc.legacy");
+    assert.ok("error" in selected, uid);
+    return selected.error;
+  };
+  assert.match(error("old1"), /L1 is already linked/);
+  assert.match(error("old2"), /L2 .*not in the map/);
+  assert.match(error("old3"), /L3 is a conflict/);
+  assert.match(error("old5"), /no account/);
+  assert.match(error("missing"), /no account/);
 });

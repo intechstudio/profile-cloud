@@ -87,3 +87,31 @@ export function planLinks(
 
   return plan;
 }
+
+// Picks the one "to link" account for a trial run, or says why it can't.
+export function selectOnly(
+  plan: Plan,
+  accounts: Account[],
+  legacyUid: string,
+  legacyProvider: string,
+): { item: { localId: string; rawId: string } } | { error: string } {
+  const account = accounts.find(
+    (a) => rawIdFor(a, legacyProvider) === legacyUid,
+  );
+  if (!account) {
+    return { error: `no account has that uid under ${legacyProvider}` };
+  }
+  const { localId } = account;
+  const item = plan.toLink.find((i) => i.localId === localId);
+  if (item) return { item };
+  if (plan.alreadyLinked.includes(localId)) {
+    return { error: `${localId} is already linked` };
+  }
+  if (plan.unmapped.includes(localId)) {
+    return { error: `${localId} has a legacy uid that is not in the map` };
+  }
+  const conflict = plan.conflicts.find((c) => c.localId === localId);
+  return {
+    error: `${localId} is a conflict: ${conflict?.reason ?? "unknown"}`,
+  };
+}

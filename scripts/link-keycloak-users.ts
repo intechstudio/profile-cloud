@@ -4,10 +4,16 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
-import { planLinks, type Account, type UidMap } from "./keycloak-link-plan.ts";
+import {
+  planLinks,
+  selectOnly,
+  type Account,
+  type UidMap,
+} from "./keycloak-link-plan.ts";
 
 const PAGE_SIZE = 1000;
 const CONCURRENCY = 4;
+const MAX_LISTED = 20;
 const ALREADY_LINKED_ERROR = "FEDERATED_USER_ID_ALREADY_LINKED";
 
 const { values: args } = parseArgs({
@@ -18,6 +24,7 @@ const { values: args } = parseArgs({
     map: { type: "string" },
     commit: { type: "boolean", default: false },
     report: { type: "string" },
+    only: { type: "string" },
   },
 });
 
@@ -49,16 +56,32 @@ console.log(`To link: ${plan.toLink.length}`);
 console.log(`Already linked: ${plan.alreadyLinked.length}`);
 console.log(`No legacy identity: ${plan.noLegacy.length}`);
 console.log(`Legacy uid not in map: ${plan.unmapped.length}`);
-printIds(plan.unmapped);
+printList(plan.unmapped);
 console.log(`Conflicts: ${plan.conflicts.length}`);
-for (const c of plan.conflicts) console.log(`  ${c.localId}: ${c.reason}`);
+printList(plan.conflicts.map((c) => `${c.localId}: ${c.reason}`));
+
+// --only <legacy uid>: counts cover every account, --commit links just that one
+let queue = [...plan.toLink];
+let onlyError: string | undefined;
+let onlyLocalId: string | undefined;
+if (args.only !== undefined) {
+  const selected = selectOnly(plan, accounts, args.only, legacyProvider);
+  if ("error" in selected) {
+    onlyError = selected.error;
+    queue = [];
+    console.log(`Only: ${onlyError}`);
+  } else {
+    queue = [selected.item];
+    onlyLocalId = selected.item.localId;
+    console.log(`Only: ${onlyLocalId}`);
+  }
+}
 
 const linked: string[] = [];
 const linkedElsewhere: string[] = [];
 const failed: { localId: string; error: string }[] = [];
 
-if (args.commit) {
-  const queue = [...plan.toLink];
+if (args.commit && !onlyError) {
   const worker = async () => {
     for (let item = queue.shift(); item; item = queue.shift()) {
       try {
@@ -84,9 +107,9 @@ if (args.commit) {
   console.log(
     `Target id already linked to another account: ${linkedElsewhere.length}`,
   );
-  printIds(linkedElsewhere);
+  printList(linkedElsewhere);
   console.log(`Failed: ${failed.length}`);
-  for (const f of failed) console.log(`  ${f.localId}: ${f.error}`);
+  printList(failed.map((f) => `${f.localId}: ${f.error}`));
 }
 
 if (args.report) {
@@ -95,6 +118,8 @@ if (args.report) {
     legacyProvider,
     provider,
     commit: args.commit,
+    only: onlyLocalId ?? null,
+    onlyError: onlyError ?? null,
     accounts: accounts.length,
     toLink: plan.toLink.map((item) => item.localId),
     alreadyLinked: plan.alreadyLinked,
@@ -110,15 +135,18 @@ if (args.report) {
 }
 
 const problems = plan.conflicts.length + linkedElsewhere.length + failed.length;
-process.exit(problems > 0 ? 1 : 0);
+process.exit(problems > 0 || onlyError ? 1 : 0);
 
 function fail(message: string): never {
   console.error(message);
   process.exit(2);
 }
 
-function printIds(ids: string[]) {
-  for (const id of ids) console.log(`  ${id}`);
+function printList(lines: string[]) {
+  for (const line of lines.slice(0, MAX_LISTED)) console.log(`  ${line}`);
+  if (lines.length > MAX_LISTED) {
+    console.log(`  ... and ${lines.length - MAX_LISTED} more, see --report`);
+  }
 }
 
 function readMap(path: string): UidMap {
