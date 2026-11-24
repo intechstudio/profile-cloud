@@ -6,6 +6,7 @@ import {
   type User,
 } from "firebase/auth";
 import { writable } from "svelte/store";
+import { providerIdForToken } from "./authProvider";
 import { firebaseAuth } from "./firebase";
 
 function createUserAccountService() {
@@ -19,6 +20,8 @@ function createUserAccountService() {
     };
   });
 
+  let signedIn: { idToken: string; uid: string } | undefined;
+
   async function authenticateUser(credential: {
     event?: string;
     providerId?: string;
@@ -31,13 +34,20 @@ function createUserAccountService() {
 
     if (!credential || credential?.event == "logout") {
       console.log("signing out");
+      signedIn = undefined;
       signOut(firebaseAuth);
       return;
     }
+    // the editor re-posts the same token on remount; a refreshed one still signs in
+    if (
+      credential.idToken &&
+      credential.idToken === signedIn?.idToken &&
+      firebaseAuth.currentUser?.uid === signedIn.uid
+    ) {
+      return;
+    }
     const provider = new OAuthProvider(
-      import.meta.env.PUBLIC_APP_ENV === "production"
-        ? "oidc.is-auth"
-        : "oidc.is-auth-dev",
+      providerIdForToken(credential.idToken, import.meta.env.PUBLIC_APP_ENV),
     );
     cred = provider.credential({
       idToken: credential.idToken,
@@ -47,6 +57,9 @@ function createUserAccountService() {
 
     return await signInWithCredential(firebaseAuth, cred)
       .then((user) => {
+        if (credential.idToken) {
+          signedIn = { idToken: credential.idToken, uid: user.user.uid };
+        }
         console.log("authenticated in profile cloud", user);
       })
       .catch((error) => {
@@ -55,6 +68,7 @@ function createUserAccountService() {
   }
 
   function logout() {
+    signedIn = undefined;
     signOut(firebaseAuth)
       .then((res) => {
         set({ account: null });
