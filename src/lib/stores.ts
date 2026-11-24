@@ -20,7 +20,7 @@ function createUserAccountService() {
     };
   });
 
-  let signedInIdToken: string | undefined;
+  let signedIn: { idToken: string; uid: string } | undefined;
 
   async function authenticateUser(credential: {
     event?: string;
@@ -34,11 +34,16 @@ function createUserAccountService() {
 
     if (!credential || credential?.event == "logout") {
       console.log("signing out");
+      signedIn = undefined;
       signOut(firebaseAuth);
       return;
     }
     // the editor re-posts the same token on remount; a refreshed one still signs in
-    if (firebaseAuth.currentUser && credential.idToken === signedInIdToken) {
+    if (
+      credential.idToken &&
+      credential.idToken === signedIn?.idToken &&
+      firebaseAuth.currentUser?.uid === signedIn.uid
+    ) {
       return;
     }
     const provider = new OAuthProvider(
@@ -52,7 +57,9 @@ function createUserAccountService() {
 
     return await signInWithCredential(firebaseAuth, cred)
       .then((user) => {
-        signedInIdToken = credential.idToken;
+        if (credential.idToken) {
+          signedIn = { idToken: credential.idToken, uid: user.user.uid };
+        }
         console.log("authenticated in profile cloud", user);
       })
       .catch((error) => {
@@ -61,6 +68,7 @@ function createUserAccountService() {
   }
 
   function logout() {
+    signedIn = undefined;
     signOut(firebaseAuth)
       .then((res) => {
         set({ account: null });
