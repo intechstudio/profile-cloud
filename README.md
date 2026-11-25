@@ -36,3 +36,93 @@ npm run build
 You can preview the production build with `npm run preview`.
 
 > To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+
+## Authentication
+
+Profile Cloud has no sign-in UI. The editor posts its ID token into the web
+component (`userAuthentication` message), and Profile Cloud signs that token
+into its own Firebase project (`profile-cloud`, or `profile-cloud-dev`
+outside production) with `signInWithCredential`. All Firestore data is keyed
+by the Profile Cloud uid.
+
+The OIDC provider is chosen by the token's `iss` claim
+(`src/lib/authProvider.ts`):
+
+| Token                       | `iss`                                | Provider                                                   |
+| --------------------------- | ------------------------------------ | ---------------------------------------------------------- |
+| Firebase (released editors) | `https://securetoken.google.com/...` | `oidc.is-auth` in production, `oidc.is-auth-dev` otherwise |
+| Keycloak (new editors)      | anything else                        | `oidc.keycloak`                                            |
+| No readable `iss`           |                                      | same as Firebase                                           |
+
+A re-posted token that already signed in the current user is not signed in
+again.
+
+### Firebase console
+
+Authentication > Sign-in method > OpenID Connect, in `profile-cloud`:
+
+| Provider id     | Issuer                                           | Client id     |
+| --------------- | ------------------------------------------------ | ------------- |
+| `oidc.is-auth`  | unchanged                                        | unchanged     |
+| `oidc.keycloak` | `https://auth.intech.studio/realms/intechstudio` | `grid-editor` |
+
+For every other `oidc.keycloak` setting, including the grant type, copy the
+existing `oidc.is-auth` provider.
+
+### Deploys
+
+- Push to `main`: deploys the live channel of `profile-cloud-dev.web.app`,
+  built with `PUBLIC_APP_ENV=production` (so it signs in to the `profile-cloud`
+  Firebase project), and publishes the npm package.
+- Tag: deploys `profile-cloud.web.app`. This is when every released editor
+  gets the new code.
+
+### Linking existing users to Keycloak
+
+Without a link, a Keycloak sign-in would create a new, empty account.
+`scripts/link-keycloak-users.ts` links every existing account to its Keycloak
+id under `oidc.keycloak`, using a map of old `is-api-auth` uid to Keycloak id
+(`{ "<firebase uid>": "<keycloak id>" }`). Keep the map out of this repo.
+Run it on `profile-cloud` before the Keycloak editor release.
+
+Needs Node 24 or later and `gcloud` signed in as a user who can manage Firebase
+Auth users in the project. It reads every account, prints counts and local ids
+only, and writes nothing unless `--commit` is passed. The first line names the
+project. Printed id lists stop after 20 lines; `--report` writes the full lists.
+
+`--map` takes the path to the map; the commands below use `~/uid-map.json`.
+Dry run:
+
+```sh
+gcloud auth login
+node scripts/link-keycloak-users.ts --project profile-cloud --legacy-provider oidc.is-auth --map ~/uid-map.json
+```
+
+Check the counts. "Legacy uid not in map" for most accounts means the map does
+not belong to this project: stop.
+
+Trial: link one account first. `--only` takes an old `is-api-auth` uid; the
+counts still cover every account, but `--commit` links only that one. It exits
+1 and says why if that account is not in "To link".
+
+```sh
+read "TRIAL_UID?Legacy uid to link first: "
+node scripts/link-keycloak-users.ts --project profile-cloud --legacy-provider oidc.is-auth --map ~/uid-map.json --only "$TRIAL_UID" --commit --report ~/link-report-trial.json
+```
+
+Sign in with that user's Keycloak account and check their profiles are there.
+Then link the rest:
+
+```sh
+node scripts/link-keycloak-users.ts --project profile-cloud --legacy-provider oidc.is-auth --map ~/uid-map.json --commit --report ~/link-report-profile-cloud.json
+```
+
+Running it again is safe: linked accounts report as "Already linked". Exit
+code 1 means a conflict or a failed link (listed by local id), 2 means bad
+arguments.
+
+### Tests
+
+```sh
+npm test
+```
