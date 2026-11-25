@@ -1,638 +1,884 @@
-# Profile Cloud off Firebase: discovery and plan (phase 2)
+# Profile Cloud off Firebase: migration plan
 
-Status: **discovery, 2026-11-04.** Nothing in this document is built. It is
-the phase-2 counterpart of `webapps/docs/auth-rework-plan.md` (phase 1,
-"auth"), whose section 7 only sketched what follows. Decisions settled there
-are taken as given and referenced by number (D1..D30).
+Status: **plan, revised 2026-11-25 after the owner's review. Nothing in this
+document is built.**
 
-**Update 2026-11-11: the phase-1 provider is Keycloak, not Logto** (D36-D44
-in the auth plan; the provider question is closed by D44). Read "Logto" below
-as "the identity provider". What changes for this plan:
+Profile Cloud exists for two things: **sharing configs** and **backing them
+up**. The configs a user works with are files in the editor's
+`grid-userdata/configs` folder; Profile Cloud holds the copies that are
+shared or kept safe.
 
-- Section 3 (re-key) is unchanged. `sub` stays the old central uid (D39,
-  imported into Keycloak with the Firebase uid as user id). If that gate
-  fails, the phase-1 fallback re-links each `oidc.is-auth` user to the new
-  `sub` with the Firebase Admin SDK, so `providerUserInfo[].rawId` is the
-  provider `sub` either way and `map-users.ts` needs no change.
-- Section 6.3 and D-P2.3: still ID token verification with `jose` against
-  the issuer's JWKS. The issuer is `https://auth.intech.studio/realms/intech`
-  (local `http://localhost:3001/realms/intech`), and `aud` is the fixed
-  client id `grid-editor` in every environment (D43). The access-token
-  alternative becomes a Keycloak client scope with an audience mapper
-  instead of a Logto API resource.
-- The editor's sign-in returns through a loopback redirect (D42). The
-  postMessage payload `{ event, providerId: "oidc", idToken }` is unchanged.
-- Local development runs next to the Keycloak stack from `intechstudio/auth`.
-  The Postgres server and backups that were planned for `logto_auth` hold
-  the Keycloak database instead.
+Today all of it runs on Firebase: configs, users and usernames in Firestore,
+pasted images in Storage, a public read API and a daily backup in Functions,
+and the app itself on Firebase Hosting. This plan moves it to a service we
+run ourselves, in a single cutover.
 
-Constraints given for this work:
+In short:
 
-- full data ownership;
-- hosted on Coolify, open-source services only;
-- authentication is stage one and is already in progress (Keycloak since
-  2026-11-11, previously Logto; phase 1);
-- feature parity;
-- mature technology.
+- The SvelteKit app in this repo becomes a Node server with a Postgres
+  database. One container serves the web page, the web component and a small
+  HTTP API.
+- Images go to a Cloudflare R2 bucket.
+- The client calls the API instead of the Firebase SDK.
+- One script copies the production data from Firebase.
+- At the cutover Firebase is closed to customers, the script runs, and the
+  new Profile Cloud and a new editor release go out. Downtime in between is
+  accepted.
 
-## 1. How profile-cloud works inside grid-editor
+## 1. Ground rules
 
-Profile-cloud is one codebase built two ways from the same Svelte sources:
+- **Clean cutover, simple for the team.** Firebase is switched off for
+  customers first, then the data is moved, then the new service is released.
+  The steps are not squeezed to keep the downtime short: Profile Cloud may
+  be unavailable for hours.
+- **No legacy support.** Concretely:
+  - The API accepts Keycloak tokens only.
+  - Every editor older than the release that ships with the cutover loses
+    Profile Cloud and shows a notice to update. Local configs keep working
+    in those editors.
+  - The client has no switch between backends. The Firebase code is deleted
+    in the same change that adds the API client.
+  - Nothing forwards from the old `*.web.app` addresses, and the old
+    Functions URLs and their API key are not kept.
+  - There is no way back to Firebase after the release.
+- **Where things run.** The service and its Postgres run on Coolify. Images
+  are on Cloudflare R2, which is accepted because we are a Cloudflare
+  customer already.
+- **Same features** for a user on the new editor, with the changes this
+  document names.
+- **Configs stay linkable.** Their ids change (section 4.2).
 
-| Build | Entry | Output | Consumer |
-|---|---|---|---|
-| SvelteKit static SPA (`ssr=false`) | `src/routes/+page.svelte` | `public/` | `profile-cloud.web.app` web browser mode (anonymous, read-only) and the `/authorize` Google page |
-| Svelte custom element | `src/WebComponent.svelte` | `public/wc/components.js` (CORS `*`), and `npm-package/dist` as `@intechstudio/profile-cloud-webcomponent` | grid-editor |
+## 2. Where things stand
 
-grid-editor loads the custom element with a dynamic `import(<profileCloudUrl>/wc/components.js)`
-into its **own window** (no iframe, `shadow: "none"`), see
-`src/renderer/main/panels/profileCloud/ProfileCloud.svelte`. The URL comes
-from the persisted app setting `profileCloudUrl`, defaulting to
-`PROFILE_CLOUD_URL_PROD` / `_DEV` / `_LOCAL` in grid-editor's
-`configuration.json`. The element name (`profile-cloud-prod|nightly|pr|dev|offline`)
-is inferred from the URL. If the import fails, the editor offers the
-`profile-cloud-offline` element bundled from the npm package.
+Sign-in moved to Keycloak on 2026-11-24. What this plan builds on:
 
-Communication is `window.postMessage` in both directions:
+- Keycloak runs at `https://auth.intech.studio/realms/intechstudio`, from
+  the `intechstudio/auth` repo. Locally it runs on
+  `http://localhost:3001/realms/intechstudio`. There is no hosted dev
+  Keycloak.
+- grid-editor 1.8.0 signs in there as the public client `grid-editor` and
+  has no Firebase code left. It posts its ID token to Profile Cloud on
+  sign-in and after every refresh, as `{ messageType: "userAuthentication",
+  authEvent: { event: "login", providerId: "oidc", idToken } }`, and
+  `{ event: "logout" }` on sign-out.
+- Profile Cloud v1.5.10 still runs on Firebase. It signs the editor's token
+  into its own Firebase project through one of two providers, picked from
+  the token's issuer (`src/lib/authProvider.ts`): `oidc.keycloak` for the
+  new editor, `oidc.is-auth` for older editors, which still sign in through
+  the old central Firebase project.
+- All Profile Cloud data is keyed by the Firebase uid of Profile Cloud's own
+  project. That uid is neither the Keycloak id nor the old central uid.
+- A one-time script (`scripts/link-keycloak-users.ts`) attached the Keycloak
+  id to every existing account: 4,186 accounts, 4,166 linked. The other 20
+  have no Keycloak user, because their central account had no email or
+  shared one.
+- The old central Firebase Auth projects are still alive, only so that older
+  editors can sign in.
 
-- editor → profile-cloud: plain messages with `messageType` in
-  `{updateFontSize, localConfigs, userAuthentication, configLink,
-  selectedComponentTypes, compatibleTypes, configDragTargetChange}`
-  (`EditorLayout.svelte: editorMessageListener`).
-- profile-cloud → editor: request/response over a `MessageChannel`
-  (`src/lib/utils.ts: parentIframeCommunication`), names
-  `profileCloudMounted, configImportCommunication, deleteLocalConfig,
-  showConfigInFolder, getCurrenConfigurationFromEditor, loginToProfileCloud,
-  logoutFromProfileCloud, createCloudConfigLink, submitAnalytics,
-  provideSelectedConfigForEditor, sendLogMessage, openExternalLink,
-  configDragChange, showOverlay`.
+## 3. What Firebase does today
 
-What each side owns:
+Profile Cloud is one codebase built two ways: a static single-page app
+(`src/routes/`, served at `profile-cloud.web.app`, anonymous and read-only
+in a browser) and a custom element (`src/WebComponent.svelte`, built to
+`wc/components.js`). The editor loads the element at run time with
+`import(<profileCloudUrl>/wc/components.js)` into its own window and talks
+to it with `postMessage`. The same element is published to npm as
+`@intechstudio/profile-cloud-webcomponent` and bundled into the editor as
+the offline fallback.
 
-- **grid-editor** owns the user session (Firebase Auth today, Logto after
-  phase 1), the local config files (`~/Documents/grid-userdata/configs/*.json`,
-  watched and pushed as `localConfigs`), reading/writing the device
-  (`getCurrenConfigurationFromEditor`, drag-to-load), analytics (Mixpanel),
-  and the deep links `grid-editor://?credential=` and `grid-editor://?config-link=`.
-- **profile-cloud** owns the cloud data (Firestore + Storage), the merged
-  view of local + cloud configs (`src/lib/configmanager/ConfigManager.ts`,
-  last-write-wins on `modifiedAt`, linked by `cloudId`), the tree UI, and
-  the username flow.
-
-The identity hand-off: the editor posts `{event: "login", providerId: "oidc",
-idToken}`; profile-cloud exchanges that token for a session in **its own**
-Firebase project through the console-configured OIDC provider
-`oidc.is-auth(-dev)` (`src/lib/stores.ts: authenticateUser`). The resulting
-`uid` is project-local and is the key for all data (`owner`, `access[]`,
-`users/{uid}`). Phase 1 keeps this bridge (D27) so phase 2 inherits the
-re-keying problem; see section 3.
-
-## 2. Firebase inventory
-
-### 2.1 profile-cloud repo
-
-| Product | Where | What |
+| Firebase product | Used for | Code |
 |---|---|---|
-| Firestore `configs` | `ConfigManager.ts` | One realtime query: `public == true OR access array-contains uid` (`onSnapshot`); `setDoc` create/update with client-generated id; `updateDoc {public}`; `deleteDoc`. Schema `src/lib/schemas.ts: CloudConfigSchema` (`id, name, description, type, version{major,minor,patch}, configType profile/preset/snippet, configs (any), files[], owner, access[], public, virtualPath, displayName, createdAt, modifiedAt`). |
-| Firestore `users`, `usernames` | `UserLogin.svelte: setUserName`, `checkIfUsernameAvailable`; `user_account.ts: getUserNameByUid`; `ConfigCardBrowser.svelte`, `ConfigCardDisplay.svelte` (owner name lookup per card) | `users/{uid} = {username}`, `usernames/{name} = {uid}` written in one batch; rules enforce uniqueness and length 3..15. |
-| Storage | `ConfigDescription.svelte: handlePaste` | Pasted images uploaded to `config_images/<uuid>.<ext>`; the tokenised download URL is written into the markdown `description`; deleted if the placeholder was removed before upload finished. |
-| Auth | `src/lib/stores.ts`, `src/lib/firebase.ts` | Federated sign-in via `OAuthProvider("oidc.is-auth")`; no accounts of its own. |
-| Analytics | `src/lib/firebase.ts` | `getAnalytics` initialised, **never used** (events go to the editor's Mixpanel via `submitAnalytics`). |
-| Functions (europe-west3) | `functions/src/publicCloudQueries.ts` | `readAllProfiles`, `readUserProfiles`, `readSingleProfile`: public configs, select-listed fields, behind `X_INTECHSTUDIO_KEY` secret. Only known caller: website `apps/website/src/routes/api/grid-configs/+server.ts` (owner id `eePyy59w5KXLy0wkvqsv1iPmLUh1`, 1h in-memory cache). |
-| Functions | `functions/src/firestoreBackup.ts` | Daily export of all collections to `gs://profile-cloud-firestore-backup`. |
-| Hosting | `firebase.json`, `.github/workflows/firebase-hosting-*.yml` | `profile-cloud.web.app` (tags), `profile-cloud-dev.web.app` (main; built with `PUBLIC_APP_ENV=production`, D30), PR previews (`profile-cloud-dev--pr…`, 30 d). CORS `*` on `wc/**`. SPA rewrite. Rules and functions deployed by hand. |
-| Tooling | `transfer-configs-to-dev.js` | Copies public configs and users prod → dev with Anonymous auth on dev. |
-| Config | `Configuration.json` | Five profile-cloud-local uids marking "official" and "workflow" owners. |
+| Firestore `configs` | One live query (public configs, plus the user's own), create and update with a client-made id, publish and unpublish, delete | `src/lib/configmanager/ConfigManager.ts` |
+| Firestore `users`, `usernames` | Username, chosen once, 3 to 15 characters, unique; shown on every card | `src/routes/UserLogin.svelte`, `user_account.ts`, `ConfigCardBrowser.svelte`, `ConfigCardDisplay.svelte` |
+| Storage | Images pasted into a description, stored under `config_images/<uuid>.<ext>`; the download URL is written into the markdown | `src/routes/ConfigDescription.svelte` |
+| Auth | Turns the editor's token into a Firebase session | `src/lib/stores.ts`, `src/lib/authProvider.ts`, `src/lib/firebase.ts` |
+| Functions | Three public read endpoints behind an API key (only known caller: the website's `api/grid-configs`), and a daily Firestore export | `functions/src/` |
+| Hosting | `profile-cloud.web.app` (tags), `profile-cloud-dev.web.app` (the nightly element, from `main`), pull-request previews | `firebase.json`, `.github/workflows/firebase-hosting-*.yml` |
+| Analytics | Initialised, never used | `src/lib/firebase.ts` |
 
-Not in the repo (console only): live `firestore.rules` (the committed one
-is stale: it covers `profiles`/`profileLinks`, not `configs`), Storage rules,
-the OIDC provider, Anonymous auth on dev, the hash parameters, the backup
-bucket retention.
+Also in the repo and tied to Firebase: the `/authorize` page with
+`GoogleAuth.svelte` (unused since the Keycloak switch), `Configuration.json`
+with five hardcoded owner uids that mark the "recommended" and "workflow"
+configs, `transfer-configs-to-dev.js`, and a `firestore.rules` file that is
+stale. The live Firestore and Storage rules exist only in the console.
 
-### 2.2 grid-editor repo
+## 4. Target
 
-Auth only (`src/renderer/lib/firebase.js`, `auth.store.ts`, `user.store.ts`,
-the `user-authentication` modals, `/authorize` round trip via `main.ts`
-deep link). All of it is removed by phase-1 slice 5 (branch
-`feat/auth-logto`, in review): main-process `openid-client` code + PKCE,
-refresh token in `safeStorage`, renderer gets `{event, providerId: "oidc",
-idToken}` and forwards it unchanged to profile-cloud. **grid-editor has no
-Firebase left after slice 5.** Nothing else in the editor touches Firebase:
-packages come from GitHub, updates from GitHub releases, the web build is
-served from Cloudflare Workers static assets (`wrangler.jsonc`).
+### 4.1 One service
 
-Editor-side things phase 2 still has to touch:
+This SvelteKit app switches from `adapter-static` to `adapter-node` and
+gains server code:
 
-- `configuration.json`: `PROFILE_CLOUD_URL_PROD/DEV` and the
-  `profile-cloud-dev--pr` substring used for element naming
-  (`ProfileCloud.svelte`).
-- The persisted `profileCloudUrl` app setting on every existing install
-  (points at `*.web.app`).
-- `PROFILE_CLOUD_EMAIL_REGISTRATION` (website `/auth`, already changing in
-  phase 1).
+- `src/routes/v1/**/+server.ts`: the API.
+- `src/lib/server/`: database access, token verification, image storage.
+- `src/hooks.server.ts`: reads the bearer token, answers CORS, opens the
+  database and runs pending migrations at start.
 
-### 2.3 Other consumers
+Database access uses Drizzle: the schema is TypeScript next to the zod
+schemas, and migrations are plain SQL files applied when the server starts.
+`functions/` is deleted.
 
-- website `api/grid-configs` (above).
-- Public config links `grid-editor://?config-link=<cloudId>` in the wild:
-  config ids must survive.
-- `@intechstudio/profile-cloud-webcomponent` on npm (offline fallback) is
-  the same code: after phase 2 it talks to the new API when online.
+**About `ssr = false`.** The web component is not affected by server
+rendering either way: it is a separate Vite library build, a plain script
+the editor imports, and SvelteKit never renders it. The switch only concerns
+the page at `/`. That page shares its components with the element, and they
+reach for `window` as soon as they load, so it stays client-rendered at the
+cutover. With `adapter-node`, server rendering is chosen per route, so pages
+added later can be server-rendered without touching the element. The first
+candidate is a public page per config (section 4.2).
 
-## 3. Identity after phase 1, and the re-key
+### 4.2 Ids and links
 
-Phase 1 ends with Logto as the only identity provider. `sub` equals the old
-**central** uid (D4). Profile-cloud data, however, is keyed by the
-**profile-cloud-project-local** uid, which Firebase minted when the central
-token was federated in. D27 keeps that mapping alive by repointing the OIDC
-provider at Logto, so phase 1 needs no data change.
+**Not settled. The id strategy is the first task of the epic**, because the
+schema, the API, the client and the migration script all depend on it. It
+has to cover both directions of sync: a local file going up to the cloud,
+and a cloud config coming down into a local file.
 
-Phase 2 removes the profile-cloud Firebase project, so the data must be
-re-keyed from local uid to Logto `sub`. The mapping is deterministic and
-exportable: `firebase auth:export` of the `profile-cloud` project lists, per
-local user, `providerUserInfo[].rawId` for provider `oidc.is-auth`, and that
-`rawId` is the central uid = Logto user id. Users without such an entry
-(dev Anonymous users, anything pre-dating the OIDC bridge) own data that
-cannot be attributed; they are counted in the pre-checks and decided then.
+What is known:
 
-Everything keyed by local uid has to move together: `configs.owner`,
-`configs.access[]`, `users/{uid}`, `usernames/{name}.uid`,
-`Configuration.json` (five ids), the website constant in `grid-configs`.
+- A local config file has up to two ids today. Its own `id` is a UUID the
+  editor makes when the file is first written; every file has it. `cloudId`
+  is added only once the config has been saved to the cloud, and holds the
+  Firestore id of that copy (20 letters and digits). On the owner's machine
+  on 2026-11-25: 161 files, 95 of them with a `cloudId`.
+- The element pairs a local file with its cloud copy through `cloudId`
+  (`ConfigManager.ts`). A file whose `cloudId` matches nothing is shown as a
+  separate, local-only config.
 
-## 4. Requirements mapped to parity
+What is wanted:
 
-| Today | Must hold after | Notes |
-|---|---|---|
-| Public configs browsable without login (editor and web) | yes | public read endpoints without auth |
-| Own private configs; make public/private; delete | yes | owner-only writes (the stale rules let any signed-in user update any doc; the new API will not) |
-| Username, unique, 3..15 chars, shown on cards | yes | one row with a unique index replaces the two-document batch |
-| List updates live (other device, someone publishing) | yes | push notifications + delta pull, section 6.4 |
-| Pasted images in descriptions | yes | served from our own host; existing Storage URLs rewritten at migration |
-| Config links by id | yes | ids preserved |
-| Local/cloud merge, offline element | unchanged | lives in profile-cloud + editor, no Firebase involved |
-| Public read API for the website | yes | same three queries, same key header |
-| Daily backup | yes | `pg_dump` schedule |
-| dev and prod environments; PR previews of the element | yes | section 6.6 |
-| Firebase Analytics | dropped | unused |
-| `transfer-configs-to-dev.js` | replaced | dump/restore of public rows |
+- One id style everywhere, not numeric. UUIDs fit: the editor and Keycloak
+  already use them.
+- Configs stay linkable. The old ids themselves do not have to survive.
+- Whatever is chosen, it is stated what a user sees after the cutover for a
+  file that was paired with a cloud copy before it.
 
-## 5. Technology evaluation
+What the task has to answer:
 
-Requirements: Postgres-class durability, OIDC token verification against
-Logto, per-row access control, a change feed for one query, small binary
-uploads, a public read API, runs as one or two containers on Coolify, OSS
-licence, boring to upgrade.
+1. **One id or two.** Keep the pair (a local id, and a cloud id written
+   into the file), or give a config one UUID that is the same in the file
+   and in the database.
+2. **Who makes the id**: the client, the server, or the editor when it
+   writes the file.
+3. **Going up.** A file saved to the cloud for the first time; saved again;
+   a file whose cloud copy was deleted; a file that still carries an old
+   Firestore `cloudId`.
+4. **Coming down.** One's own config on a second machine or after a
+   reinstall; someone else's public config taken into the local folder (a
+   copy with its own identity, or still tied to the original); the same
+   config taken twice.
+5. **Migrated configs.** How the rows from Firestore get their new ids, and
+   how the files on users' disks find them again.
+6. **Links.** The form of a link, and whether old links resolve.
 
-| Candidate | Licence | Fit | Why not / caveats |
-|---|---|---|---|
-| **SvelteKit `adapter-node` + Postgres** (own code, this repo) | MIT / PostgreSQL | All requirements; the framework is already here, so SPA, web component and API ship as one container; `+server.ts` routes, `handle` hook for auth and CORS, `init` hook for the pool and migrations; the website in webapps already runs this shape | ~1.5k lines to write and own; no admin UI (use `psql`); no built-in WebSocket in the node adapter (SSE is used instead) |
-| Fastify + Postgres service | MIT / PostgreSQL | Same stack as `apps/hq-api`; schema validation and plugins (`@fastify/cors`, `multipart`, `websocket`) | A second framework, build and deploy artifact in a repo that already has SvelteKit; duplicates static and CORS concerns. Set aside after review |
-| PocketBase | MIT | Closest feature match (realtime, files, rules, OIDC login, admin UI, backups) in one binary | **Pre-1.0**, single maintainer, breaking releases documented as expected; SQLite only; fails "mature" |
-| Supabase self-hosted | Apache-2.0 | Realtime, storage, RLS, Postgres | 10+ containers (Kong, GoTrue, PostgREST, Realtime, Storage, Studio); own auth to bridge to Logto; heavy on Coolify for one collection |
-| Payload CMS 3 | MIT | Collections, access control, uploads, admin UI, REST; team has Payload experience | No realtime (polling or custom SSE); Next.js runtime; auth strategy for Logto is custom code anyway |
-| PostgREST + RLS | MIT | Mature, JWKS verification, policies in SQL | No change feed, no uploads, logic in SQL policies; still needs a side service, so two things instead of one |
-| Hasura v2 | Apache-2.0 | Subscriptions, JWT auth | v2 in maintenance, v3 is a different product; GraphQL for one table |
-| ElectricSQL / PowerSync | Apache-2.0 / FSL (not OSS) | Sync engines | No offline persistence to preserve, so the complexity buys nothing; PowerSync licence excluded |
-| Directus | BSL 1.1 | Rich | Not an OSS licence; excluded |
-| Object storage (MinIO, Garage, SeaweedFS) | AGPL / AGPL / Apache | S3 for images | Not needed at this volume; images fit in Postgres and ride the same backup. Revisit if uploads grow beyond a few GB |
+The starting proposal, to be confirmed or replaced by that task: every id is
+a UUID in one `uuid` column type. Users have the Keycloak id. New configs
+get theirs from the database. A migrated config gets a UUID computed from
+its Firestore id (UUID version 5 under one fixed namespace), so the client
+can turn an old `cloudId` into the new id with one small function, with no
+lookup table and no second id column, and old links can be resolved the same
+way. Links keep their form, `grid-editor://?config-link=<id>`.
 
-**Recommendation:** turn this SvelteKit app into the service. Switch to
-`adapter-node`, add the API as `+server.ts` routes, keep the UI pages
-client-rendered as today, store images as `bytea` served by the API, drive
-the SSE change feed from Postgres `LISTEN/NOTIFY`, and ship one container
-that serves the SPA, `wc/components.js` and the API. Every component is
-mature, already in the team's stack, and nothing holds user data outside the
-Coolify Postgres.
+The task ends with this section rewritten as the decision, and with the
+rules as test cases the client and the migration script share.
 
-### 5.1 Database layer
+Later, not part of this migration: a public web page per config, such as
+`https://profile-cloud.intech.studio/c/<id>`, server-rendered, with the
+name, description and an "Open in Grid Editor" button. That makes a config
+shareable as an ordinary web link.
 
-SvelteKit recommends no ORM. Its scaffolding CLI integrates one: `sv add
-drizzle` sets up Drizzle with Postgres, MySQL or SQLite. The docs only say to
-keep the client under `$lib/server`.
+### 4.3 Data model
 
-| Candidate | Fit in a Vite-built server | Notes |
-|---|---|---|
-| **Drizzle** (`drizzle-orm`, `drizzle-kit`) | No decorators, no build config; migrations generated as plain SQL and applied at startup | Schema in TypeScript next to the zod schemas; `drizzle-zod` can derive them. `citext` and `bytea` need a `customType` each (a few lines). Matches the official `sv add` integration |
-| TypeORM (as in hq-api) | Decorator entities depend on `emitDecoratorMetadata`, which esbuild does not emit; columns need explicit `type` or an swc Vite plugin | Viable with `EntitySchema` object definitions instead of decorators; `DataSource` as a singleton from the `init` hook. Years on 0.3.x, maintenance picked up again in 2025 |
-| Kysely | Fine | Type-safe query builder only, own migration runner; good if SQL-first is preferred |
-| Plain `pg` + `node-pg-migrate` | Fine | Five tables, a dozen endpoints; the most boring option, zod at the boundary |
-| Prisma | Fine | Own schema language and generator step; more than this needs |
-
-**Decision D-P2.11:** Drizzle. Second choice if consistency with hq-api
-wins: TypeORM with `EntitySchema`, never the decorator path in this build.
-
-## 6. Target architecture
-
-### 6.1 Components
-
-| Component | Runs where | Notes |
-|---|---|---|
-| `profile-cloud` (this app, `adapter-node`) | Coolify, one container, image built from this repo | Serves the SPA (`/`), the web component (`/wc/`), and the API (`/v1/`). Routes in `src/routes/v1/**/+server.ts`; database, token verification and the change feed in `src/lib/server/`; `handle` hook for bearer auth and CORS; `init` hook opens the Drizzle/`pg` pool, runs migrations, starts `LISTEN`. `/healthz` for the argus monitor stack |
-| Database `profile_cloud` (`profile_cloud_dev`) | Existing Postgres server on Coolify (the one `auth`/`auth-dev` use) | own role, direct 5432, same backup routine as `logto_auth` |
-| Web component build | unchanged Vite lib build (`vite.config.webcomponent.ts`) | output moves to `static/wc/` so the node server serves it; the CORS header now set in `firebase.json` moves to the `handle` hook |
-| Logto | already planned | API resource registration optional, section 6.3 |
-
-Repository: everything stays in this repo. `functions/` is deleted; server
-code lives in `src/lib/server/` and `src/routes/v1/`; the zod schemas in
-`src/lib/schemas.ts` are imported by routes and client alike with no package
-plumbing. Alternative considered: a separate service in `webapps/apps/`,
-rejected because it splits one product across two repos and two deploys.
-
-Node adapter specifics: `BODY_SIZE_LIMIT` defaults to 512 KB and must be
-raised to cover the 5 MB image cap; `ORIGIN` must be set so the server knows
-its public URL behind the Coolify proxy; keep `ssr = false` on the UI routes
-(they talk to the editor through `window`), the API routes are server-only
-by nature.
-
-### 6.2 Data model
-
-Authored as a Drizzle schema in `src/lib/server/db/schema.ts`; `drizzle-kit
-generate` turns it into the SQL migrations under `drizzle/`, applied by
-`migrate()` from the `init` hook. `citext` and `bytea` are `customType`
-definitions. The equivalent SQL:
+The id columns below follow the starting proposal of section 4.2 and change
+with its outcome.
 
 ```sql
 users (
-  id          text primary key,           -- Logto sub (= old central uid)
-  username    citext unique,              -- null until chosen; 3..15 enforced in API
+  id          uuid primary key,     -- Keycloak user id
+  username    text unique,          -- null until chosen; 3..15 characters
+  featured    text,                 -- null, 'recommended' or 'workflow'
   created_at  timestamptz not null default now()
 );
 
 configs (
-  id           text primary key,          -- existing Firestore ids preserved
-  owner_id     text not null references users(id),
+  id           uuid primary key default uuidv7(),
+  owner_id     uuid not null references users(id),
   name         text not null,
   description  text not null default '',
-  type         text not null,             -- ElementType | ModuleType | 'snippet'
-  config_type  text not null check (config_type in ('profile','preset','snippet')),
-  version      jsonb,                     -- {major,minor,patch} as strings
-  configs      jsonb not null,            -- payload, opaque to the API
-  files        jsonb,                     -- [{name,content,mimeType?}]
+  type         text not null,
+  config_type  text not null,       -- 'profile' | 'preset' | 'snippet'
+  version      jsonb,               -- {major, minor, patch}
+  configs      jsonb not null,      -- the payload; the API does not look inside
+  files        jsonb,
   virtual_path text not null default '',
   display_name text,
   public       boolean not null default false,
   created_at   timestamptz not null,
-  modified_at  timestamptz not null,
-  seq          bigint generated always as identity  -- change cursor
-);
-create index on configs (public) where public;
-create index on configs (owner_id);
-create index on configs (seq);
-
-config_access (                            -- parity with access[]; today always [owner]
-  config_id text references configs(id) on delete cascade,
-  user_id   text references users(id),
-  primary key (config_id, user_id)
+  modified_at  timestamptz not null,               -- set by the client; decides local against cloud
+  updated_at   timestamptz not null default now(), -- set by the server on every write
+  summary      jsonb not null,      -- derived on save: what is inside, in short
+  search       tsvector not null    -- derived on save: name, description, script text
 );
 
 images (
-  id         uuid primary key,
-  owner_id   text not null references users(id),
-  mime       text not null,
-  bytes      bytea not null,               -- cap 5 MB per image in the API
-  created_at timestamptz not null default now()
+  id            uuid primary key default uuidv7(),
+  owner_id      uuid not null references users(id),
+  content_type  text not null,
+  size          integer not null,
+  created_at    timestamptz not null default now()
 );
 ```
 
-Type normalisations done today at read time (`potentiometer → potmeter`,
-`VSN1 → VSN1L`, `ConfigManager.ts: configsUpdated`) are applied once at
-import and the shims deleted.
+Simpler than in Firestore, as agreed:
 
-### 6.3 Authentication at the API
+- **No access list.** Every config stores `access: [owner]` today and the
+  code never writes anything else. Only the owner can change a config.
+- **One username table** instead of the `users` and `usernames` documents
+  that had to be written together.
+- **No hardcoded owner ids.** The five uids in `Configuration.json` become
+  the `featured` column, set by the migration and changed later with SQL.
 
-- Bearer token on every non-public call. First iteration verifies the Logto
-  **ID token** with `jose` against the issuer's JWKS: `iss`, `exp`,
-  signature, `aud ∈ {grid-editor client ids}`; `sub` is the user. This is the
-  same contract Vendure uses (D26, phase-1 slice 2) and needs **no change to
-  the editor or to the postMessage payload** (slice 5 already resends on
-  every refresh).
-- Upgrade path, not required for parity: register a Logto API resource
-  (indicator is permanent, choose it once, e.g.
-  `https://profile-cloud.intech.studio/api`), have the editor request an
-  access token for it, and add `accessToken` to the postMessage payload.
-  Needed only if scopes or a non-editor client ever call the API.
-- Web browser mode stays anonymous and read-only (it is today). A Logto SPA
-  login for the web mode is a feature, not parity.
-- `users` row is created on first authenticated call (`sub`, no username),
-  which mirrors Firebase creating the local user on first sign-in.
+### 4.4 Sign-in at the API
 
-### 6.4 API surface
+The client sends the ID token it got from the editor as
+`Authorization: Bearer <token>`. The server verifies it with `jose` against
+the realm's published keys: signature, issuer, audience (`grid-editor`) and
+expiry. The token's `sub` is the user id. A `users` row is created on the
+first signed-in call. Without a token the API serves public data only.
 
-Prefix `/v1`. JSON. `Config` shape equals `CloudConfigSchema` with
-`owner`, `access[]` derived.
+Token lifetime and refresh:
 
-| Method and path | Auth | Replaces |
+- The realm file sets no lifetime, so Keycloak's default applies, which is
+  five minutes (to be confirmed on a decoded token). It will be raised in
+  the auth repo; 30 minutes for the `grid-editor` client is the suggested
+  starting value.
+- Whatever the lifetime, the client handles expiry. The editor already
+  refreshes a minute before the token runs out and posts the new one. A
+  request that still gets `401`, for example right after the laptop wakes,
+  waits for the next token from the editor and is retried once; if none
+  comes, the client shows the signed-out state.
+- This is tested while building, with the local Keycloak set to a lifetime
+  of a minute, and the lifetime is settled from what that shows.
+
+### 4.5 API
+
+All under `/v1`, JSON. A config has the fields of today's `CloudConfigSchema`
+without `access`, plus `ownerName` and `featured`, so cards no longer look up
+each owner separately. The list returns configs in a light form and a single
+config in full; "The list and the detail" below says what each carries.
+
+| Method and path | Sign-in | Does |
 |---|---|---|
-| `GET /configs?since=<seq>` | optional | the `onSnapshot` query: public ∪ accessible-to-me; `since` returns only rows changed after the cursor plus a list of deleted ids (kept in a small `config_tombstones` table or via `deleted_at`) |
-| `GET /configs/:id` | optional | single read, used by config links |
-| `PUT /configs/:id` | required | `setDoc`: create if absent (owner = caller) or update if caller is owner or in access; client-generated id kept |
-| `PATCH /configs/:id {public}` | required | `updateDoc` |
-| `DELETE /configs/:id` | required | `deleteDoc`, owner or access |
-| `GET /events` (SSE) | optional | change notifications `{seq, id, op}`; client follows with `GET /configs?since=`; reconnect with `Last-Event-ID` |
-| `GET /me` | required | `users/{uid}` |
-| `PUT /me/username` | required | the two-doc batch; `409` if taken |
-| `GET /usernames/:name` | none | availability check (`404`/`204`) |
-| `GET /users/:id` | none | `{username}` for cards (batch variant `?ids=` to replace the per-card `getDoc`) |
-| `POST /images` (multipart), `GET /images/:id`, `DELETE /images/:id` | required / none / owner | Storage; `GET` sends long cache headers and the stored mime |
-| `GET /public/configs`, `/public/users/:id/configs`, `/public/configs/:id` | `X_INTECHSTUDIO_KEY` header, as today | the three Functions, same select-listed fields; `userId` may also be a username |
-| `GET /healthz` | none | monitoring |
+| `GET /configs` | optional | Public configs plus the caller's own, in light form, with the current `state` (section 4.6). `?owner=<username>` narrows to one owner, `?q=<text>` searches |
+| `GET /configs/state` | optional | Only the `state` |
+| `GET /configs/:id` | optional | One config in full; used when a config is clicked, loaded, or opened from a link |
+| `POST /configs` | required | Create; answers with the row and its id (who makes the id is section 4.2's question) |
+| `PUT /configs/:id` | required | Replace one's own |
+| `PATCH /configs/:id` | required | Publish or unpublish |
+| `DELETE /configs/:id` | required | Delete one's own |
+| `GET /me` | required | Own user row |
+| `PUT /me/username` | required | Choose the username; `409` if taken or already chosen |
+| `GET /usernames/:name` | none | Is the name free |
+| `POST /images` | required | Upload; answers with the image URL |
+| `DELETE /images/:id` | required | Delete one's own |
+| `GET /healthz` | none | For monitoring |
 
-Change feed: `EventSource` cannot send `Authorization`, so the client uses
-`fetch` with a streamed body (a 40-line helper) or the API accepts a
-short-lived signed stream token from `GET /events/token`. Private events are
-only delivered to the authenticated stream; the anonymous stream carries
-public changes. Polling every 30 s with the same `since` cursor is the
-fallback when the stream is down, which also covers the offline element.
+**The list and the detail.** Configs load progressively: the list is light,
+and the heavy parts of a config come only when it is clicked.
 
-CORS (Firebase hid this): the element runs in the editor's origin, so the
-API must allow `https://grid-editor.app`, `https://stable.grid-editor.app`,
-`https://pr-*-grid-editor.intechstudio.workers.dev`, the Electron renderer
-origin (`file://` → `Origin: null`; verify on the slice-5 build), the web
-dev origins, and the profile-cloud web origin. `Authorization` triggers a
-preflight on every call; cache it with `Access-Control-Max-Age`.
+| | When | Carries |
+|---|---|---|
+| List | the panel opens, Refresh, a search | id, name, type, kind, version, owner, public, folder path, dates, `summary` |
+| Detail | a config is clicked, loaded onto a module, or taken into the local folder | everything: description, payload, files |
 
-### 6.5 Client changes in profile-cloud
+It stays one table. Postgres keeps large values (payload, files, a long
+description) outside the main row by itself, and a query that does not name
+those columns never reads them. So the list is one select of the light
+columns joined to `users` for the owner's name, and the detail is one select
+of the whole row. Nothing is gained by picking parts out of the payload in
+SQL, since Postgres loads the whole value to do it.
 
-Introduce one seam, `src/lib/cloud/`:
+Two features read every payload in the list today, and each gets a column
+that is derived when a config is saved:
 
-- `CloudBackend` interface: `subscribe(uid?) → stream of Config[]`,
-  `save`, `setPublic`, `delete`, `getUsername(ids)`, `setUsername`,
-  `usernameAvailable`, `uploadImage`, `deleteImage`, `setToken(idToken|null)`.
-- `firebase.ts` implementation: the code that exists today, moved behind the
-  interface, selected by `PUBLIC_CLOUD_BACKEND=firebase`.
-- `api.ts` implementation: REST + SSE, selected by
-  `PUBLIC_CLOUD_BACKEND=api` with `PUBLIC_API_URL`.
+- **The tree shows the presets inside a profile** (`ConfigTree.ts`).
+  `summary` holds what the tree needs for that: the presets in a profile
+  with their type and name, and the number and size of files. The payload of
+  a preset is fetched when it is clicked.
+- **Search looks inside scripts**, besides name and description
+  (`Filter.ts`). `search` is a Postgres text-search column over those three;
+  `?q=` uses it. Local files are still searched in the client.
 
-Call sites to route through the seam: `ConfigManager.ts`,
+One function derives both from a config. It lives in `src/lib/` and is used
+by the server on every save and by the migration script, so the two cannot
+drift.
+
+The client keeps every detail it has loaded in memory, by id and
+`updatedAt`. The list carries `updatedAt`, so the client knows when a kept
+detail is stale without asking.
+
+Files and descriptions do not get tables of their own. That would only pay
+off if a file needed its own identity, for example to be shared alone, and
+it can be done later behind the same API.
+
+CORS: the element runs inside the editor's page, so every call is
+cross-origin. The API answers `Access-Control-Allow-Origin: *`. That is safe
+here because it authenticates by the bearer header only and sets no cookies,
+and it removes the need to list editor origins (the desktop editor's page is
+a `file://` URL, whose origin is `null`).
+
+Request size: `adapter-node` rejects bodies over 512 KB by default, and a
+config with files can be larger than that. The limit is set from the largest
+config the dry run finds (section 9), with room to spare.
+
+### 4.6 Noticing changes
+
+Firestore pushed every change into the list. Configs do not change often
+enough to justify rebuilding that now, so the first version is deliberately
+small:
+
+- The list loads when the element starts, when the user signs in or out,
+  and after the user's own saves and deletes.
+- With the list the server returns a `state`: a short value made from the
+  number of configs the caller can see and the newest `updated_at` among
+  them. Any create, edit, delete, publish or unpublish changes it.
+- The client asks `GET /configs/state` when the panel comes into view and
+  once a minute while it is open. If the value differs, it shows "Configs
+  were changed" with a **Refresh** button, which reloads the list.
+
+The path from here, each step replacing one piece and none of them needed
+for the cutover:
+
+1. Refresh fetches only the rows changed since the last load, using
+   `updated_at`.
+2. The once-a-minute question becomes a pushed event.
+3. Changes are applied without the button.
+
+### 4.7 Images on R2
+
+Images pasted into descriptions live in a Cloudflare R2 bucket used only by
+Profile Cloud. Postgres keeps one small row per image (owner, type, size),
+so the API knows who may delete what.
+
+- **Upload.** The client sends the image to `POST /v1/images`. The server
+  checks sign-in, type and size (5 MB at most), puts the object into the
+  bucket as `<id>.<ext>`, writes the row and answers with the URL. The
+  markdown gets that URL.
+- **Read.** Straight from the bucket, through a custom domain of ours on
+  the bucket, for example `https://profile-cloud-images.intech.studio/<id>.<ext>`.
+  The Node server is not involved, and Cloudflare caches. The names are
+  unguessable and a public bucket does not list its contents; this is the
+  same exposure as today's Firebase download URLs.
+- **Delete.** `DELETE /v1/images/:id` removes the object and the row.
+
+**The storage module.** One file, `src/lib/server/images.ts`, is the only
+code that knows about R2. It offers `put`, `remove` and `urlFor`, and tests
+swap it for an in-memory stand-in. It talks to R2 through the S3-compatible
+API with `@aws-sdk/client-s3`, the package Cloudflare documents for this:
+endpoint `https://<account id>.r2.cloudflarestorage.com`, region `auto`, an
+access key pair. Nothing R2-specific is needed for Drizzle or SvelteKit:
+Drizzle only stores the row, and the upload is an ordinary `+server.ts`
+route. `aws4fetch` is the lighter alternative Cloudflare also documents.
+
+Why uploads pass through our server instead of going straight to R2 with a
+signed URL: a signed upload URL can fix the content type but, per the R2
+docs, not the size, it only works on R2's own domain, and it needs CORS
+rules on the bucket. Through the server there is one check in one place.
+`adapter-node` rejects bodies over 512 KB by default, so `BODY_SIZE_LIMIT`
+is raised to cover 5 MB.
+
+Set-up, by the owner in the Cloudflare dashboard:
+
+| What | Value |
+|---|---|
+| Production bucket | `profile-cloud-images`, public through a custom domain. The domain's zone must be in the same Cloudflare account, which `intech.studio` is |
+| Development bucket | `profile-cloud-images-dev`, public through its `r2.dev` address, which Cloudflare rate-limits and allows for development only |
+| Credentials | One API token per bucket, permission "Object Read & Write", scoped to that bucket |
+| Server env | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `PUBLIC_IMAGE_URL` |
+
+Local development uses the development bucket. R2 can only be imitated
+locally inside a Wrangler dev server, which this app does not run.
+
+Cost: the free tier covers 10 GB of storage and millions of requests a
+month, and R2 does not charge for downloads.
+
+Backups: images are not in the Postgres backup. A restored database and the
+bucket can differ by an image uploaded in between, which shows as a broken
+picture at worst. R2 keeps no second copy for us; if one is wanted, it is a
+scheduled copy to another bucket.
+
+### 4.8 Client changes
+
+One module, `src/lib/api.ts`, is the only place that calls `fetch`. Its core
+is a single `execute()` function that adds the base URL, the headers and the
+current token, parses the answer, turns failures into one error type and
+does the `401` wait-and-retry. Each endpoint is a small typed function on
+top of it.
+
+These files lose their Firebase imports and call the module instead:
+`ConfigManager.ts`, `stores.ts` (signing in becomes "keep the token"),
 `UserLogin.svelte`, `user_account.ts`, `ConfigCardBrowser.svelte`,
-`ConfigCardDisplay.svelte`, `ConfigDescription.svelte`, `stores.ts`
-(`authenticateUser` becomes "hold the token", no sign-in call). The
-postMessage protocol with the editor does not change. The env switch gives
-a one-line rollback for the first release after cutover; the Firebase
-implementation and dependency are deleted in the decommission slice.
+`ConfigCardDisplay.svelte`, `ConfigDescription.svelte`, `schemas.ts`.
 
-Behaviour changes worth stating: writes are awaited and errors surfaced via
-`sendLogMessage` (today `setDoc` is fire-and-forget); the list refreshes
-from the `since` cursor after a write instead of waiting for the snapshot.
+Deleted in the same change: `src/lib/firebase.ts`, `collections.ts`,
+`authProvider.ts` and its test, `src/routes/authorize/`,
+`GoogleAuth.svelte`, `functions/`, `firebase.json`, `firestore.*`,
+`transfer-configs-to-dev.js`, the link scripts, the owner ids in
+`Configuration.json`, and the `firebase` dependency.
 
-### 6.6 Hosting, environments, CI
+Behaviour that changes:
 
-| | Today | After |
-|---|---|---|
-| prod API | Firebase project `profile-cloud` | `https://profile-cloud.intech.studio` (API) on Coolify, db `profile_cloud` |
-| dev API | `profile-cloud-dev` (prod data copy) | `https://profile-cloud-dev.intech.studio`, db `profile_cloud_dev`, seeded from a public-rows dump |
-| local | dev project | repo-root `docker compose` (Postgres) + `npm run dev` next to the `apps/auth` Logto stack; `PUBLIC_API_URL=http://localhost:5200` (same origin as the dev server) |
-| static prod | `profile-cloud.web.app` | same container: `https://profile-cloud.intech.studio` serves `/`, `/wc/` and `/v1/` |
-| static dev / PR | `profile-cloud-dev.web.app`, `…--pr<n>` previews | dev container on `profile-cloud-dev.intech.studio`; PR previews via Coolify preview deployments (one container per PR, hostname pattern `pr-<n>.profile-cloud-dev.intech.studio`, pointed at `profile_cloud_dev`); untested for us, fallback is Workers static previews of the element only, pointed at the dev API |
-| deploy | `firebase deploy` by hand for rules/functions, Action for hosting | one image build per push (dev) and per tag (prod); Drizzle migrations run from the `init` hook at container start |
-| backups | daily Firestore export | nightly `pg_dump -Fc` of `profile_cloud` to the same place `logto_auth` dumps go (argus) |
+- Saves, deletes and publishing wait for the server's answer and report a
+  failure. Today they are fired and forgotten.
+- Ids and the pairing of local files with cloud copies work as section
+  4.2 decides.
+- The list refreshes as in section 4.6.
+- Configs load progressively (section 4.5): the list holds light entries, a
+  click fetches the detail, the tree builds a profile's presets from
+  `summary`, and searching cloud configs asks the server.
+- The two type fix-ups done on every read (`potentiometer`, `VSN1`) are
+  applied once by the migration and removed.
+- The element already refuses editors below a minimum version
+  (`WebComponent.svelte`). That constant becomes the cutover editor release.
 
-Hosts stay under `intech.studio` so cookies and CORS stay first-party where
-it matters, and so the editor's URL-based element naming has stable
-substrings (`-dev`, `pr-`) to key on.
+### 4.9 The local config folder
 
-Editor side: update `PROFILE_CLOUD_URL_PROD/DEV`, replace the
-`profile-cloud-dev--pr` substring check, and on startup migrate a persisted
-`profileCloudUrl` equal to either old `*.web.app` value to the new default.
-Until the Firebase project is deleted, Firebase Hosting serves a one-line
-`wc/components.js` that imports the new URL, so editors that have not
-updated keep working.
+The folder is what makes Profile Cloud a backup, so its handling is written
+down here and checked as its own task.
 
-## 7. Decisions to take (phase 2)
+How it works today, and stays:
 
-Recommendations are first; the alternative is noted.
+- The desktop editor watches `grid-userdata/configs` (`startConfigWatcher`
+  in `src/electron/main.ts`) and sends the whole list to the element as a
+  `localConfigs` message whenever a file is added, changed or removed.
+- The element merges local files and cloud configs (`ConfigManager.ts`):
+  linked by `cloudId`, the newer `modifiedAt` wins, and each entry shows as
+  local only, cloud only or in sync.
+- Saving writes the file through the editor and the cloud copy through the
+  API.
 
-- **D-P2.1 Backend:** this SvelteKit app on `adapter-node` + Postgres
-  (section 5). Alternatives: a separate Fastify service (set aside after
-  review), PocketBase if "mature" is relaxed.
-- **D-P2.2 Repo:** everything in this repo (`src/lib/server/`,
-  `src/routes/v1/`). Alternative: a separate service in `webapps/apps/`.
-- **D-P2.3 Token:** verify Logto ID tokens, `aud` = grid-editor client ids;
-  no editor change. Alternative: Logto API resource + access token (adds a
-  field to slice 5's payload; decide before slice 5 merges if wanted).
-- **D-P2.4 Static hosting:** the same container serves SPA, web component
-  and API; PR previews through Coolify preview deployments. Alternative:
-  Workers static assets for the element with version previews (proven in
-  grid-editor), pointed at the dev API.
-- **D-P2.5 Images:** Postgres `bytea`, 5 MB cap, served by the API.
-  Alternative: Garage/MinIO when volume justifies it.
-- **D-P2.6 Change feed:** SSE + `since` cursor, 30 s polling fallback.
-  Alternative: polling only (parity loss: cross-device updates delayed).
-- **D-P2.7 Public API key:** keep `X_INTECHSTUDIO_KEY` on `/public/*` for
-  parity; the data is public anyway, so the key is rate-limit hygiene.
-- **D-P2.8 Orphaned data:** rows owned by local uids with no Logto mapping
-  (count unknown until the export) are imported with `owner = null`,
-  hidden unless public, and listed for manual review. Alternative: drop.
-- **D-P2.9 Official owners:** replace the five hardcoded uids in
-  `Configuration.json` and the website constant by usernames resolved
-  through the API, so ids never need hardcoding again.
-- **D-P2.10 Write freeze at cutover:** short (hours) announced freeze versus
-  a delta re-import by `modifiedAt`. Recommendation: delta re-import, no
-  freeze; unsynced local files re-upload on the next save anyway.
+What is missing today: the element cannot tell whether the editor has a
+folder at all. The web editor has no watcher and sends no local configs, and
+the element treats that the same as an empty folder.
 
-## 8. Plan
+What this migration adds:
 
-Ordered after the phase-1 slices it depends on. Slice letters avoid
-collision with phase-1 numbers. Each slice has an acceptance line and is
-testable on the local stack (`apps/auth` Logto + this repo's compose).
+- The editor says whether it has file-system access, as one more field in
+  its answer to the `profileCloudMounted` message the element already
+  sends.
+- With access, the element behaves as above. Without it, the element is
+  cloud-only: it says so, and it hides what needs a file (show in folder,
+  local-only states).
 
-| Slice | Repo | Depends on | Rough size |
+Not in this migration: giving the web editor a folder through the browser's
+directory picker, and backing up changed files to the cloud without the
+user pressing save. Both become possible on top of the above; each is its
+own decision.
+
+### 4.10 Editor and website
+
+grid-editor, in the release that ships with the cutover:
+
+- `PROFILE_CLOUD_URL_PROD` points at the new host. The nightly address and
+  the pull-request preview naming are removed, since those hosts no longer
+  exist; the local option stays.
+- The URL is also a saved setting (`profileCloudUrl`). On start, a saved
+  value equal to an old `*.web.app` address is replaced by the new default.
+- The file-system field of section 4.9.
+- The bundled `@intechstudio/profile-cloud-webcomponent` is bumped to the
+  API-backed build.
+- A notification about the move.
+
+Website: `api/grid-configs` calls `GET /v1/configs?owner=<username>` on the
+new host instead of the Function. The hardcoded uid and the two env values
+for the Function go away.
+
+### 4.11 Hosting and Docker files
+
+Two environments, as with Vendure: local first in Docker, then `main`.
+
+| | Where | Database | Images |
 |---|---|---|---|
-| A. Server side (adapter-node, Drizzle, `/v1` routes) | profile-cloud | local Logto (phase-1 slice 1) | 4..6 days |
-| B. Client seam + API backend | profile-cloud | A | 3..5 days |
-| C. Migration tooling + dev rehearsal | profile-cloud (`scripts/migrate/`) | A, exports (user action) | 2..3 days |
-| D. Hosting, CI, editor URLs | profile-cloud, grid-editor, Coolify | A, B | 2..3 days |
-| E. Public API, website, backups, monitoring | profile-cloud, webapps, argus | A, D | 1..2 days |
-| F. Cutover | runbook | phase-1 slice 8 done, C rehearsed, D, E | 1 day + 1 rehearsal |
-| G. Decommission | profile-cloud, grid-editor, Firebase console | F confirmed, retention passed | 1 day |
+| Production | `https://profile-cloud.intech.studio` on Coolify, deployed on every push to `main` | its own Postgres resource on Coolify, with its own scheduled backup | `profile-cloud-images` |
+| Local | `http://localhost:5200` | Postgres from the compose file | `profile-cloud-images-dev` |
 
-### Slice A: server side
+There is no hosted dev or nightly environment and there are no pull-request
+previews. Migrations run when the server starts, so a push to `main` that
+changes the schema migrates production on restart. A push to `main` is also
+live in every editor at once, because editors load the element at run time;
+testing against a real editor locally is the guard.
 
-- `@sveltejs/adapter-node` replaces `adapter-static`; UI routes keep
-  `ssr = false`. Web component build output moved to `static/wc/`.
-- `src/lib/server/db/`: Drizzle schema (6.2), `drizzle.config.ts`,
-  generated migrations in `drizzle/`, pool + `migrate()` + `LISTEN` started
-  from the `init` hook in `hooks.server.ts`.
-- `hooks.server.ts` `handle`: bearer extraction, `jose` JWKS verification
-  against `OIDC_ISSUER` with `OIDC_ALLOWED_AUDIENCES` into `event.locals.user`,
-  CORS allow-list from `CORS_ORIGINS` (preflight answered here, the `/wc/`
-  CORS header too).
-- `src/routes/v1/**/+server.ts`: all endpoints of 6.4, zod-validated bodies
-  from `src/lib/schemas.ts`, SSE as a streamed `Response`, multipart images
-  with size and mime checks, `/public/*` with the key, `/healthz`.
-- `docker-compose.yml` (Postgres + app), `Dockerfile`, `.env.example`
-  (`DATABASE_URL`, `OIDC_*`, `CORS_ORIGINS`, `PUBLIC_API_KEY`, `ORIGIN`,
-  `BODY_SIZE_LIMIT`), README.
-- Tests: endpoint tests (Vitest) calling the route handlers or a running
-  preview against a throwaway Postgres: ownership, visibility of public vs
-  private, username uniqueness and length, `since` cursor including deletes,
-  audience rejection, image round trip above 512 KB.
-- Acceptance: with the local Logto, a token from the slice-5 editor build
-  (or a token minted by the seed M2M for tests) can create, list, publish,
-  and delete a config; an anonymous call sees only public rows; SSE delivers
-  the change within a second.
+Files, named as in the auth repo:
 
-### Slice B: client seam and API backend
+| File | For |
+|---|---|
+| `Dockerfile` | The production image: builds the app and the web component, runs the Node server |
+| `docker-compose.yml` | Local development: Postgres, and the app built from the `Dockerfile` when the production image itself is to be tried |
+| `docker-compose.hosted.yml` | What Coolify deploys: the app only, every value from Coolify's environment, a health check on `/healthz`. The database is the separate Coolify resource |
+| `.dockerignore`, `.env.example` | As usual; `.env.example` lists every variable both compose files read |
 
-- `src/lib/cloud/` as in 6.5; Firebase code moved behind the interface
-  unchanged; API implementation with fetch-streamed SSE and the polling
-  fallback; token held from the editor's `userAuthentication` message;
-  `getUsername` batched; image upload through the API; `firebase.ts`
-  analytics removed.
-- Delete `transfer-configs-to-dev.js`; add `scripts/dump-public.ts`.
-- Acceptance: the local editor (slice-5 branch, `VITE_PROFILE_CLOUD_URL`
-  pointing at a local dev build with `PUBLIC_CLOUD_BACKEND=api`) shows the
-  same tree, save/overwrite/delete/publish, link copy, drag-to-load, username
-  set, image paste, as the Firebase build; switching the env back to
-  `firebase` restores today's behaviour with no other change.
+The local loop: Keycloak from a checkout of `intechstudio/auth`
+(`docker compose up`), Postgres from this repo's compose file, `npm run dev`.
+A test user and its token come from the auth repo's helper
+(`node e2e/test-user.ts create`, then `token <email> <password>`). API tests
+need neither Keycloak nor R2: they sign tokens with a test key and use the
+in-memory image store.
 
-### Slice C: migration tooling
+Also: `/healthz` is added to the monitor stack in `argus`; the three
+`firebase-hosting-*.yml` workflows are removed and the npm publish stays;
+a runbook `docs/runbooks/hosted-profile-cloud.md` describes the Coolify
+set-up in the style of the Keycloak one.
 
-Inputs (all **user action** or run only with explicit approval for that
-run, as in phase-1 D23): Firestore export of `configs`, `users`,
-`usernames` (use the existing daily export in the backup bucket, or an
-Admin SDK read); `firebase auth:export` of the **profile-cloud** project
-(for the local uid → `sub` map); a listing of `config_images/` in Storage.
+Until the cutover, `main` keeps deploying the Firebase build. The work lives
+on `feat/firebase-migration`, which the Coolify application follows until
+then; at the cutover the branch merges and the application follows `main`.
 
-`scripts/migrate/` (run with `tsx`, reusing the Drizzle schema from
-`src/lib/server/db/`):
+## 5. The migration script
 
-1. `map-users.ts`: local uid → `sub` from `providerUserInfo` where
-   `providerId == "oidc.is-auth"`; report unmapped uids and the rows they
-   own (D-P2.8).
-2. `import.ts`: idempotent upsert; `Timestamp → timestamptz`;
-   `access[] → config_access`; type normalisation; `users` + `usernames` →
-   `users` (conflicts reported, not resolved silently); download every
-   `firebasestorage.googleapis.com/…/config_images/…` URL found in
-   `description`, store it, rewrite the markdown URL to `/v1/images/<id>`;
-   `--dry-run`, resumable, counts at the end.
-3. `verify.ts`: row counts per collection, per-owner counts, checksum of
-   `configs` payloads, sample of rewritten descriptions, list of images
-   referenced but missing.
-4. `rekey-config.ts`: prints the new ids for `Configuration.json` and the
-   website constant (until D-P2.9 removes them).
+One script, `scripts/migrate-from-firebase.ts`, copies everything. It
+follows the conventions of the link script that already ran on production:
+plain Node, the operator's own `gcloud` login and no service-account key, a
+dry run unless `--commit` is passed, output that shows counts and ids only,
+and a `--report` file with the full lists. It reads Firebase with admin
+credentials, so it works while the projects are closed to customers.
 
-Acceptance: rehearsal against the `profile-cloud-dev` export into
-`profile_cloud_dev`; the editor on the slice-5 branch, signed into hosted
-`auth-dev` as an imported user, lists their configs with images rendering
-from the new host.
+What it does, in order:
 
-### Slice D: hosting, CI, editor
+1. **Accounts → users.** Reads every account of the Firebase project (the
+   same paged read the link script uses). Each Firebase uid is mapped to a
+   Keycloak id:
+   - from the account's `oidc.keycloak` identity, which the link run and
+     every later Keycloak sign-in wrote;
+   - otherwise from its `oidc.is-auth` identity through the uid map file
+     kept in the auth checkout (`--uid-map`). This covers people who first
+     opened Profile Cloud from an older editor after the link run;
+   - otherwise the account has no Keycloak user (the known 20). It is kept
+     as a user nobody can sign in to, under an id computed from its
+     Firebase uid: its username and public configs stay visible, and
+     support can hand it to a real user later with one SQL update.
 
-- Coolify: `profile-cloud-dev` then `profile-cloud` services (one
-  container from the repo's `Dockerfile`; Postgres shared), roles and
-  databases as in the Logto runbook, env (`DATABASE_URL`, `OIDC_ISSUER`,
-  `OIDC_ALLOWED_AUDIENCES`, `CORS_ORIGINS`, `PUBLIC_API_KEY`, `ORIGIN`,
-  `BODY_SIZE_LIMIT`), domains, health check on `/healthz`. Runbook under
-  `docs/runbooks/hosted-profile-cloud.md` in the style of `hosted-logto.md`.
-- Coolify preview deployments enabled on the dev service (D-P2.4);
-  workflows replace the three `firebase-hosting-*.yml` with image build and
-  Coolify deploy webhooks; a PR preview must serve SPA, element and API.
-- grid-editor: new URLs in `configuration.json`, element naming by the new
-  substrings, persisted-setting migration, `README` origins list for the
-  Logto seed (CORS list and `GRID_EDITOR_WEB_REDIRECT_URIS` now share the
-  same origins; keep them in one place).
-- Old-host shim prepared (one-line `components.js`), deployed at cutover.
-- Acceptance: dev element loaded from the new dev host inside a nightly
-  editor build; a PR preview URL loads as `profile-cloud-pr`.
+   Where an account has both identities, the two routes must agree; a
+   disagreement is reported and the Keycloak identity wins. Two accounts
+   that map to the same Keycloak id are merged into one user; if both have a
+   username, the older account's is kept and the case is reported.
+2. **Usernames.** `users` and `usernames` documents become the `username`
+   column. Inconsistent pairs are reported.
+3. **Configs.** Every `configs` document becomes a row: the id as section
+   4.2 decides (proposed: computed from the Firestore id), timestamps
+   converted, the two type fix-ups applied, `access` dropped, owner
+   replaced by the mapped id, and `summary` and `search` derived with the
+   function the server uses.
+4. **Featured owners.** The five uids from `Configuration.json` set
+   `featured`. The script stops if one of them has no Keycloak id.
+5. **Images.** Every `config_images` URL found in a description is copied
+   from Firebase Storage to the R2 bucket under the same uuid, gets its
+   row, and is replaced in the markdown by the new URL. An object already
+   in the bucket is skipped, so the bulk of the images can be copied before
+   the cutover. Images no description refers to are not copied.
+6. **Verify.** Counts per collection and per owner against Firestore, a
+   checksum over the config payloads, every rewritten image URL answering,
+   and the list of everything reported above.
 
-### Slice E: public API, website, backups, monitoring
+On the Postgres side it insists on an empty database, or empties it with
+`--reset`, and writes in one go. There is no incremental mode: every
+rehearsal and the real run start from nothing.
 
-- Website `api/grid-configs`: new endpoint URL and key env names; owner by
-  username (D-P2.9).
-- Nightly `pg_dump` for `profile_cloud` added to the existing backup routine;
-  restore tested once on dev.
-- `/healthz` added to the argus monitor stack; alert on SSE connection
-  count dropping to zero during editor hours is optional.
-- Acceptance: website profile list renders from the new API in dev; a
-  restored dump on dev serves the editor.
+Rehearsals load into the production database itself. Before the cutover it
+is empty and nothing points at it, so real data can be loaded, looked at
+through the production host with a locally built editor, and wiped again.
 
-### Slice F: cutover (runbook)
+## 6. Cutover
 
-Pre-conditions: phase-1 slice 8 confirmed (Logto is live and the editor
-release that sends Logto tokens is out), C rehearsed twice on dev, D and E
-deployed to prod with empty data.
+Before:
 
-1. Prod exports (Firestore, Storage listing, profile-cloud `auth:export`):
-   **user action**. Import into `profile_cloud`, `verify.ts` clean.
-2. Deploy static with `PUBLIC_CLOUD_BACKEND=api` to the new prod host;
-   deploy the old-host shim on Firebase Hosting; publish the editor release
-   with the new URLs (or ship the URL change one release earlier so only
-   the static flip remains).
-3. Smoke: imported user with private configs, public browse anonymous,
-   config link from the website, image rendering, username change, website
-   `grid-configs`.
-4. Delta: re-run `import.ts` once more for rows with `modifiedAt` after the
-   export timestamp (D-P2.10).
-5. Rollback until confirmed: redeploy static with `PUBLIC_CLOUD_BACKEND=firebase`
-   (the Firebase project is untouched by the import); editor needs nothing.
-   Rows written to Postgres in between are re-exported into Firestore by the
-   reverse of `import.ts` only if the rollback lasts; otherwise they wait
-   for the second attempt.
+- The script has run cleanly against production data at least twice, and
+  real accounts have been checked on the production host.
+- The editor release and the website change are ready.
+- The live Firestore and Storage rules are saved to a file.
 
-### Slice G: decommission
+Then, with no time pressure between the steps:
 
-After the retention window agreed in F (suggest 30 days of clean operation):
+1. **Close Firebase to customers.** Publish Firestore and Storage rules
+   that deny everything. Admin scripts still read. Deploy one last build to
+   the two `*.web.app` hosts that only shows a notice: Profile Cloud is
+   moving, update Grid Editor to use it again. This is the one part of an
+   installed editor that can still be changed, so it is how every existing
+   editor gets told.
+2. **Migrate.** Run the script with `--reset --commit`. Check its verify
+   output, then sign in on the production host and look at known accounts:
+   own private configs, a public config, a link, an image.
+3. **Release.** Merge `feat/firebase-migration` to `main` and point the
+   Coolify application at `main`. Release the editor. Deploy the website
+   change.
+4. **Confirm.** In the released desktop editor and the web editor: sign in,
+   save, publish, paste an image, see "Configs were changed" after a change
+   from a second window. Announce.
 
-- profile-cloud: delete `src/lib/cloud/firebase.ts`, `firebase.ts`,
-  `collections.ts`, `functions/`, `firebase.json`, `firestore.*`, the
-  `firebase` dependency, the old workflows; stop publishing the shim.
-- grid-editor: nothing left after slice 5 plus D.
-- Console (**user action**): disable Firestore and Storage writes first,
-  export a final archive to cold storage we own, then delete the
-  `profile-cloud` and `profile-cloud-dev` projects and the backup bucket;
-  remove the `FIREBASE_SERVICE_ACCOUNT_PROFILE_CLOUD*` GitHub secrets and
-  `X_INTECHSTUDIO_KEY` from Secret Manager.
+Until step 3, backing out means publishing the saved rules and redeploying
+the previous build to `*.web.app`. After step 3 there is no return.
 
-## 9. Pre-checks that need prod access (user action or approved run)
+Afterwards the Firebase projects stay closed to customers and readable for
+admin scripts for as long as the owner wants them. Deleting them is the
+owner's step, together with the old central Auth projects, the importer and
+its exports (uid map included) as the auth runbook `after-switch.md`
+describes, and the Firebase secrets in GitHub and the website's env. Once
+the projects are gone, older editors cannot load the element at all.
 
-- Live `firestore.rules` and Storage rules from the console, to confirm the
-  access model in 6.4 matches what is enforced today, not the stale file.
-- Counts: `configs` total / public / per owner, `users`, `usernames`,
-  Storage objects and total bytes under `config_images/`, largest object.
-- `auth:export` of the profile-cloud project: how many local users lack an
-  `oidc.is-auth` identity (D-P2.8), how many have none at all.
-- Whether any caller other than the website uses the three Functions
-  (Cloud Functions request logs for 30 days).
-- The Electron renderer `Origin` on the slice-5 build, for the CORS list.
-- Which Postgres server and backup routine host `logto_auth`, so
-  `profile_cloud` follows it (the Logto runbook has the same `TODO(user)`).
+## 7. Epic and tasks
+
+Epic: **Move Profile Cloud off Firebase.** Done when Profile Cloud runs on
+the new service for every user and no repo depends on Firebase.
+
+The project is followed in dex: one epic, the tasks below, and subtasks
+added to a task when work on it starts.
+
+How the work is run: agents carry out the tasks, steered by Claude, and
+nothing starts without the owner's command. Each task has a brief an agent
+can work from and a "done when" that can be checked. The owner reviews a
+finished task before anything that needs it begins. There are no time
+estimates; the table gives the order and what can run side by side.
+
+| # | Task | Needs | Can run alongside |
+|---|---|---|---|
+| 1 | Id strategy | | |
+| 2 | Server foundation | 1 | |
+| 3 | API | 2 | 4, 8 |
+| 4 | Image storage on R2 | 2 | 3, 8 |
+| 5 | Client on the API | 3, 4 | 7, 8 |
+| 6 | Local config folder | 5 | 7 |
+| 7 | Migration script | 2, 4 | 5, 6, 8 |
+| 8 | Hosting | 2 | 3, 4, 5, 7 |
+| 9 | Editor release and website | 5, 6 | 10 |
+| 10 | Rehearsal on production data | 5, 7, 8 | 9 |
+| 11 | Cutover | 9, 10 | |
+| 12 | Clean-up | 11 | |
+
+Tasks 1, 10 and 11 are done together with the owner: a decision, runs
+against production, and the release.
+
+**1. Id strategy.** Answer the questions of section 4.2 for both directions
+of sync, with the owner. A design task: no code beyond the test cases.
+*Done when:* section 4.2 states the decision, every case in its list has an
+answer, and the rules exist as test cases.
+
+**2. Server foundation.** `adapter-node`; Drizzle schema and first
+migration; database opened and migrated at start; token verification;
+`/healthz`; `Dockerfile`, both compose files, `.env.example`; README section
+for the local loop.
+*Done when:* `docker compose up` gives a working local stack, and a request
+with a token from the local Keycloak is recognised while a wrong audience, a
+wrong issuer and an expired token are refused.
+
+**3. API.** The config, user and username endpoints, the light list and the
+full detail, the function that derives `summary` and `search`, `?q=`, the
+`state` value, CORS, zod validation shared with the client.
+*Done when:* tests cover ownership (nobody changes another user's config),
+what an anonymous caller sees, username rules, the list never carrying
+payload, files or description, search finding a word that occurs only inside
+a script, and `state` changing on every kind of write.
+
+**4. Image storage on R2.** The storage module, the two image endpoints, the
+body size limit, the buckets, tokens and custom domain.
+*Done when:* an image above 512 KB uploaded locally is served from the
+development bucket's URL, a wrong type and an oversized file are refused,
+and delete removes object and row.
+
+**5. Client on the API.** `src/lib/api.ts` with `execute()`; every Firebase
+call site moved; Firebase code, `/authorize` and `functions/` deleted; ids
+as decided in task 1; awaited writes; the token expiry handling, tried with
+a one-minute lifetime; the change notice with Refresh; progressive loading
+(detail on click, kept by id and `updatedAt`, presets in the tree from
+`summary`, server search next to local search); the minimum editor version.
+*Done when:* in a local editor the element lists, saves, overwrites,
+deletes, publishes, copies a link, loads by drag, sets a username and pastes
+an image; cloud entries stay light until clicked, a profile's presets show
+in the tree before its payload is fetched, and search finds a word inside a
+script both in a cloud config and in a local file; `grep -ri firebase src`
+finds nothing.
+
+**6. Local config folder.** The file-system field in the editor's answer;
+cloud-only mode in the element; a written check list for the folder
+behaviour of section 4.9 and for the sync cases of section 4.2.
+*Done when:* in the desktop editor a file added, changed and removed in the
+folder shows in the list without a restart, a file paired with a cloud copy
+before the migration behaves as task 1 decided, and the web editor shows
+cloud-only mode.
+
+**7. Migration script.** Section 5, with the mapping, merge and id rules as
+unit tests on made-up accounts, like the link plan's tests.
+*Done when:* a dry run prints every count in section 9, and a committed run
+into a local database passes its own verify step.
+
+**8. Hosting.** Coolify: the Postgres resource with its backup and one tried
+restore, the application from `docker-compose.hosted.yml`, env, domain,
+health check, deploy on push; monitoring; the runbook.
+*Done when:* the production host serves page, element and API from the
+branch against an empty database, and a restored backup serves the same
+data.
+
+**9. Editor release and website.** The changes of section 4.10, as pull
+requests that stay unmerged until the cutover.
+*Done when:* an editor built from the branch works against the production
+host, including an install that had the old URL saved, and the website's
+list renders from the new API.
+
+**10. Rehearsal on production data.** Run the script against production into
+the production database (reads only on the Firebase side; approved for each
+run), look at the reports, decide the open cases, repeat after fixes.
+*Done when:* two runs in a row need no change to the script, and real
+accounts have been checked.
+
+**11. Cutover.** Write `docs/runbooks/cutover.md` from section 6 with the
+exact commands, then run it.
+*Done when:* the confirm step passes on production.
+
+**12. Clean-up.** README rewritten for the new setup; the auth documents
+updated to say Profile Cloud no longer uses Firebase; the list of what the
+owner deletes, handed over.
+*Done when:* the docs describe only what runs.
+
+## 8. Choices for the owner
+
+Settled in the review: the relational model and its simplifications; images
+on R2; a Postgres resource of its own; local and production only; downtime
+at the cutover; the request wrapper in the client; no version history.
+
+Still open, each with the recommendation the plan assumes:
+
+1. **The id strategy** (section 4.2). Decided in its own task, including
+   whether old links keep working.
+2. **Progressive loading** (section 4.5) is written into the plan as
+   suggested: a light list, the detail on click, and two derived columns so
+   the tree and search keep working. The lighter alternative drops searching
+   inside the scripts of cloud configs and with it the `search` column.
+3. **Accounts without a Keycloak user** are kept (section 5, step 1).
+   Alternative: leave them and their configs out.
+4. **Token lifetime:** 30 minutes for the `grid-editor` client, adjusted
+   after testing.
+5. **Image reads straight from the bucket's custom domain** (section 4.7).
+   Alternative: through the API, which hides R2 but puts every image
+   through the Node server.
+6. **The notice in existing editors comes from a last deploy to
+   `*.web.app`** (section 6, step 1). This is my reading of "a notification
+   in the editor"; a notification in the new editor release is listed in
+   section 4.10 as well.
+7. **Usernames stay case-sensitive, as today**, unless the dry run finds no
+   two names that differ only by case; then the column becomes
+   case-insensitive.
+8. **The R2 bucket's location:** default, or EU jurisdiction, which needs a
+   different endpoint and has to be chosen when the bucket is created.
+
+## 9. Checks that need production access
+
+All are reads. Each run needs the owner's approval.
+
+- The live Firestore and Storage rules, copied from the console.
+- The script's dry run, which reports:
+  - accounts in total, mapped by each route, and without a Keycloak user;
+    what the latter own (configs, how many public);
+  - accounts merged into one user; username conflicts; names that differ
+    only by case;
+  - configs in total and public, the size of the full list in bytes, and
+    the largest single config;
+    configs whose `access` is not `[owner]`; configs whose owner has no
+    account;
+  - whether all five featured uids map;
+  - image URLs in descriptions, and objects, total bytes and the largest
+    object under `config_images/`.
+- Request logs of the three Functions for 30 days: is the website really
+  the only caller.
 
 ## 10. Risks
 
-- **Re-key correctness** is the only irreversible-looking step; it is fully
-  derived from the auth export, dry-run and verified, and the Firebase side
-  is untouched until G.
-- **Unknown live rules** may allow behaviour the new API tightens (any
-  signed-in user editing any config). Expected to be fine; confirmed by the
-  pre-check.
-- **CORS and Electron origin**: new surface Firebase absorbed. Caught in
-  slice B/D acceptance on the real editor build.
-- **Change feed on the Coolify proxy**: SSE needs no buffering on Traefik;
-  the polling fallback covers a misconfiguration.
-- **Timing with phase 1:** phase 2 cannot cut over before phase-1 slice 8,
-  because the API verifies Logto tokens. Slices A..E can be built and
-  rehearsed in parallel with phase-1 slices 5..7 on the local stack.
-- **Persisted editor setting** pointing at `*.web.app`: covered by the
-  setting migration and the shim.
+- **A wrong owner mapping** would show people the wrong private configs. It
+  is derived from identities Firebase holds, checked two ways where
+  possible, verified by per-owner counts, and tried with real sign-ins
+  before the cutover.
+- **Local files and their cloud copies must line up after the id change.**
+  This is what the id strategy task is for, and task 6 checks it in a real
+  editor.
+- **Every desktop user has to update.** The notice says so, the web editor
+  needs nothing, and local configs are unaffected.
+- **A push to `main` is live everywhere at once**, with no nightly host in
+  between. Schema changes and element changes are tried locally against a
+  real editor first.
+- **Progressive loading changes how the client holds configs.** Today
+  every config is complete in memory; afterwards cloud entries are light
+  until clicked, while local files stay complete. The merge of the two, the
+  tree and search each have to work with both. It is the largest change to
+  existing client code, and task 5 is checked against it.
+- **Rules nobody has read.** The live rules may allow things the API will
+  not, such as editing someone else's config. That tightening is intended.
+- **No return after the release.** What makes that acceptable: rehearsals
+  on real data, the way out before step 3, and the untouched Firebase copy.
 
-## 11. Not changing
+## 11. Where Profile Cloud is heading
 
-The editor ↔ profile-cloud message protocol, the local-file merge and
-`cloudId` linking, config ids and deep-link formats, the element delivery
-mechanism, the offline npm package, the UI.
+Context from the owner, 2026-11-25. **None of this is built in the
+migration.** It needs larger editor changes and is its own project. It is
+written down because it decides a few things here.
+
+The direction:
+
+- **A whole control surface as one thing.** Today a profile holds one
+  module's page config and that page's files. The aim is one saved unit for
+  the interconnected surface: all connected modules, their configs and
+  their files for the active page, written to a local file and loaded onto
+  the modules in one action (one by one underneath, with the existing Grid
+  logic). The name is open; "collection" and "surface" are the candidates.
+- **A shadow copy.** When a module is unplugged its code is gone from the
+  editor. A copy of the last known setup, kept by the editor, would cover
+  that.
+- **Smaller pieces stay.** Snippets and control element configs remain, and
+  a larger config can be opened to take one piece out of it. An
+  organisational layer comes on top.
+- **No version history.** Undo and redo through stored versions was
+  considered and is not wanted.
+- **The panel.** A plain list, with the selected config's description in
+  its own box beside it, or moved into the configuration panel. An idea, to
+  be compared with how other software does it.
+
+What follows for this migration:
+
+- **One row is one self-contained document, shaped like the local file.**
+  The server does not interpret the payload, apart from the one function
+  that derives the summary and the search text, and the kind of config is a
+  plain text field. A surface later is a new kind with a bigger
+  payload, not a new table and not a set of references between rows.
+- **Identity belongs to the document.** Pieces inside a config are found by
+  their place in it, not by ids of their own. The id strategy (section 4.2)
+  only has to cover whole documents, and a surface file will get its id the
+  same way a profile does.
+- **The list should not carry payloads.** Surfaces will be several times
+  the size of a profile, and a list with a detail box only needs the
+  payload of the selected config. Section 4.5 does this now: a light list,
+  and description, payload and files when a config is clicked.
+- **The local file is the working copy, the cloud is the share and the
+  backup.** Nothing in the API assumes a config exists only in the cloud,
+  and the folder handling of section 4.9 is treated as a core feature.
+- **No history tables.** One row per config, overwritten on save.
+- **The shadow copy is the editor's business.** It should live outside
+  `grid-userdata/configs`, or every shadow file would appear in the list.
 
 ## Sources
 
-- Phase 1: `webapps/docs/auth-rework-plan.md`, `webapps/apps/auth/runbooks/hosted-logto.md`
-- grid-editor slice 5: branch `feat/auth-logto` (`src/electron/auth.ts`, `src/shared/auth-provider.ts`)
-- Firebase auth export format: https://firebase.google.com/docs/cli/auth
-- Firestore export/import: https://firebase.google.com/docs/firestore/manage-data/export-import
-- Logto API resources: https://docs.logto.io/authorization/api-resources
+- Sign-in as it runs: `intechstudio/auth` (`README.md`,
+  `realm/intechstudio.json`, `importer/uid-map.ts`, `e2e/test-user.ts`);
+  grid-editor PR #1687 (`src/electron/auth.ts`,
+  `src/renderer/lib/auth.web.ts`); profile-cloud PR #191 and this repo's
+  README, "Authentication".
+- The config folder: grid-editor `src/electron/main.ts`
+  (`startConfigWatcher`), `src/renderer/main/panels/profileCloud/ProfileCloud.svelte`.
+- What was run on production and what still waits for this migration:
+  `webapps/docs/auth/runbooks/stage-2.md`, `after-switch.md`,
+  `hosted-keycloak.md`.
 - SvelteKit `adapter-node` (`BODY_SIZE_LIMIT`, `ORIGIN`): https://svelte.dev/docs/kit/adapter-node
-- SvelteKit server hooks (`handle`, `init`): https://svelte.dev/docs/kit/hooks
-- SvelteKit `sv add drizzle`: https://svelte.dev/docs/cli/drizzle
-- Drizzle Postgres `customType`, migrations: https://orm.drizzle.team/docs/custom-types ; https://orm.drizzle.team/docs/migrations
-- TypeORM `EntitySchema` (decorator-free entities): https://typeorm.io/docs/entity/separating-entity-definition
-- PocketBase stability statement: https://pocketbase.io/faq/
-- Coolify compose and preview deployments: https://coolify.io/docs/knowledge-base/docker/compose
+- SvelteKit page options (`ssr` per route): https://svelte.dev/docs/kit/page-options
+- Drizzle migrations: https://orm.drizzle.team/docs/migrations
+- R2 with the AWS SDK for JavaScript: https://developers.cloudflare.com/r2/examples/aws/aws-sdk-js-v3/
+- R2 public buckets and custom domains: https://developers.cloudflare.com/r2/buckets/public-buckets/
+- R2 signed URLs and their limits: https://developers.cloudflare.com/r2/api/s3/presigned-urls/
+- R2 API tokens: https://developers.cloudflare.com/r2/api/tokens/
+- R2 pricing: https://developers.cloudflare.com/r2/pricing/
+- R2 local development: https://developers.cloudflare.com/r2/local-development/
+- Identity Toolkit `accounts:batchGet`: https://cloud.google.com/identity-platform/docs/reference/rest/v1/projects.accounts/batchGet
