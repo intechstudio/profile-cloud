@@ -1,7 +1,8 @@
 # Profile Cloud off Firebase: migration plan
 
-Status: **plan, revised 2026-11-25 after the owner's review. Nothing in this
-document is built.**
+Status: **plan, revised 2026-11-25 after the owner's review; ids and the
+handling of the local folder against the cloud decided on 2026-11-26
+(sections 4.2 and 4.9). Nothing in this document is built.**
 
 Profile Cloud exists for two things: **sharing configs** and **backing them
 up**. The configs a user works with are files in the editor's
@@ -20,6 +21,9 @@ In short:
   HTTP API.
 - Images go to a Cloudflare R2 bucket.
 - The client calls the API instead of the Firebase SDK.
+- The local folder stays the working copy. While a user is signed in, the
+  files that have a cloud copy are kept backed up; nothing else about a file
+  depends on the network.
 - One script copies the production data from Firebase.
 - At the cutover Firebase is closed to customers, the script runs, and the
   new Profile Cloud and a new editor release go out. Downtime in between is
@@ -46,7 +50,11 @@ In short:
   customer already.
 - **Same features** for a user on the new editor, with the changes this
   document names.
-- **Configs stay linkable.** Their ids change (section 4.2).
+- **Configs stay linkable.** Their ids change, and old links keep working
+  (section 4.2).
+- **Offline first.** Saving and editing configs in the local folder is the
+  main thing and never depends on the network. The cloud is an extra on top
+  (section 4.9).
 
 ## 2. Where things stand
 
@@ -129,58 +137,48 @@ candidate is a public page per config (section 4.2).
 
 ### 4.2 Ids and links
 
-**Not settled. The id strategy is the first task of the epic**, because the
-schema, the API, the client and the migration script all depend on it. It
-has to cover both directions of sync: a local file going up to the cloud,
-and a cloud config coming down into a local file.
+Decided on 2026-11-26.
 
-What is known:
+**One id.** A config has one UUID. It is the `id` in the local file and the
+id of its cloud copy. The separate `cloudId` goes away.
 
-- A local config file has up to two ids today. Its own `id` is a UUID the
-  editor makes when the file is first written; every file has it. `cloudId`
-  is added only once the config has been saved to the cloud, and holds the
-  Firestore id of that copy (20 letters and digits). On the owner's machine
-  on 2026-11-25: 161 files, 95 of them with a `cloudId`.
-- The element pairs a local file with its cloud copy through `cloudId`
-  (`ConfigManager.ts`). A file whose `cloudId` matches nothing is shown as a
-  separate, local-only config.
+**Who makes it.** The id is made where the config is first written: by the
+editor when it writes a new file, as today, and by the client when a config
+is created without a folder (the web editor). The server never makes a
+config id. Saving to the cloud means "create or replace the config with this
+id" (`PUT /configs/:id`), so repeating a save does no harm.
 
-What is wanted:
+**Migrated configs.** A config copied from Firestore gets a UUID computed
+from its Firestore id (UUID version 5 under one fixed namespace). One small
+function in `src/lib/` does this, and it is used in three places:
 
-- One id style everywhere, not numeric. UUIDs fit: the editor and Keycloak
-  already use them.
-- Configs stay linkable. The old ids themselves do not have to survive.
-- Whatever is chosen, it is stated what a user sees after the cutover for a
-  file that was paired with a cloud copy before it.
+- the migration script, for the new ids;
+- the server, which converts any config id in a request that is not a UUID.
+  This is what keeps old links working, with no lookup table;
+- the client, for local files that still carry a `cloudId`. Such a file
+  counts as having the computed id. The file itself gets that id and loses
+  `cloudId` the next time it is saved.
 
-What the task has to answer:
+**Links** keep their form, `grid-editor://?config-link=<id>`. New links
+carry the UUID. Old links carry a Firestore id and still open, in the new
+editor.
 
-1. **One id or two.** Keep the pair (a local id, and a cloud id written
-   into the file), or give a config one UUID that is the same in the file
-   and in the database.
-2. **Who makes the id**: the client, the server, or the editor when it
-   writes the file.
-3. **Going up.** A file saved to the cloud for the first time; saved again;
-   a file whose cloud copy was deleted; a file that still carries an old
-   Firestore `cloudId`.
-4. **Coming down.** One's own config on a second machine or after a
-   reinstall; someone else's public config taken into the local folder (a
-   copy with its own identity, or still tied to the original); the same
-   config taken twice.
-5. **Migrated configs.** How the rows from Firestore get their new ids, and
-   how the files on users' disks find them again.
-6. **Links.** The form of a link, and whether old links resolve.
+The cases:
 
-The starting proposal, to be confirmed or replaced by that task: every id is
-a UUID in one `uuid` column type. Users have the Keycloak id. New configs
-get theirs from the database. A migrated config gets a UUID computed from
-its Firestore id (UUID version 5 under one fixed namespace), so the client
-can turn an old `cloudId` into the new id with one small function, with no
-lookup table and no second id column, and old links can be resolved the same
-way. Links keep their form, `grid-editor://?config-link=<id>`.
+| Case | What happens |
+|---|---|
+| A file is uploaded for the first time | A cloud copy is created with the file's id |
+| It is uploaded again | The cloud copy with that id is replaced |
+| A file is uploaded after its cloud copy was deleted | The cloud copy comes back under the same id, private |
+| A file is uploaded whose id belongs to someone else's cloud config (a file received from another user) | The server refuses. The client gives the file a new id and uploads it as the user's own |
+| One's own cloud config is taken onto a second computer | The file gets the same id, so it lines up with the cloud copy |
+| Someone else's config is imported | A copy with a new id, not tied to the original. Imported twice, it gives two files |
+| A file with an old `cloudId`, after the cutover | Lines up with its migrated cloud copy through the computed id |
+| A file with an old `cloudId` whose cloud copy no longer exists | A local file like any other, under the computed id |
+| An old link | Opens the migrated config |
 
-The task ends with this section rewritten as the decision, and with the
-rules as test cases the client and the migration script share.
+These rules are written as test cases that the client and the migration
+script share (task 1).
 
 Later, not part of this migration: a public web page per config, such as
 `https://profile-cloud.intech.studio/c/<id>`, server-rendered, with the
@@ -188,9 +186,6 @@ name, description and an "Open in Grid Editor" button. That makes a config
 shareable as an ordinary web link.
 
 ### 4.3 Data model
-
-The id columns below follow the starting proposal of section 4.2 and change
-with its outcome.
 
 ```sql
 users (
@@ -201,7 +196,7 @@ users (
 );
 
 configs (
-  id           uuid primary key default uuidv7(),
+  id           uuid primary key,    -- made by the client, the same as in the local file
   owner_id     uuid not null references users(id),
   name         text not null,
   description  text not null default '',
@@ -214,8 +209,9 @@ configs (
   display_name text,
   public       boolean not null default false,
   created_at   timestamptz not null,
-  modified_at  timestamptz not null,               -- set by the client; decides local against cloud
+  modified_at  timestamptz not null,               -- set by the client: the modified time of the file this copy came from
   updated_at   timestamptz not null default now(), -- set by the server on every write
+  deleted_at   timestamptz,                        -- set when the config is deleted in the panel; null otherwise
   summary      jsonb not null,      -- derived on save: what is inside, in short
   search       tsvector not null    -- derived on save: name, description, script text
 );
@@ -237,6 +233,15 @@ Simpler than in Firestore, as agreed:
   that had to be written together.
 - **No hardcoded owner ids.** The five uids in `Configuration.json` become
   the `featured` column, set by the migration and changed later with SQL.
+
+Two columns carry the folder handling of section 4.9:
+
+- **`modified_at`** is the modified time of the file a cloud copy was
+  uploaded from. A file with a later time than its cloud copy is uploaded.
+- **`deleted_at`** makes a delete soft. A deleted config is left out of
+  every list and its link stops working, but the row stays. Deleting also
+  makes it private, so a config that is uploaded again under the same id
+  comes back private.
 
 ### 4.4 Sign-in at the API
 
@@ -271,11 +276,10 @@ config in full; "The list and the detail" below says what each carries.
 |---|---|---|
 | `GET /configs` | optional | Public configs plus the caller's own, in light form, with the current `state` (section 4.6). `?owner=<username>` narrows to one owner, `?q=<text>` searches |
 | `GET /configs/state` | optional | Only the `state` |
-| `GET /configs/:id` | optional | One config in full; used when a config is clicked, loaded, or opened from a link |
-| `POST /configs` | required | Create; answers with the row and its id (who makes the id is section 4.2's question) |
-| `PUT /configs/:id` | required | Replace one's own |
+| `GET /configs/:id` | optional | One config in full; used when a config is clicked, loaded, or opened from a link. An old Firestore id is converted (section 4.2) |
+| `PUT /configs/:id` | required | Create the config with this id, or replace one's own. Refused with `409` if the id belongs to another user's config. Brings back a deleted config of one's own |
 | `PATCH /configs/:id` | required | Publish or unpublish |
-| `DELETE /configs/:id` | required | Delete one's own |
+| `DELETE /configs/:id` | required | Soft delete one's own (section 4.3) |
 | `GET /me` | required | Own user row |
 | `PUT /me/username` | required | Choose the username; `409` if taken or already chosen |
 | `GET /usernames/:name` | none | Is the name free |
@@ -288,7 +292,7 @@ and the heavy parts of a config come only when it is clicked.
 
 | | When | Carries |
 |---|---|---|
-| List | the panel opens, Refresh, a search | id, name, type, kind, version, owner, public, folder path, dates, `summary` |
+| List | the panel opens, Refresh, a search | id, name, type, kind, version, owner, public, folder path, dates (`modifiedAt` and `updatedAt` among them), `summary` |
 | Detail | a config is clicked, loaded onto a module, or taken into the local folder | everything: description, payload, files |
 
 It stays one table. Postgres keeps large values (payload, files, a long
@@ -337,14 +341,17 @@ Firestore pushed every change into the list. Configs do not change often
 enough to justify rebuilding that now, so the first version is deliberately
 small:
 
-- The list loads when the element starts, when the user signs in or out,
-  and after the user's own saves and deletes.
+- The panel has a **Refresh** button that is always there. It reloads the
+  cloud list and asks the editor to re-read the local folder (section 4.9).
+  A colleague who was told "it is uploaded" presses it and searches.
+- The list also loads when the element starts, when the user signs in or
+  out, and after the user's own saves and deletes.
 - With the list the server returns a `state`: a short value made from the
   number of configs the caller can see and the newest `updated_at` among
   them. Any create, edit, delete, publish or unpublish changes it.
 - The client asks `GET /configs/state` when the panel comes into view and
-  once a minute while it is open. If the value differs, it shows "Configs
-  were changed" with a **Refresh** button, which reloads the list.
+  once a minute while it is open. If the value differs, a dot appears on the
+  Refresh button. Nothing reloads by itself.
 
 The path from here, each step replacing one piece and none of them needed
 for the cutover:
@@ -352,7 +359,7 @@ for the cutover:
 1. Refresh fetches only the rows changed since the last load, using
    `updated_at`.
 2. The once-a-minute question becomes a pushed event.
-3. Changes are applied without the button.
+3. Changes are applied without pressing the button.
 
 ### 4.7 Images on R2
 
@@ -428,10 +435,14 @@ Deleted in the same change: `src/lib/firebase.ts`, `collections.ts`,
 
 Behaviour that changes:
 
-- Saves, deletes and publishing wait for the server's answer and report a
-  failure. Today they are fired and forgotten.
-- Ids and the pairing of local files with cloud copies work as section
-  4.2 decides.
+- What the user does to the cloud on purpose (Upload, publish, unpublish,
+  delete, get the cloud version) waits for the server's answer and reports a
+  failure. Today these are fired and forgotten.
+- What the user does to a file never waits for the network. The cloud copy
+  follows in the background (section 4.9).
+- Ids work as in section 4.2, and local files meet their cloud copies as in
+  section 4.9. The merge by `cloudId` and newer `modifiedAt` in
+  `ConfigManager.ts` is removed.
 - The list refreshes as in section 4.6.
 - Configs load progressively (section 4.5): the list holds light entries, a
   click fetches the detail, the tree builds a profile's presets from
@@ -441,39 +452,112 @@ Behaviour that changes:
 - The element already refuses editors below a minimum version
   (`WebComponent.svelte`). That constant becomes the cutover editor release.
 
-### 4.9 The local config folder
+### 4.9 The local folder and the cloud
 
-The folder is what makes Profile Cloud a backup, so its handling is written
-down here and checked as its own task.
+Decided on 2026-11-26. The folder comes first: saving and editing configs
+offline has to be solid, and the cloud is an extra on top of it.
 
-How it works today, and stays:
+**Principles**
 
-- The desktop editor watches `grid-userdata/configs` (`startConfigWatcher`
-  in `src/electron/main.ts`) and sends the whole list to the element as a
-  `localConfigs` message whenever a file is added, changed or removed.
-- The element merges local files and cloud configs (`ConfigManager.ts`):
-  linked by `cloudId`, the newer `modifiedAt` wins, and each entry shows as
-  local only, cloud only or in sync.
-- Saving writes the file through the editor and the cloud copy through the
-  API.
+- The files in `grid-userdata/configs` are the working copy. The cloud holds
+  a backup of them and the versions that are shared.
+- Saving, renaming, deleting and loading onto a module work from the file
+  alone and never wait for the network.
+- Being signed in is the switch for backup. Signed out, nothing is sent to
+  the cloud.
+- A file on one computer is never changed because of what happened on
+  another.
 
-What is missing today: the element cannot tell whether the editor has a
-folder at all. The web editor has no watcher and sends no local configs, and
-the element treats that the same as an empty folder.
+**Where a config is.** A config is a file on this computer, a cloud copy, or
+both. The two indicators on a list item show exactly that, one for the
+computer and one for the cloud. They no longer say which side is newer: the
+states "local", "cloud" and "synced" go away. Both indicators lit is the
+normal look of a backed-up config, since uploading never removes the file.
 
-What this migration adds:
+**What gives a config a cloud copy**
 
-- The editor says whether it has file-system access, as one more field in
-  its answer to the `profileCloudMounted` message the element already
-  sends.
-- With access, the element behaves as above. Without it, the element is
-  cloud-only: it says so, and it hides what needs a file (show in folder,
-  local-only states).
+- It is created in the editor while signed in, as today.
+- The user presses Upload on it.
 
-Not in this migration: giving the web editor a folder through the browser's
-directory picker, and backing up changed files to the cloud without the
-user pressing save. Both become possible on top of the above; each is its
-own decision.
+Files that get into the folder any other way (copied from a pendrive,
+written by an agent, created while signed out) stay local until Upload is
+pressed.
+
+**Keeping the cloud copy up to date.** While signed in, a file that has a
+cloud copy of the user's own is uploaded when the file's modified time is
+later than the cloud copy's. That one rule covers every way a file changes:
+an edit in the editor, an edit by hand or by an agent, and edits made while
+signed out, which go up after the next sign-in.
+
+- It is checked when the element starts, at sign-in, when the folder changes
+  and on Refresh.
+- Uploads go one at a time, and each stores the file's time with the cloud
+  copy.
+- A failed upload interrupts nothing and is tried again at the next check.
+  It shows as one of the editor's log messages.
+- Backup only uploads. It never changes or deletes a local file, and it
+  never deletes in the cloud.
+- A soft-deleted cloud copy does not count as a cloud copy. A file left on
+  another computer is not uploaded again unless the user presses Upload.
+
+**The actions**
+
+| Action | The file | The cloud copy |
+|---|---|---|
+| Create, signed in | Written | Created |
+| Create, signed out | Written | None until Upload |
+| Edit, rename, overwrite from a module | Written | Follows by the rule above |
+| Edit one's own config that is only in the cloud | None | Changed directly, as today |
+| Upload | Unchanged | Created or replaced; waits for the server and reports the result |
+| Import someone else's config | A new file with a new id | Unchanged |
+| Get the cloud version of one's own config | Written with the same id and the cloud copy's time; asks first if a file is already there | Unchanged |
+| Delete in the panel | Deleted | Soft deleted: hidden from every list, its link stops working, the row stays in the database |
+| Delete the file in the file system | Gone | Kept; the config shows as in the cloud only |
+| Load onto a module | Unchanged | Unchanged; works for any config, imported or not |
+
+**Two computers.** There is no merging and no conflict handling. If the same
+config is edited on two computers, the later file time wins in the cloud,
+and neither computer's file is touched.
+
+**What the editor provides**
+
+- It watches the folder (`startConfigWatcher` in `src/electron/main.ts`) and
+  sends the whole list to the element as a `localConfigs` message whenever a
+  file is added, changed or removed, as today. Each entry now also carries
+  the file's modified time.
+- It sets a file's time to the cloud copy's time when the file is written
+  from the cloud version. Otherwise a freshly fetched file would look newer
+  than its cloud copy and be uploaded straight back.
+- It re-reads the folder when the element asks, which is what the Refresh
+  button does on the local side.
+- It says whether it has file-system access, as one more field in its answer
+  to the `profileCloudMounted` message. Without access (the web editor) the
+  element is cloud-only: it says so, and it hides what needs a file.
+
+**Files that cause trouble**
+
+- A file the element cannot use, for example one without an id, is skipped
+  and named in a message, and the others load. Today one such file makes the
+  whole local list fail.
+- Two files with the same id give an error in the log that names both. One
+  of them is shown, as today.
+
+**First start after the cutover.** A file's modified time is always a moment
+later than the timestamp stored inside it, which is what the migrated cloud
+copy carries. So every file that has a cloud copy is uploaded once on first
+start, with the same content. Nothing changes for the user.
+
+**Not in this migration**
+
+- Loading the bundled element by itself when there is no internet. The
+  screen with the "Load Offline" button stays as it is; grid-editor issue
+  #1693 keeps the idea.
+- A content hash that would skip uploading a file whose time changed but
+  whose content did not. It only saves traffic and can be added later as one
+  column and one check.
+- A folder for the web editor through the browser's directory picker.
+- Sending only the changed file from the editor to the element, instead of
+  the whole list.
 
 ### 4.10 Editor and website
 
@@ -484,7 +568,10 @@ grid-editor, in the release that ships with the cutover:
   exist; the local option stays.
 - The URL is also a saved setting (`profileCloudUrl`). On start, a saved
   value equal to an old `*.web.app` address is replaced by the new default.
-- The file-system field of section 4.9.
+- What section 4.9 lists under "What the editor provides": the file's
+  modified time in the local list, setting that time on a file written from
+  the cloud version, re-reading the folder on request, and the file-system
+  field.
 - The bundled `@intechstudio/profile-cloud-webcomponent` is bumped to the
   API-backed build.
 - A notification about the move.
@@ -563,9 +650,9 @@ What it does, in order:
    username, the older account's is kept and the case is reported.
 2. **Usernames.** `users` and `usernames` documents become the `username`
    column. Inconsistent pairs are reported.
-3. **Configs.** Every `configs` document becomes a row: the id as section
-   4.2 decides (proposed: computed from the Firestore id), timestamps
-   converted, the two type fix-ups applied, `access` dropped, owner
+3. **Configs.** Every `configs` document becomes a row: the id computed
+   from the Firestore id (section 4.2), timestamps converted, the two type
+   fix-ups applied, `access` dropped, owner
    replaced by the mapped id, and `summary` and `search` derived with the
    function the server uses.
 4. **Featured owners.** The five uids from `Configuration.json` set
@@ -611,8 +698,10 @@ Then, with no time pressure between the steps:
    Coolify application at `main`. Release the editor. Deploy the website
    change.
 4. **Confirm.** In the released desktop editor and the web editor: sign in,
-   save, publish, paste an image, see "Configs were changed" after a change
-   from a second window. Announce.
+   save, publish, paste an image, see the dot on Refresh after a change
+   from a second window, and open a link made before the cutover. In the
+   desktop editor, a file that had a cloud copy before the cutover shows
+   both indicators. Announce.
 
 Until step 3, backing out means publishing the saved rules and redeploying
 the previous build to `*.web.app`. After step 3 there is no return.
@@ -640,12 +729,12 @@ estimates; the table gives the order and what can run side by side.
 
 | # | Task | Needs | Can run alongside |
 |---|---|---|---|
-| 1 | Id strategy | | |
+| 1 | Id and backup rules as test cases | | |
 | 2 | Server foundation | 1 | |
 | 3 | API | 2 | 4, 8 |
 | 4 | Image storage on R2 | 2 | 3, 8 |
 | 5 | Client on the API | 3, 4 | 7, 8 |
-| 6 | Local config folder | 5 | 7 |
+| 6 | Local folder and backup | 5 | 7 |
 | 7 | Migration script | 2, 4 | 5, 6, 8 |
 | 8 | Hosting | 2 | 3, 4, 5, 7 |
 | 9 | Editor release and website | 5, 6 | 10 |
@@ -653,13 +742,16 @@ estimates; the table gives the order and what can run side by side.
 | 11 | Cutover | 9, 10 | |
 | 12 | Clean-up | 11 | |
 
-Tasks 1, 10 and 11 are done together with the owner: a decision, runs
-against production, and the release.
+Tasks 10 and 11 are done together with the owner: runs against production,
+and the release.
 
-**1. Id strategy.** Answer the questions of section 4.2 for both directions
-of sync, with the owner. A design task: no code beyond the test cases.
-*Done when:* section 4.2 states the decision, every case in its list has an
-answer, and the rules exist as test cases.
+**1. Id and backup rules as test cases.** The decisions are made (sections
+4.2 and 4.9). This task writes them down as code the others build on: the
+function that computes a UUID from a Firestore id, the function that decides
+whether a file is uploaded, and their test cases.
+*Done when:* every case in the table of section 4.2 and every row of the
+actions table in section 4.9 has a test, and the client and the migration
+script use the same id function.
 
 **2. Server foundation.** `adapter-node`; Drizzle schema and first
 migration; database opened and migrated at start; token verification;
@@ -670,12 +762,17 @@ with a token from the local Keycloak is recognised while a wrong audience, a
 wrong issuer and an expired token are refused.
 
 **3. API.** The config, user and username endpoints, the light list and the
-full detail, the function that derives `summary` and `search`, `?q=`, the
+full detail, create-or-replace by id, the conversion of old Firestore ids,
+soft delete, the function that derives `summary` and `search`, `?q=`, the
 `state` value, CORS, zod validation shared with the client.
-*Done when:* tests cover ownership (nobody changes another user's config),
-what an anonymous caller sees, username rules, the list never carrying
-payload, files or description, search finding a word that occurs only inside
-a script, and `state` changing on every kind of write.
+*Done when:* tests cover ownership (nobody changes another user's config,
+and an id that belongs to someone else is refused), what an anonymous caller
+sees, username rules, the list never carrying payload, files or description,
+search finding a word that occurs only inside a script, `state` changing on
+every kind of write, a second save with the same id replacing the first, an
+old Firestore id finding its migrated config, and a deleted config being
+left out of the list, failing by its link and coming back private when it is
+saved again.
 
 **4. Image storage on R2.** The storage module, the two image endpoints, the
 body size limit, the buckets, tokens and custom domain.
@@ -685,8 +782,9 @@ and delete removes object and row.
 
 **5. Client on the API.** `src/lib/api.ts` with `execute()`; every Firebase
 call site moved; Firebase code, `/authorize` and `functions/` deleted; ids
-as decided in task 1; awaited writes; the token expiry handling, tried with
-a one-minute lifetime; the change notice with Refresh; progressive loading
+as in section 4.2; awaited writes for what the user does to the cloud on
+purpose; the token expiry handling, tried with a one-minute lifetime; the
+Refresh button and its dot; progressive loading
 (detail on click, kept by id and `updatedAt`, presets in the tree from
 `summary`, server search next to local search); the minimum editor version.
 *Done when:* in a local editor the element lists, saves, overwrites,
@@ -696,13 +794,31 @@ in the tree before its payload is fetched, and search finds a word inside a
 script both in a cloud config and in a local file; `grep -ri firebase src`
 finds nothing.
 
-**6. Local config folder.** The file-system field in the editor's answer;
-cloud-only mode in the element; a written check list for the folder
-behaviour of section 4.9 and for the sync cases of section 4.2.
-*Done when:* in the desktop editor a file added, changed and removed in the
-folder shows in the list without a restart, a file paired with a cloud copy
-before the migration behaves as task 1 decided, and the web editor shows
-cloud-only mode.
+**6. Local folder and backup.** Section 4.9, in the element and in
+grid-editor. In the element: the two indicators with their new meaning, the
+upload rule and when it is checked, Upload, import and "get the cloud
+version", the soft delete, skipping a file it cannot use, the log error for
+two files with one id, and cloud-only mode. In grid-editor: the file's
+modified time in the local list, setting that time on a file written from
+the cloud version, re-reading the folder on request, and the file-system
+field.
+*Done when,* in the desktop editor:
+- a file added, changed and removed in the folder shows in the list without
+  a restart, and Refresh picks up a change as well;
+- with no network, a config is saved, renamed, deleted and loaded onto a
+  module without waiting;
+- a file with a cloud copy that is edited by hand is uploaded while signed
+  in, and is not while signed out; after signing in again it is;
+- a file put into the folder by hand is not uploaded until Upload is
+  pressed;
+- an older copy of a config on a second computer is neither uploaded nor
+  changed;
+- deleting in the panel removes the file and hides the cloud copy, and
+  deleting the file in the file system leaves the cloud copy;
+- a file without an id is skipped and named while the others load;
+- a file that had a cloud copy before the migration shows both indicators;
+
+and the web editor shows cloud-only mode.
 
 **7. Migration script.** Section 5, with the mapping, merge and id rules as
 unit tests on made-up accounts, like the link plan's tests.
@@ -743,10 +859,24 @@ Settled in the review: the relational model and its simplifications; images
 on R2; a Postgres resource of its own; local and production only; downtime
 at the cutover; the request wrapper in the client; no version history.
 
+Settled on 2026-11-26:
+
+- One UUID per config, made by the client, with old Firestore ids converted
+  on the server so old links keep working (section 4.2).
+- The folder first and the cloud as an extra; sign-in as the switch for
+  backup; one upload rule by file time; two indicators and no sync states;
+  soft delete in the cloud; a Refresh button (section 4.9).
+- Half-finished edits reaching a public config through backup are accepted
+  as a minor annoyance.
+- Left out on purpose: a content hash, a "differs" mark, a separate backup
+  switch, safer file writes in the editor, new ids for duplicate files, and
+  loading the offline element automatically (grid-editor issue #1693).
+
 Still open, each with the recommendation the plan assumes:
 
-1. **The id strategy** (section 4.2). Decided in its own task, including
-   whether old links keep working.
+1. **Moving a deleted local file to the system trash** instead of removing
+   it for good, to match the soft delete in the cloud. Raised, not decided;
+   the plan assumes the file is removed as today.
 2. **Progressive loading** (section 4.5) is written into the plan as
    suggested: a light list, the detail on click, and two derived columns so
    the tree and search keep working. The lighter alternative drops searching
@@ -795,8 +925,19 @@ All are reads. Each run needs the owner's approval.
   possible, verified by per-owner counts, and tried with real sign-ins
   before the cutover.
 - **Local files and their cloud copies must line up after the id change.**
-  This is what the id strategy task is for, and task 6 checks it in a real
-  editor.
+  They do so through the id computed from the old `cloudId` (section 4.2).
+  Task 1 tests the rule and task 6 checks it in a real editor.
+- **The file's time decides what is uploaded, not its content.** A file
+  that is older in content but newer in time, for example one copied back
+  from somewhere or checked out from git, replaces a newer cloud copy. So
+  does a file that was emptied or broken. Both are accepted: the file is the
+  truth and the cloud follows it.
+- **Without sync states, nothing tells a user that a file has no cloud
+  copy** beyond the cloud indicator being off. Files that arrive in the
+  folder from outside are not backed up until Upload is pressed.
+- **Every file with a cloud copy is uploaded once on the first start after
+  the cutover** (section 4.9). The content is the same and the files are
+  small, but it is a burst of requests on release day.
 - **Every desktop user has to update.** The notice says so, the web editor
   needs nothing, and local configs are unaffected.
 - **A push to `main` is live everywhere at once**, with no nightly host in
@@ -846,8 +987,8 @@ What follows for this migration:
   plain text field. A surface later is a new kind with a bigger
   payload, not a new table and not a set of references between rows.
 - **Identity belongs to the document.** Pieces inside a config are found by
-  their place in it, not by ids of their own. The id strategy (section 4.2)
-  only has to cover whole documents, and a surface file will get its id the
+  their place in it, not by ids of their own. The id rules (section 4.2)
+  only cover whole documents, and a surface file will get its id the
   same way a profile does.
 - **The list should not carry payloads.** Surfaces will be several times
   the size of a profile, and a list with a detail box only needs the
@@ -868,7 +1009,13 @@ What follows for this migration:
   `src/renderer/lib/auth.web.ts`); profile-cloud PR #191 and this repo's
   README, "Authentication".
 - The config folder: grid-editor `src/electron/main.ts`
-  (`startConfigWatcher`), `src/renderer/main/panels/profileCloud/ProfileCloud.svelte`.
+  (`startConfigWatcher`), `src/electron/src/profiles.ts`,
+  `src/renderer/main/panels/profileCloud/ProfileCloud.svelte`; in this repo
+  `src/lib/configmanager/ConfigManager.ts` and
+  `src/lib/components/tree/ProfileCloudTreeItem.svelte` (the two
+  indicators).
+- The offline screen that stays as it is:
+  https://github.com/intechstudio/grid-editor/issues/1693
 - What was run on production and what still waits for this migration:
   `webapps/docs/auth/runbooks/stage-2.md`, `after-switch.md`,
   `hosted-keycloak.md`.
